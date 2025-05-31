@@ -848,6 +848,10 @@ async function loadData(filters = {}) {
       renderStudentCards();
       hideLoading();
     } else {
+      // デバッグ情報がある場合は表示
+      if (data.debug_info) {
+        console.error('API Debug Info:', data.debug_info);
+      }
       throw new Error(data.message || 'データの取得に失敗しました');
     }  } catch (error) {
     console.error('データ読み込みエラー:', error);
@@ -859,7 +863,15 @@ async function loadData(filters = {}) {
       errorMessage = 'サーバーエラーが発生しました。しばらく待ってから再度お試しください。';
     } else if (error.message.includes('401') || error.message.includes('403')) {
       errorMessage = 'セッションが切れている可能性があります。ページをリロードしてください。';
+    } else if (error.message.includes('ImportError')) {
+      errorMessage = 'サーバー設定エラー: 必要なモジュールが見つかりません。';
     }
+    
+    // エラーの詳細をコンソールに表示
+    if (error.message) {
+      console.error('Error details:', error.message);
+    }
+    
     showError(errorMessage);
     hideLoading();
   }

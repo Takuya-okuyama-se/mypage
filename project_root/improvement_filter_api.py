@@ -14,15 +14,35 @@ from urllib.parse import parse_qs
 
 # ロギング用セットアップ
 import logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filename='logs/improvement_filter.log',
-    filemode='a'
-)
+
+# ログディレクトリを作成
+log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+if not os.path.exists(log_dir):
+    try:
+        os.makedirs(log_dir)
+    except:
+        pass
+
+try:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        filename=os.path.join(log_dir, 'improvement_filter.log'),
+        filemode='a'
+    )
+except:
+    # ログファイルが作成できない場合は標準出力を使用
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
 
 # ライブラリのインポート
-sys.path.append('/path/to/your/modules')
+# 現在のディレクトリをPythonパスに追加
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
 try:
     from points_utils import teacher_award_points
 except ImportError:
@@ -49,12 +69,12 @@ except ImportError:
 try:
     from config import Config
 except ImportError:
-    # config.pyがない場合の環境変数からの直接読み込み
+    # config.pyがない場合のフォールバック設定
     class Config:
-        MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
-        MYSQL_USER = os.getenv('MYSQL_USER', 'root')
-        MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
-        MYSQL_DB = os.getenv('MYSQL_DB', 'test')
+        MYSQL_HOST = os.getenv('MYSQL_HOST', 'mysql3103.db.sakura.ne.jp')
+        MYSQL_USER = os.getenv('MYSQL_USER', 'seishinn')
+        MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'Yakyuubu8')
+        MYSQL_DB = os.getenv('MYSQL_DB', 'seishinn_test')
         MYSQL_PORT = int(os.getenv('MYSQL_PORT', 3306))
 
 # データベース接続関数
@@ -89,10 +109,25 @@ def get_elementary_improved_students(filters):
     conn = get_db_connection()
     
     try:
-        start_month = int(filters.get('start_month', 1))
-        end_month = int(filters.get('end_month', 12))
-        subject_id = filters.get('subject', 'all')
-        min_improvement = int(filters.get('min_improvement', 0))
+        # フィルターパラメータの処理を改善
+        # month パラメータを使用（start_month/end_month ではなく）
+        month = filters.get('month')
+        if isinstance(month, list):
+            month = month[0] if month else None
+        current_month = int(month) if month else datetime.now().month
+        
+        # subject パラメータ
+        subject_id = filters.get('subject')
+        if isinstance(subject_id, list):
+            subject_id = subject_id[0] if subject_id else None
+        
+        # min_improvement パラメータ
+        min_improvement_str = filters.get('min_improvement', '0')
+        if isinstance(min_improvement_str, list):
+            min_improvement_str = min_improvement_str[0] if min_improvement_str else '0'
+        min_improvement = int(min_improvement_str) if min_improvement_str else 0
+        
+        logging.info(f"Processing elementary students - month: {current_month}, subject: {subject_id}, min_improvement: {min_improvement}")
         
         with conn.cursor() as cur:
             # 基本的なSQLクエリの構築
@@ -125,7 +160,9 @@ def get_elementary_improved_students(filters):
                     (s1.score - s2.score) >= %s
             """
             
-            params = [end_month, start_month, min_improvement]
+            # 前月を計算
+            previous_month = current_month - 1 if current_month > 1 else 12
+            params = [current_month, previous_month, min_improvement]
             
             # 科目フィルターが指定されている場合はWHERE句に追加
             if subject_id != 'all':
@@ -178,12 +215,24 @@ def get_elementary_improved_students(filters):
                 }
                 
                 students.append(student)
+            
+            # points_statusフィルターを適用
+            points_status = filters.get('points_status')
+            if isinstance(points_status, list):
+                points_status = points_status[0] if points_status else None
+                
+            if points_status == 'pending':
+                students = [s for s in students if not s['points_awarded']]
+            elif points_status == 'awarded':
+                students = [s for s in students if s['points_awarded']]
                 
             return {'success': True, 'students': students}
     
     except Exception as e:
         # エラーメッセージを安全に処理
         logging.error("Error in get_elementary_improved_students: %s", str(e))
+        import traceback
+        logging.error("Traceback: %s", traceback.format_exc())
         return {'success': False, 'message': str(e)}
         
     finally:

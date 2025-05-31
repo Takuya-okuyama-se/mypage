@@ -2501,12 +2501,23 @@ def api_improvement_filter_advanced():
             
         except ImportError as e:
             # improvement_filter_api.pyが使用できない場合は既存のロジックを使用
-            app.logger.warning(f"Could not import improvement_filter_api: {e}")
+            app.logger.warning(f"Could not import improvement_filter_api: {e}, falling back to built-in logic")
+            # フォールバックロジックを継続するためpassを使用
             pass
         except Exception as e:
             # その他のエラーの場合
             app.logger.error(f"Error in improvement filter API: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
+            import traceback
+            error_details = {
+                'error_type': type(e).__name__,
+                'error_message': str(e),
+                'traceback': traceback.format_exc()
+            }
+            return jsonify({
+                'success': False,
+                'message': f'APIエラー: {str(e)}',
+                'debug_info': error_details
+            }), 500
         
         month = request.args.get('month', type=int)
         current_month = month if month else datetime.now().month
