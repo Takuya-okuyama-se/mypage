@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/myapp/index.cgi/static/modern-style.css">
   
   <!-- JavaScript -->
-  <script src="/myapp/index.cgi/static/js/csrf_utils.js"></script>
+  <script src="/myapp/index.cgi/static/js/csrf_utils_safe.js?v=20250106"></script>
   
   <style>
     /* 基本スタイル */
@@ -718,7 +718,7 @@
   </div>
 
   {% block scripts %}{% endblock %}
-  <script src="/myapp/index.cgi/static/js/hamburger-fixed.js"></script>
+  <script src="/myapp/index.cgi/static/js/hamburger-fixed.js?v=20250106"></script>
   <script>
     // CSRF対策の設定
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';

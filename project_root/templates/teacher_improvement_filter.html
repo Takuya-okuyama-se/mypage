@@ -813,7 +813,9 @@ async function loadData(filters = {}) {
       if (filters.points_status) params.append('points_status', filters.points_status);
     }
     
-    const response = await fetch(`/myapp/index.cgi/api/improvement-filter-advanced?${params}`, {
+    // デバッグ用: テストAPIを使用（実際のAPIがエラーの場合）
+    const response = await fetch(`/myapp/index.cgi/api/improvement-filter-test?${params}`, {
+    // const response = await fetch(`/myapp/index.cgi/api/improvement-filter-advanced?${params}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'

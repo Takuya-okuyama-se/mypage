@@ -281,7 +281,37 @@ async function loadStudentsFromDatabase() {
       throw new Error(`API エラー: ${response.status}`);
     }
     
-    const data = await response.json();
+    // レスポンスのテキストを先に取得
+    const responseText = await response.text();
+    console.log('レスポンスの長さ:', responseText.length);
+    
+    // JSONパースエラーの詳細を取得
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('JSONパースエラー:', parseError);
+      console.error('エラー位置周辺のテキスト:');
+      
+      // エラー位置の前後100文字を表示
+      const errorPosition = 5695;
+      const start = Math.max(0, errorPosition - 100);
+      const end = Math.min(responseText.length, errorPosition + 100);
+      console.error(responseText.substring(start, end));
+      
+      // 特殊文字を可視化
+      console.error('特殊文字の確認:');
+      for (let i = start; i < end && i < responseText.length; i++) {
+        const char = responseText[i];
+        const code = char.charCodeAt(0);
+        if (code < 32 || code > 126) {
+          console.error(`位置 ${i}: 文字コード ${code}`);
+        }
+      }
+      
+      throw new Error('JSONパースエラー: レスポンスが正しいJSON形式ではありません');
+    }
+    
     console.log('取得したデータ:', data);
     
     if (data.success && data.students) {

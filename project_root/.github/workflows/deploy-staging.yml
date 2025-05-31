@@ -1,0 +1,78 @@
+name: Deploy to Staging
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Deploy to Staging via FTP (Dry Run)
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: seishinn.sakura.ne.jp
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: /home/seishinn/www/staging/
+        
+        # 除外するファイル/ディレクトリ
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/.env
+          **/.env.*
+          **/venv/**
+          **/__pycache__/**
+          **/*.pyc
+          **/*.pyo
+          **/*.pyd
+          **/.Python
+          **/pip-log.txt
+          **/pip-delete-this-directory.txt
+          **/.tox/
+          **/.coverage
+          **/.coverage.*
+          **/htmlcov/
+          **/cover/
+          **/*.log
+          **/logs/**
+          **/tmp/**
+          **/temp/**
+          **/cache/**
+          **/.DS_Store
+          **/Thumbs.db
+          **/*.swp
+          **/*.swo
+          **/~*
+          **/*.bak
+          **/*.backup
+          **/*.old
+          **/*.orig
+          **/test_*.py
+          **/check_*.py
+          **/*.sql
+          **/database_info/**
+          **/backup_archive/**
+          **/backup_cleanup/**
+          
+        # ステージング環境では既存ファイルを保持
+        dangerous-clean-slate: false
+        
+        # プルリクエストではドライランモード
+        dry-run: true
+        
+        # ログレベル
+        log-level: verbose
+        
+        # タイムアウト設定（ミリ秒）
+        timeout: 300000  # 5分
+        
+        # 並列アップロード数
+        parallel: 5

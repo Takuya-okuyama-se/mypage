@@ -1,0 +1,82 @@
+name: Pre-Deploy Check
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Check for hardcoded credentials
+      run: |
+        echo "Checking for hardcoded credentials..."
+        
+        # Check for common patterns
+        if grep -r "mysql3103.db.sakura.ne.jp\|seishinn\|Yakyuubu8\|AIzaSy" \
+           --include="*.py" \
+           --include="*.js" \
+           --include="*.html" \
+           --exclude-dir=".git" \
+           --exclude-dir="venv" \
+           --exclude-dir="node_modules" \
+           --exclude-dir="__pycache__" \
+           --exclude=".env*" \
+           --exclude="*.sql" .; then
+          echo "❌ ERROR: Hardcoded credentials found!"
+          echo "Please move all credentials to environment variables."
+          exit 1
+        else
+          echo "✅ No hardcoded credentials found."
+        fi
+    
+    - name: Check for .env file
+      run: |
+        if [ -f ".env" ]; then
+          echo "⚠️  WARNING: .env file found in repository"
+          echo "Make sure .env is in .gitignore"
+        fi
+        
+        if [ -f ".env.example" ]; then
+          echo "✅ .env.example found - good practice!"
+        else
+          echo "⚠️  Consider adding .env.example for documentation"
+        fi
+    
+    - name: Check Python syntax
+      run: |
+        echo "Checking Python syntax..."
+        python3 -m py_compile *.py || true
+    
+    - name: Check file permissions
+      run: |
+        echo "Checking for files with unusual permissions..."
+        find . -type f -name "*.py" -o -name "*.cgi" | while read file; do
+          perms=$(stat -c "%a" "$file" 2>/dev/null || stat -f "%OLp" "$file")
+          if [ "$perms" = "777" ]; then
+            echo "⚠️  WARNING: $file has 777 permissions"
+          fi
+        done
+    
+    - name: Check for large files
+      run: |
+        echo "Checking for large files..."
+        find . -type f -size +10M | grep -v ".git" | while read file; do
+          echo "⚠️  WARNING: Large file found: $file ($(du -h "$file" | cut -f1))"
+        done
+    
+    - name: Summary
+      run: |
+        echo "======================================"
+        echo "Pre-deployment check completed."
+        echo "Please review any warnings above."
+        echo "======================================" 

@@ -10816,39 +10816,6 @@ def submit_student_homework():
         log_error(f"Error in submit_student_homework: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-
-
-# Static file handler for CGI mode
-@app.route('/static/<path:filename>')
-@app.route('/myapp/index.cgi/static/<path:filename>')
-def serve_static(filename):
-    """Serve static files in CGI mode"""
-    import os
-    from flask import send_from_directory, make_response
-    static_dir = os.path.join(app.root_path, 'static')
-    
-    # Security check - prevent directory traversal
-    if '..' in filename or filename.startswith('/'):
-        return "Invalid file path", 400
-    
-    # Check if file exists
-    file_path = os.path.join(static_dir, filename)
-    if not os.path.exists(file_path):
-        # Log the attempted path for debugging
-        log_error(f"Static file not found: {file_path} (requested: {filename})")
-        return "File not found", 404
-    
-    # Serve file with appropriate content type
-    response = make_response(send_from_directory(static_dir, filename))
-    
-    # Set content type based on file extension
-    if filename.endswith('.js'):
-        response.headers['Content-Type'] = 'application/javascript'
-    elif filename.endswith('.css'):
-        response.headers['Content-Type'] = 'text/css'
-    
-    return response
-
 if __name__ == '__main__':
     # アプリケーション起動時の初期化処理
     try:

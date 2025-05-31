@@ -1,0 +1,80 @@
+name: Deploy to Sakura Server
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Deploy to Sakura Server via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: seishinn.sakura.ne.jp
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: /home/seishinn/www/
+        
+        # 除外するファイル/ディレクトリ
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/.env
+          **/.env.*
+          **/venv/**
+          **/__pycache__/**
+          **/*.pyc
+          **/*.pyo
+          **/*.pyd
+          **/.Python
+          **/pip-log.txt
+          **/pip-delete-this-directory.txt
+          **/.tox/
+          **/.coverage
+          **/.coverage.*
+          **/htmlcov/
+          **/cover/
+          **/*.log
+          **/logs/**
+          **/tmp/**
+          **/temp/**
+          **/cache/**
+          **/.DS_Store
+          **/Thumbs.db
+          **/*.swp
+          **/*.swo
+          **/~*
+          **/*.bak
+          **/*.backup
+          **/*.old
+          **/*.orig
+          **/test_*.py
+          **/check_*.py
+          **/*.sql
+          **/database_info/**
+          **/backup_archive/**
+          **/backup_cleanup/**
+          
+        # アップロードする前にファイルを削除しない（既存ファイルを保持）
+        dangerous-clean-slate: false
+        
+        # ドライラン（テスト実行）- 本番デプロイ時はfalseに設定
+        dry-run: false
+        
+        # ログレベル
+        log-level: verbose
+        
+        # タイムアウト設定（ミリ秒）
+        timeout: 600000  # 10分
+        
+        # 並列アップロード数
+        parallel: 10
