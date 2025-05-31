@@ -143,7 +143,7 @@ def get_elementary_improved_students(filters):
                     u.name AS student_name,
                     u.school_type,
                     u.grade_level,
-                    COALESCE(sub.name, CONCAT('科目', e1.subject)) AS subject_name,
+                    COALESCE(sub.name, CONCAT('科目', s1.subject)) AS subject_name,
                     (s1.score - s2.score) AS improvement
                 FROM elementary_grades s1
                 JOIN elementary_grades s2 ON 
@@ -152,7 +152,7 @@ def get_elementary_improved_students(filters):
                     s1.subject = s2.subject AND
                     s1.month != s2.month
                 JOIN users u ON s1.student_id = u.id
-                JOIN subjects sub ON s1.subject = sub.id
+                LEFT JOIN subjects sub ON s1.subject = sub.id
                 WHERE 
                     u.school_type = 'elementary' AND
                     s1.month = %s AND 
@@ -301,14 +301,14 @@ def get_middle_improved_students(filters):
                     u.school_type,
                     u.grade_level,
                     p1.subject,
-                    COALESCE(sub.name, CONCAT('科目', e1.subject)) AS subject_name,
+                    COALESCE(sub.name, CONCAT('科目', p1.subject)) AS subject_name,
                     (p1.point - p2.point) AS improvement
                 FROM internal_points p1
                 JOIN internal_points p2 ON 
                     p1.student_id = p2.student_id AND 
                     p1.subject = p2.subject
                 JOIN users u ON p1.student_id = u.id
-                JOIN subjects sub ON p1.subject = sub.id
+                LEFT JOIN subjects sub ON p1.subject = sub.id
                 WHERE 
                     u.school_type = 'middle' AND
                     p1.grade_year = %s AND 
@@ -516,8 +516,16 @@ def get_middle_exam_improved_students(filters):
             '3-3': 3
         }
         
-        from_month = exam_to_month.get(from_exam, 5)
-        to_month = exam_to_month.get(to_exam, 7)
+        # 期間情報から学年と学期を抽出
+        # exam形式: "1-1", "1-1-final", "1-2", etc.
+        from_parts = from_exam.split('-')
+        to_parts = to_exam.split('-')
+        
+        from_grade = int(from_parts[0])
+        from_term = int(from_parts[1])
+        
+        to_grade = int(to_parts[0])
+        to_term = int(to_parts[1])
         
         with conn.cursor() as cur:
             # 基本的なSQLクエリの構築
@@ -525,9 +533,11 @@ def get_middle_exam_improved_students(filters):
                 SELECT 
                     e1.student_id, 
                     e1.score AS current_score,
-                    e1.month AS current_month,
+                    e1.term AS current_term,
+                    e1.grade_year AS current_grade,
                     e2.score AS previous_score,
-                    e2.month AS previous_month,
+                    e2.term AS previous_term,
+                    e2.grade_year AS previous_grade,
                     u.name AS student_name,
                     u.school_type,
                     u.grade_level,
@@ -537,18 +547,19 @@ def get_middle_exam_improved_students(filters):
                 FROM grades e1
                 JOIN grades e2 ON 
                     e1.student_id = e2.student_id AND 
-                    e1.subject = e2.subject AND
-                    e1.grade_year = e2.grade_year
+                    e1.subject = e2.subject
                 JOIN users u ON e1.student_id = u.id
                 LEFT JOIN subjects sub ON e1.subject = sub.id
                 WHERE 
                     u.school_type = 'middle' AND
-                    e1.month = %s AND 
-                    e2.month = %s AND
+                    e1.grade_year = %s AND
+                    e1.term = %s AND
+                    e2.grade_year = %s AND
+                    e2.term = %s AND
                     (e1.score - e2.score) >= %s
             """
             
-            params = [to_month, from_month, min_improvement]
+            params = [to_grade, to_term, from_grade, from_term, min_improvement]
             
             # 科目フィルターが指定されている場合はWHERE句に追加
             if subject_id != 'all':
