@@ -58,6 +58,18 @@
 }
 
 /* フィルターコントロール */
+.filter-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+}
+
 .control-label {
   font-weight: 500;
   color: #555;
@@ -813,9 +825,8 @@ async function loadData(filters = {}) {
       if (filters.points_status) params.append('points_status', filters.points_status);
     }
     
-    // デバッグ用: テストAPIを使用（実際のAPIがエラーの場合）
-    const response = await fetch(`/myapp/index.cgi/api/improvement-filter-test?${params}`, {
-    // const response = await fetch(`/myapp/index.cgi/api/improvement-filter-advanced?${params}`, {
+    // APIエンドポイントを呼び出し
+    const response = await fetch(`/myapp/index.cgi/api/improvement-filter-advanced?${params}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -840,7 +851,16 @@ async function loadData(filters = {}) {
       throw new Error(data.message || 'データの取得に失敗しました');
     }  } catch (error) {
     console.error('データ読み込みエラー:', error);
-    showError(error.message);
+    // より詳細なエラーメッセージを表示
+    let errorMessage = 'データの読み込みに失敗しました。';
+    if (error.message.includes('404')) {
+      errorMessage = 'APIエンドポイントが見つかりません。サーバー設定を確認してください。';
+    } else if (error.message.includes('500')) {
+      errorMessage = 'サーバーエラーが発生しました。しばらく待ってから再度お試しください。';
+    } else if (error.message.includes('401') || error.message.includes('403')) {
+      errorMessage = 'セッションが切れている可能性があります。ページをリロードしてください。';
+    }
+    showError(errorMessage);
     hideLoading();
   }
 }
