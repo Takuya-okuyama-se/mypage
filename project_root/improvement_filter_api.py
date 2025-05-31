@@ -470,22 +470,46 @@ def get_middle_exam_improved_students(filters):
     conn = get_db_connection()
     
     try:
-        from_exam = filters.get('from_exam', '1-1')
-        to_exam = filters.get('to_exam', '1-1-final')
-        subject_id = filters.get('subject', 'all')
-        min_improvement = int(filters.get('min_improvement', 0))
+        # フィルターから値を取得
+        from_exam = filters.get('from_exam')
+        if isinstance(from_exam, list):
+            from_exam = from_exam[0] if from_exam else '1-1'
+        from_exam = from_exam or '1-1'
         
-        # 期間情報を解析
-        from_parts = from_exam.split('-')
-        to_parts = to_exam.split('-')
+        to_exam = filters.get('to_exam')
+        if isinstance(to_exam, list):
+            to_exam = to_exam[0] if to_exam else '1-1-final'
+        to_exam = to_exam or '1-1-final'
         
-        from_year = int(from_parts[0])
-        from_term = int(from_parts[1])
-        from_type = 'final' if len(from_parts) > 2 and from_parts[2] == 'final' else 'midterm'
+        subject_id = filters.get('subject')
+        if isinstance(subject_id, list):
+            subject_id = subject_id[0] if subject_id else None
+            
+        min_improvement_str = filters.get('min_improvement', '0')
+        if isinstance(min_improvement_str, list):
+            min_improvement_str = min_improvement_str[0] if min_improvement_str else '0'
+        min_improvement = int(min_improvement_str) if min_improvement_str else 0
         
-        to_year = int(to_parts[0])
-        to_term = int(to_parts[1])
-        to_type = 'final' if len(to_parts) > 2 and to_parts[2] == 'final' else 'midterm'
+        logging.info(f"Processing middle exam students - from: {from_exam}, to: {to_exam}, subject: {subject_id}, min_improvement: {min_improvement}")
+        
+        # 期間を月に変換（簡易的なマッピング）
+        # 1-1 (1年1学期中間) → 5月, 1-1-final (1年1学期期末) → 7月
+        # 1-2 (1年2学期中間) → 10月, 1-2-final (1年2学期期末) → 12月
+        # 1-3 (1年3学期学年末) → 3月
+        exam_to_month = {
+            '1-1': 5, '1-1-final': 7,
+            '1-2': 10, '1-2-final': 12,
+            '1-3': 3,
+            '2-1': 5, '2-1-final': 7,
+            '2-2': 10, '2-2-final': 12,
+            '2-3': 3,
+            '3-1': 5, '3-1-final': 7,
+            '3-2': 10, '3-2-final': 12,
+            '3-3': 3
+        }
+        
+        from_month = exam_to_month.get(from_exam, 5)
+        to_month = exam_to_month.get(to_exam, 7)
         
         with conn.cursor() as cur:
             # 基本的なSQLクエリの構築
@@ -493,33 +517,30 @@ def get_middle_exam_improved_students(filters):
                 SELECT 
                     e1.student_id, 
                     e1.score AS current_score,
-                    e1.exam_type AS current_exam_type,
+                    e1.month AS current_month,
                     e2.score AS previous_score,
-                    e2.exam_type AS previous_exam_type,
+                    e2.month AS previous_month,
                     u.name AS student_name,
                     u.school_type,
                     u.grade_level,
                     e1.subject,
                     sub.name AS subject_name,
                     (e1.score - e2.score) AS improvement
-                FROM exam_scores e1
-                JOIN exam_scores e2 ON 
+                FROM elementary_grades e1
+                JOIN elementary_grades e2 ON 
                     e1.student_id = e2.student_id AND 
-                    e1.subject = e2.subject
+                    e1.subject = e2.subject AND
+                    e1.grade_year = e2.grade_year
                 JOIN users u ON e1.student_id = u.id
-                JOIN subjects sub ON e1.subject = sub.id
+                LEFT JOIN subjects sub ON e1.subject = sub.id
                 WHERE 
                     u.school_type = 'middle' AND
-                    e1.grade_year = %s AND 
-                    e1.term = %s AND 
-                    e1.exam_type = %s AND
-                    e2.grade_year = %s AND 
-                    e2.term = %s AND
-                    e2.exam_type = %s AND
+                    e1.month = %s AND 
+                    e2.month = %s AND
                     (e1.score - e2.score) >= %s
             """
             
-            params = [to_year, to_term, to_type, from_year, from_term, from_type, min_improvement]
+            params = [to_month, from_month, min_improvement]
             
             # 科目フィルターが指定されている場合はWHERE句に追加
             if subject_id != 'all':
@@ -546,7 +567,7 @@ def get_middle_exam_improved_students(filters):
                     AND is_active = 1
                     ORDER BY created_at DESC 
                     LIMIT 1
-                """, (row['student_id'], f"%{to_year}年{to_term}学期%"))
+                """, (row['student_id'], f"%{to_exam}%"))
                 
                 points_awarded = cur.fetchone()
                 
@@ -579,6 +600,8 @@ def get_middle_exam_improved_students(filters):
     except Exception as e:
         # エラーメッセージを安全に処理
         logging.error("Error in get_middle_exam_improved_students: %s", str(e))
+        import traceback
+        logging.error("Traceback: %s", traceback.format_exc())
         return {'success': False, 'message': str(e)}
         
     finally:
