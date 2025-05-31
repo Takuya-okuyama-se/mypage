@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Cloud Vision API 診断ツール</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .test-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .canvas-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        #testCanvas {
+            border: 2px solid #333;
+            border-radius: 8px;
+            cursor: crosshair;
+            background: white;
+        }
+        .clear-button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .clear-button:hover {
+            background: #ff5252;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ok { background: #4CAF50; }
+        .status-error { background: #f44336; }
+        .status-warning { background: #ff9800; }
+        .status-unknown { background: #9e9e9e; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Google Cloud Vision API 診断ツール</h1>
+        
+        <div class="test-section">
+            <h3><span class="status-indicator status-unknown" id="apiStatus"></span>API接続テスト</h3>
+            <p>Google Cloud Vision APIの基本的な接続テストを実行します。</p>
+            <button class="test-button" onclick="testAPIConnection()">API接続テスト実行</button>
+            <div id="apiResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3><span class="status-indicator status-unknown" id="handwritingStatus"></span>手書き認識テスト</h3>
+            <p>キャンバスに文字を描いて、手書き認識機能をテストできます。</p>
+            <div class="canvas-container">
+                <canvas id="testCanvas" width="200" height="100"></canvas><br>
+                <button class="clear-button" onclick="clearCanvas()">クリア</button>
+                <button class="test-button" onclick="testHandwriting()">手書き認識テスト</button>
+            </div>
+            <div id="handwritingResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3><span class="status-indicator status-unknown" id="systemStatus"></span>システム情報</h3>
+            <p>サーバーとブラウザの環境情報を表示します。</p>
+            <button class="test-button" onclick="getSystemInfo()">システム情報取得</button>
+            <div id="systemResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 テスト履歴</h3>
+            <button class="test-button" onclick="clearHistory()">履歴クリア</button>
+            <div id="testHistory" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let testHistory = [];
+        let isDrawing = false;
+        let canvas, ctx;
+
+        // キャンバス初期化
+        window.onload = function() {
+            canvas = document.getElementById('testCanvas');
+            ctx = canvas.getContext('2d');
+            setupCanvas();
+            
+            // ページ読み込み時に自動でAPI接続テスト
+            setTimeout(() => {
+                addToHistory('info', 'ページが読み込まれました');
+                testAPIConnection();
+            }, 1000);
+        };
+
+        function setupCanvas() {
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+            
+            // タッチイベント
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const mouseEvent = new MouseEvent('mouseup', {});
+                canvas.dispatchEvent(mouseEvent);
+            });
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000';
+            
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                ctx.beginPath();
+                isDrawing = false;
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            addToHistory('info', 'キャンバスをクリアしました');
+        }
+
+        async function testAPIConnection() {
+            updateStatus('apiStatus', 'unknown');
+            showResult('apiResult', 'info', 'API接続テストを実行中...');
+            
+            try {
+                // テスト用の画像データ（簡単な「I」の文字）
+                const testCanvas = document.createElement('canvas');
+                testCanvas.width = 100;
+                testCanvas.height = 100;
+                const testCtx = testCanvas.getContext('2d');
+                
+                // 「I」の文字を描画
+                testCtx.fillStyle = '#000';
+                testCtx.fillRect(45, 20, 10, 60);
+                testCtx.fillRect(35, 20, 30, 8);
+                testCtx.fillRect(35, 72, 30, 8);
+                
+                const imageData = testCanvas.toDataURL('image/png');
+                
+                const response = await fetch('/api/english/recognize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: imageData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    updateStatus('apiStatus', 'ok');
+                    showResult('apiResult', 'success', 
+                        `✅ API接続成功！\n` +
+                        `認識結果: "${result.text || '(空)'}"\n` +
+                        `生テキスト: "${result.raw_text || '(なし)'}"\n` +
+                        `信頼度: ${result.confidence || 'N/A'}\n` +
+                        `レスポンス時間: ${Date.now() - performance.now()}ms`
+                    );
+                    addToHistory('success', `API接続テスト成功: ${result.text || '(認識なし)'}`);
+                } else {
+                    updateStatus('apiStatus', 'error');
+                    showResult('apiResult', 'error', 
+                        `❌ API接続失敗\n` +
+                        `ステータス: ${response.status}\n` +
+                        `メッセージ: ${result.message || '不明なエラー'}`
+                    );
+                    addToHistory('error', `API接続テスト失敗: ${result.message}`);
+                }
+            } catch (error) {
+                updateStatus('apiStatus', 'error');
+                showResult('apiResult', 'error', 
+                    `❌ 接続エラー\n` +
+                    `エラー: ${error.message}\n` +
+                    `サーバーが起動していない可能性があります`
+                );
+                addToHistory('error', `API接続エラー: ${error.message}`);
+            }
+        }
+
+        async function testHandwriting() {
+            updateStatus('handwritingStatus', 'unknown');
+            showResult('handwritingResult', 'info', '手書き認識テストを実行中...');
+            
+            try {
+                const imageData = canvas.toDataURL('image/png');
+                
+                if (isCanvasEmpty()) {
+                    updateStatus('handwritingStatus', 'warning');
+                    showResult('handwritingResult', 'warning', 
+                        `⚠️ キャンバスが空です\n` +
+                        `何か文字を描いてからテストしてください`
+                    );
+                    addToHistory('warning', '手書きテスト: キャンバスが空');
+                    return;
+                }
+                
+                const response = await fetch('/api/english/recognize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: imageData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    updateStatus('handwritingStatus', 'ok');
+                    showResult('handwritingResult', 'success', 
+                        `✅ 手書き認識成功！\n` +
+                        `認識結果: "${result.text || '(空)'}"\n` +
+                        `生テキスト: "${result.raw_text || '(なし)'}"\n` +
+                        `信頼度: ${result.confidence || 'N/A'}`
+                    );
+                    addToHistory('success', `手書き認識成功: "${result.text}"`);
+                } else {
+                    updateStatus('handwritingStatus', 'error');
+                    showResult('handwritingResult', 'error', 
+                        `❌ 手書き認識失敗\n` +
+                        `ステータス: ${response.status}\n` +
+                        `メッセージ: ${result.message || '不明なエラー'}`
+                    );
+                    addToHistory('error', `手書き認識失敗: ${result.message}`);
+                }
+            } catch (error) {
+                updateStatus('handwritingStatus', 'error');
+                showResult('handwritingResult', 'error', 
+                    `❌ 手書き認識エラー\n` +
+                    `エラー: ${error.message}`
+                );
+                addToHistory('error', `手書き認識エラー: ${error.message}`);
+            }
+        }
+
+        function isCanvasEmpty() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            return imageData.data.every(pixel => pixel === 0 || pixel === 255);
+        }
+
+        async function getSystemInfo() {
+            updateStatus('systemStatus', 'unknown');
+            showResult('systemResult', 'info', 'システム情報を取得中...');
+            
+            const clientInfo = {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                platform: navigator.platform,
+                cookieEnabled: navigator.cookieEnabled,
+                onLine: navigator.onLine,
+                screenResolution: `${screen.width}x${screen.height}`,
+                viewportSize: `${window.innerWidth}x${window.innerHeight}`,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                const response = await fetch('/api/system/info');
+                if (response.ok) {
+                    const serverInfo = await response.json();
+                    updateStatus('systemStatus', 'ok');
+                    showResult('systemResult', 'info', 
+                        `📱 クライアント情報:\n` +
+                        `ブラウザ: ${clientInfo.userAgent}\n` +
+                        `言語: ${clientInfo.language}\n` +
+                        `画面解像度: ${clientInfo.screenResolution}\n` +
+                        `ビューポート: ${clientInfo.viewportSize}\n` +
+                        `オンライン: ${clientInfo.onLine ? 'はい' : 'いいえ'}\n\n` +
+                        `🖥️ サーバー情報:\n` +
+                        JSON.stringify(serverInfo, null, 2)
+                    );
+                } else {
+                    updateStatus('systemStatus', 'warning');
+                    showResult('systemResult', 'warning', 
+                        `📱 クライアント情報のみ:\n` +
+                        JSON.stringify(clientInfo, null, 2) + '\n\n' +
+                        `⚠️ サーバー情報の取得に失敗しました`
+                    );
+                }
+            } catch (error) {
+                updateStatus('systemStatus', 'warning');
+                showResult('systemResult', 'warning', 
+                    `📱 クライアント情報のみ:\n` +
+                    JSON.stringify(clientInfo, null, 2) + '\n\n' +
+                    `❌ サーバー情報取得エラー: ${error.message}`
+                );
+            }
+            
+            addToHistory('info', 'システム情報を取得しました');
+        }
+
+        function updateStatus(elementId, status) {
+            const element = document.getElementById(elementId);
+            element.className = `status-indicator status-${status}`;
+        }
+
+        function showResult(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.textContent = message;
+            element.style.display = 'block';
+        }
+
+        function addToHistory(type, message) {
+            const timestamp = new Date().toLocaleString('ja-JP');
+            testHistory.unshift({
+                timestamp,
+                type,
+                message
+            });
+            
+            // 履歴を最新20件に制限
+            if (testHistory.length > 20) {
+                testHistory = testHistory.slice(0, 20);
+            }
+            
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            const historyElement = document.getElementById('testHistory');
+            if (testHistory.length > 0) {
+                historyElement.style.display = 'block';
+                historyElement.className = 'result info';
+                historyElement.textContent = testHistory.map(entry => 
+                    `[${entry.timestamp}] ${entry.type.toUpperCase()}: ${entry.message}`
+                ).join('\n');
+            }
+        }
+
+        function clearHistory() {
+            testHistory = [];
+            const historyElement = document.getElementById('testHistory');
+            historyElement.style.display = 'none';
+            addToHistory('info', 'テスト履歴をクリアしました');
+        }
+    </script>
+</body>
+</html>

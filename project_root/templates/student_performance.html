@@ -1,0 +1,1964 @@
+{% extends "base.html" %}
+{% block title %}成績・内申 | 塾生徒サイト{% endblock %}
+{% block head_extra %}
+<style>
+  .grades-container, .internal-points-container {
+    margin-bottom: 20px;
+  }
+  
+  .grade-tabs, .month-tabs {
+    display: flex;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #dee2e6;
+    flex-wrap: wrap;
+  }
+  
+  .grade-tab, .month-tab {
+    padding: 8px 15px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    border: 1px solid #dee2e6;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    background-color: #f8f9fa;
+  }
+  
+  .grade-tab.active, .month-tab.active {
+    background-color: #fff;
+    border-bottom: 1px solid white;
+    margin-bottom: -1px;
+    font-weight: bold;
+  }
+  
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+  }
+  
+  .data-table th, .data-table td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+  
+  .data-table th {
+    background-color: #f2f2f2;
+  }
+  
+  .subject-name {
+    text-align: left;
+    font-weight: bold;
+    width: 20%;
+  }
+  
+  .score-cell {
+    width: 15%;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .score-cell:hover {
+    background-color: #e3f2fd;
+  }
+  
+  .comment-cell {
+    text-align: left;
+    width: 65%;
+  }
+  
+  .comment-input {
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid #ddd;
+    padding: 5px;
+    resize: vertical;
+  }
+  
+  .comment-display {
+    text-align: left;
+    word-break: break-word;
+    cursor: pointer;
+    min-height: 25px;
+  }
+  
+  .comment-display:hover {
+    background-color: #e3f2fd;
+  }
+  
+  .editable {
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .editable:hover {
+    background-color: #e3f2fd;
+  }
+  
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: 5px;
+  }
+  
+  .status-updating {
+    background-color: #fbbc05;
+  }
+  
+  .status-success {
+    background-color: #34a853;
+  }
+  
+  .status-error {
+    background-color: #ea4335;
+  }
+  
+  .no-data {
+    color: #999;
+  }
+  
+  #loading-message, #data-error {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  #retry-button {
+    margin-top: 10px;
+  }
+  
+  .school-preference-comparison {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border-left: 4px solid #4285f4;
+  }
+  
+  .school-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .school-details {
+    margin-top: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .school-detail-item {
+    background-color: #f0f0f0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  
+  .preference-order {
+    background-color: #4285f4;
+    color: white;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+  
+  .point-difference {
+    margin-top: 5px;
+    padding: 5px;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  
+  .point-difference.positive {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .point-difference.negative {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+    .year-selector {
+    margin-bottom: 15px;
+  }
+  
+  .month-dropdown-container {
+    margin-bottom: 15px;
+  }
+  
+  .chart-container {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    height: 300px;
+  }
+  
+  .save-button {
+    margin-top: 10px;
+    padding: 5px 15px;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+    .save-button:hover {
+    background-color: #3367d6;
+  }
+  
+  /* HOPE ROOMログイン用のスタイル */
+  .hope-room-section {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    border-left: 4px solid #4285f4;
+  }
+  
+  .loading-message {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    font-weight: bold;
+  }
+  
+  .hope-room-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .hope-room-title h4 {
+    margin: 0;
+    margin-right: 10px;
+  }
+  
+  .hope-room-title .badge {
+    padding: 4px 8px;
+    background-color: #4285f4;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  {% if teacher_view or is_teacher_login %}
+  <div class="alert alert-info">
+    <p>あなたは現在、講師として生徒アカウントにアクセスしています。</p>
+    {% if is_teacher_login %}
+    <a href="/myapp/index.cgi/student/return-to-teacher" class="btn btn-primary">講師アカウントに戻る</a>
+    {% else %}
+    <a href="/myapp/index.cgi/teacher/dashboard" class="btn btn-primary">講師ダッシュボードに戻る</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  <h3>{{ name }}さんの成績{% if role == 'student' and school_type == 'middle' %}・内申点{% endif %}</h3>
+  <div class="year-selector">
+    <select id="year-select" class="form-control">
+      {% for year in range(1, grade_level + 1) %}
+        <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}年生</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div id="loading-message" style="display: block;">
+    <p>成績データを読み込み中...</p>
+  </div>  <div id="data-error" style="display: none;">
+    <p>成績データの読み込みに失敗しました。</p>
+    <button id="retry-button" class="btn btn-primary">再試行</button>
+  </div>
+  
+  <!-- HOPE ROOM 模試成績確認セクション -->
+  <div class="hope-room-section">    <div class="hope-room-title">
+      <h4>HOPE ROOM 模試成績</h4>
+      <span class="badge">外部サイト</span>
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div>
+        <small><strong>ID:</strong> {{ hope_room_login_id }}</small>
+      </div>
+      <div>
+        <small><strong>PASS:</strong> {{ hope_room_password }}</small>
+      </div>
+    </div>
+    
+    <div id="hope-room-loading-message" class="loading-message">
+      <p>ログイン中...</p>
+    </div>
+    
+    <div id="hope-room-login-form">
+      <form id="hope-room-auto-login-form" action="https://www.hoperoom.jp/Login" method="post" target="_blank">
+        <input type="hidden" id="LoginId" name="LoginId" value="{{ hope_room_login_id }}">
+        <input type="hidden" id="Password" name="Password" value="{{ hope_room_password }}">
+        <input type="hidden" name="__RequestVerificationToken" value="">
+        
+        <div class="text-center mb-2">
+          <button type="submit" class="btn btn-primary btn-sm" id="hope-room-login-button">
+            <span>HOPEROOMを開く</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div><!-- 小学生用UI -->
+  <div id="elementary-container" style="display: none;">
+    <div class="month-dropdown-container">
+      <select id="month-select" class="form-control">
+        <!-- 月のドロップダウンはJavaScriptで動的に生成 -->
+      </select>
+    </div>
+    <div id="grades-container">
+      <!-- ここに科目テーブルが表示されます -->
+    </div>
+
+    <div class="chart-container">
+      <canvas id="scoreChart"></canvas>
+    </div>
+  </div>
+  <!-- 中学生用UI -->
+  <div id="middle-container" style="display: none;">
+    <div class="grade-tabs">
+      {% for year in range(1, grade_level + 1) %}
+        <div class="grade-tab {% if year == current_year %}active{% endif %}" data-year="{{ year }}">
+          {{ year }}年生
+        </div>
+      {% endfor %}
+    </div>
+    <div id="middle-grades-container" style="display: none;">
+      <h4>テスト成績（100点満点）</h4>
+      <table class="data-table" id="grades-table">
+        <thead>
+          <tr>
+            <th>科目</th>
+            <th>1学期</th>
+            <th>2学期</th>
+            <th>3学期</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 成績データがここに表示されます -->
+        </tbody>
+      </table>
+    </div>
+
+    <div id="internal-points-container" style="display: none;">
+      <h4>内申点（5段階評価）</h4>
+      <table class="data-table" id="internal-points-table">
+        <thead>
+          <tr>
+            <th>科目</th>
+            <th>1学期</th>
+            <th>2学期</th>
+            <th>3学期</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 内申点データがここに表示されます -->
+        </tbody>
+      </table>
+      
+      <!-- 志望校比較セクションが動的に追加されます -->
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// HOPE ROOMログイン処理
+function setupHopeRoomLogin() {
+  const form = document.getElementById('hope-room-auto-login-form');
+  const loginButton = document.getElementById('hope-room-login-button');
+  const loadingMessage = document.getElementById('hope-room-loading-message');
+  const loginForm = document.getElementById('hope-room-login-form');
+  
+  if (!form || !loginButton || !loadingMessage || !loginForm) {
+    return; // 要素が見つからない場合は処理を中止
+  }
+  
+  loginButton.addEventListener('click', function() {
+    // ロード中表示
+    loadingMessage.style.display = 'block';
+    loginForm.style.display = 'none';
+    
+    // CSRF対策トークンを取得（HOPEROOMの場合は必要ない場合もある）
+    fetch('https://www.hoperoom.jp/Login')
+      .then(response => response.text())
+      .then(html => {
+        try {
+          // HTML文字列からトークンを抽出する処理
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const token = doc.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+          
+          if (token) {
+            document.querySelector('input[name="__RequestVerificationToken"]').value = token;
+          }
+          
+          // 新しいウィンドウを開いてフォームを送信
+          const newWindow = window.open('about:blank', '_blank');
+          setTimeout(function() {
+            form.submit();
+            // 一定時間後にロード表示を隠して通常表示に戻す
+            setTimeout(function() {
+              loadingMessage.style.display = 'none';
+              loginForm.style.display = 'block';
+            }, 3000);
+          }, 500);
+        } catch (e) {
+          console.error('HOPE ROOMログイン処理エラー:', e);
+          loadingMessage.style.display = 'none';
+          loginForm.style.display = 'block';
+          alert('ログイン処理中にエラーが発生しました。もう一度お試しください。');
+        }
+      })
+      .catch(error => {
+        console.error('HOPE ROOMログインページ取得エラー:', error);
+        loadingMessage.style.display = 'none';
+        loginForm.style.display = 'block';
+        alert('HOPE ROOMへのアクセスに失敗しました。インターネット接続を確認してください。');
+      });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // HOPE ROOMログイン処理をセットアップ
+  setupHopeRoomLogin();
+  
+  // 以下は元々のコード
+  // 現在のユーザーID (Flask側から渡される) - 最初に定義
+  const currentUserId = {{ user_id }};
+  
+  // グローバル変数
+  let currentYear = {{ current_year }};
+  
+  // ユーザー固有のストレージキーを生成する関数
+  function getStorageKey(prefix) {
+    return prefix + '_' + currentUserId + '_' + currentYear;
+  }
+  
+  // 前回選択された月をローカルストレージから復元
+  let currentMonth;
+  const storedMonth = localStorage.getItem(getStorageKey('selectedMonth'));
+  if (storedMonth) {
+    currentMonth = parseInt(storedMonth);
+  } else {
+    currentMonth = new Date().getMonth() + 1; // 現在の月
+  }
+  
+  let currentData = null;
+  let userPreferences = null;
+  let scoreChart = null;
+  
+  // 現在の学校タイプ
+  const schoolType = "{{ school_type }}";
+  
+  // 小学生用の科目
+  const ELEMENTARY_SUBJECTS = {
+    '1': '国語',
+    '2': '算数', 
+    '3': '英語'
+  };
+  
+  // 月の名前
+  const MONTHS = ['', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+  
+  // 全ユーザー編集可能にする
+  const canEdit = true;
+  
+  // 初期表示
+  document.getElementById('year-select').addEventListener('change', function() {
+    currentYear = parseInt(this.value);
+    loadPerformanceData(currentYear);
+  });
+  
+  // 再試行ボタン
+  document.getElementById('retry-button').addEventListener('click', function() {
+    loadPerformanceData(currentYear);
+  });
+  
+  // 初期データ読み込み
+  loadPerformanceData(currentYear);
+  
+  // 中学生用タブ切り替え
+  if (schoolType === 'middle') {
+    document.querySelectorAll('.grade-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        // アクティブタブの切り替え
+        document.querySelectorAll('.grade-tab').forEach(function(t) {
+          t.classList.remove('active');
+        });
+        this.classList.add('active');
+        
+        // データの読み込み
+        currentYear = parseInt(this.getAttribute('data-year'));
+        loadPerformanceData(currentYear);
+      });
+    });
+  }
+  
+  // 成績データ取得・表示関数
+  function loadPerformanceData(gradeYear) {
+    // ローディング表示
+    document.getElementById('loading-message').style.display = 'block';
+    document.getElementById('data-error').style.display = 'none';
+    document.getElementById('elementary-container').style.display = 'none';
+    document.getElementById('middle-container').style.display = 'none';
+    
+    // データ取得
+    if (schoolType === 'elementary') {
+      // 小学生用データ取得
+      fetchElementaryData(gradeYear);
+    } else {
+      // 中学生用データ取得
+      fetchMiddleData(gradeYear);
+      fetchPreferences();
+    }
+  }
+  
+  // 小学生用データ取得処理 - 強化版
+  function fetchElementaryData(year) {
+    // APIエンドポイント 
+    fetch(`/myapp/index.cgi/api/student/grades?grade_year=${year}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('APIレスポンスが正常ではありません');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("APIレスポンス:", data); // デバッグ用
+        
+        // データをグローバル変数に保存
+        currentData = data;
+        
+        // 修正: データに月がない場合は標準学校月を設定
+        if (!data.months || data.months.length === 0) {
+          data.months = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3]; // 全ての学校の月
+        }
+        
+        // 修正: データの月リストをローカルストレージに保存
+        localStorage.setItem(getStorageKey('availableMonths'), JSON.stringify(data.months));
+        
+        // 月タブを生成
+        generateMonthTabs(data.months);
+        
+        // 修正: 前回選択された月があればそれを使用、なければ最新の月を選択
+        const storedMonth = localStorage.getItem(getStorageKey('selectedMonth'));
+        let monthToSelect;
+        
+        if (storedMonth && data.months.includes(parseInt(storedMonth))) {
+          monthToSelect = parseInt(storedMonth);
+        } else if (data.months && data.months.length > 0) {
+          monthToSelect = data.months[data.months.length - 1];
+          localStorage.setItem(getStorageKey('selectedMonth'), monthToSelect.toString());
+        } else {
+          // データがない場合はデフォルトの月を使用
+          monthToSelect = currentMonth;
+        }
+        
+        selectMonth(monthToSelect);
+        
+        // グラフの更新
+        updateChart(data);
+        
+        // ローディング非表示、コンテンツ表示
+        document.getElementById('loading-message').style.display = 'none';
+        document.getElementById('elementary-container').style.display = 'block';
+      })
+      .catch(error => {
+        console.error('テストデータの読み込み中にエラーが発生しました:', error);
+        document.getElementById('loading-message').style.display = 'none';
+        document.getElementById('data-error').style.display = 'block';
+        
+        // 修正: エラー時はローカルストレージに保存した月データがあれば復元
+        const storedMonths = localStorage.getItem(getStorageKey('availableMonths'));
+        if (storedMonths) {
+          try {
+            const months = JSON.parse(storedMonths);
+            if (months && months.length > 0) {
+              // 保存されていた月データでUIを復元
+              generateMonthTabs(months);
+              const storedMonth = localStorage.getItem(getStorageKey('selectedMonth'));
+              selectMonth(storedMonth ? parseInt(storedMonth) : months[months.length - 1]);
+              return; // 成功した場合はここで終了
+            }
+          } catch (e) {
+            console.error('保存データの復元エラー:', e);
+          }
+        }
+        
+        // 上記の処理が失敗した場合、サンプルデータを使用
+        useElementarySampleData();
+      });
+  }
+  
+  // 中学生用データ取得処理
+  function fetchMiddleData(gradeYear) {
+    // APIエンドポイント
+    fetch(`/myapp/index.cgi/api/student/grades?grade_year=${gradeYear}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('API response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // グローバル変数にデータを保存
+        currentData = data;
+        
+        // データが取得できたらテーブルを表示
+        displayMiddlePerformanceData(data);
+        
+        // ローディング非表示、テーブル表示
+        document.getElementById('loading-message').style.display = 'none';
+        document.getElementById('middle-container').style.display = 'block';
+        document.getElementById('middle-grades-container').style.display = 'block';
+        document.getElementById('internal-points-container').style.display = 'block';
+        
+        // 志望校データがあれば比較表示
+        if (userPreferences) {
+          updateInternalPointsTable();
+        }
+      })
+      .catch(error => {
+        console.error('Error loading performance data:', error);
+        document.getElementById('loading-message').style.display = 'none';
+        document.getElementById('data-error').style.display = 'block';
+      });
+  }
+  
+  // 志望校情報を取得する関数（中学生用）
+  function fetchPreferences() {
+    // APIエンドポイント
+    fetch('/myapp/index.cgi/api/student/preferences')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('API response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        userPreferences = data;
+        
+        // 内申点表の更新
+        if (currentData) {
+          updateInternalPointsTable();
+        }
+      })
+      .catch(error => {
+        console.error('Error loading preferences:', error);
+      });
+  }
+  
+  // サンプルデータの作成（小学生用） - 修正：すべての月を含める
+  function createSampleData() {
+    // 全ての月を含める
+    let allMonths = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
+    
+    let sampleData = {
+      months: allMonths,
+      scores: {},
+      subjects: {
+        '1': '国語',
+        '2': '算数', 
+        '3': '英語'
+      }
+    };
+    
+    // 各科目のサンプルデータを作成
+    for (const [subjectId, subjectName] of Object.entries(ELEMENTARY_SUBJECTS)) {
+      sampleData.scores[subjectId] = {};
+      
+      // 各月のデータを作成
+      allMonths.forEach(month => {
+        // ランダムな点数を生成 (70〜95)
+        const randomScore = Math.floor(Math.random() * 26) + 70;
+        
+        sampleData.scores[subjectId][month] = {
+          score: randomScore,
+          comment: '',
+          id: `sample-${subjectId}-${month}`
+        };
+      });
+    }
+    
+    return sampleData;
+  }
+  
+  // テスト用サンプルデータを使用（小学生用） - 強化版
+  function useElementarySampleData() {
+    const sampleData = createSampleData();
+    currentData = sampleData;
+    
+    // 修正: サンプルの月リストをローカルストレージに保存
+    localStorage.setItem(getStorageKey('availableMonths'), JSON.stringify(sampleData.months));
+    
+    // 月タブを生成
+    generateMonthTabs(sampleData.months);
+    
+    // 修正: 前回選択した月があればそれを使用、なければ最新の月を選択
+    const storedMonth = localStorage.getItem(getStorageKey('selectedMonth'));
+    let monthToSelect;
+    
+    if (storedMonth && sampleData.months.includes(parseInt(storedMonth))) {
+      monthToSelect = parseInt(storedMonth);
+    } else if (sampleData.months.length > 0) {
+      monthToSelect = sampleData.months[sampleData.months.length - 1];
+      localStorage.setItem(getStorageKey('selectedMonth'), monthToSelect.toString());
+    } else {
+      monthToSelect = sampleData.months[sampleData.months.length - 1];
+    }
+    
+    selectMonth(monthToSelect);
+    
+    // グラフの更新
+    updateChart(sampleData);
+    
+    document.getElementById('loading-message').style.display = 'none';
+    document.getElementById('elementary-container').style.display = 'block';
+  }
+    // 月ドロップダウンの生成（小学生用）
+  function generateMonthTabs(months) {
+    const monthSelect = document.getElementById('month-select');
+    if (!monthSelect) return;
+    
+    monthSelect.innerHTML = '';
+    
+    // 常に全ての月を表示（データの有無に関わらず）
+    const allMonths = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3]; // 学校年度の全ての月
+    
+    // すべての月のオプションを生成
+    allMonths.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = MONTHS[month];
+        
+        // 選択されている月を設定
+        const storedMonth = localStorage.getItem(getStorageKey('selectedMonth'));
+        if (storedMonth && parseInt(storedMonth) === month) {
+            option.selected = true;
+        }
+        
+        monthSelect.appendChild(option);
+    });
+    
+    // 月選択の変更イベントを設定
+    monthSelect.addEventListener('change', function() {
+        selectMonth(parseInt(this.value));
+    });
+    
+    // elementary-container を明示的に表示
+    document.getElementById('elementary-container').style.display = 'block';
+  }
+    // 月を選択して表示（小学生用） - ドロップダウン対応版
+  function selectMonth(month) {
+    currentMonth = month;
+    
+    // 修正: 選択した月をローカルストレージに保存
+    localStorage.setItem(getStorageKey('selectedMonth'), month.toString());
+    
+    // ドロップダウンの選択値を更新
+    const monthSelect = document.getElementById('month-select');
+    if (monthSelect) {
+      monthSelect.value = month;
+    }
+    
+    // 成績テーブルを表示
+    displayScoreTable(month);
+    
+    // elementary-container を明示的に表示
+    document.getElementById('elementary-container').style.display = 'block';
+  }
+    // 成績テーブル表示（小学生用） - ドロップダウン対応版
+  function displayScoreTable(month) {
+    // 月ドロップダウンの表示を確認・保証
+    const monthSelect = document.getElementById('month-select');
+    if (monthSelect) {
+      monthSelect.value = month.toString();
+    }
+    
+    // elementary-container を明示的に表示
+    document.getElementById('elementary-container').style.display = 'block';
+    
+    const container = document.getElementById('grades-container');
+    container.innerHTML = '';
+    
+    // タイトル
+    const title = document.createElement('h4');
+    title.textContent = `${MONTHS[month]}のテスト成績`;
+    container.appendChild(title);
+    
+    // テーブル作成
+    const table = document.createElement('table');
+    table.className = 'data-table';
+    
+    // ヘッダー行 - 点数とコメントを列に
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = `
+      <th>科目</th>
+      <th>点数</th>
+      <th>コメント</th>
+    `;
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    // テーブルボディ
+    const tbody = document.createElement('tbody');
+    
+    // 表示するデータの有無を確認
+    const hasData = currentData && currentData.scores;
+    
+    // 科目順序（算数、国語、英語の順で表示）
+    const subjectOrder = ['2', '1', '3']; // 算数, 国語, 英語
+    
+    // 各科目の行を追加
+    subjectOrder.forEach(subjectId => {
+      const subjectName = ELEMENTARY_SUBJECTS[subjectId];
+      
+      let score = null;
+      let scoreId = null;
+      let comment = '';
+      
+      // データが存在する場合
+      if (hasData && currentData.scores[subjectId] && currentData.scores[subjectId][month]) {
+        score = currentData.scores[subjectId][month].score;
+        scoreId = currentData.scores[subjectId][month].id;
+        comment = currentData.scores[subjectId][month].comment || '';
+      }
+      
+      // 科目行を作成
+      const subjectRow = document.createElement('tr');
+      
+      // 科目名セル
+      const subjectCell = document.createElement('td');
+      subjectCell.className = 'subject-name';
+      subjectCell.textContent = subjectName;
+      subjectRow.appendChild(subjectCell);
+      
+      // 点数のセル
+      const scoreCell = document.createElement('td');
+      scoreCell.className = 'score-cell editable';
+      scoreCell.setAttribute('data-subject', subjectId);
+      scoreCell.setAttribute('data-month', month);
+      
+      if (score !== null) {
+        scoreCell.textContent = score;
+        if (scoreId) {
+          scoreCell.setAttribute('data-id', scoreId);
+        }
+      } else {
+        scoreCell.innerHTML = '<span class="no-data">-</span>';
+      }
+      subjectRow.appendChild(scoreCell);
+      
+      // コメントのセル
+      const commentCell = document.createElement('td');
+      commentCell.className = 'comment-cell';
+      
+      // コメント表示/編集用の要素
+      const commentDisplay = document.createElement('div');
+      commentDisplay.className = 'comment-display';
+      commentDisplay.textContent = comment || '(クリックしてコメントを入力)';
+      commentDisplay.style.color = comment ? 'black' : '#999';
+      commentCell.appendChild(commentDisplay);
+      subjectRow.appendChild(commentCell);
+      
+      // 行をテーブルに追加
+      tbody.appendChild(subjectRow);
+    });
+    
+    table.appendChild(tbody);
+    container.appendChild(table);
+    
+    // 編集可能な要素を設定
+    setupEditableFields();
+  }
+  
+  // 中学生用成績データ表示関数
+  function displayMiddlePerformanceData(data) {
+    const gradesTable = document.getElementById('grades-table').querySelector('tbody');
+    const internalPointsTable = document.getElementById('internal-points-table').querySelector('tbody');
+    
+    // テーブルをクリア
+    gradesTable.innerHTML = '';
+    internalPointsTable.innerHTML = '';
+    
+    // データを初期化 (修正部分: データ構造がnullや未定義の場合に対処)
+    if (!data) {
+      data = {};
+    }
+    if (!data.subjects) {
+      data.subjects = {};
+    }
+    if (!data.grades) {
+      data.grades = {};
+    }
+    if (!data.internal_points) {
+      data.internal_points = {};
+    }
+    
+    // サンプルデータが必要な場合（APIからデータが取得できない場合）
+    if (Object.keys(data.subjects).length === 0) {
+      const sampleSubjects = {
+        '1': '国語', '2': '数学', '3': '英語', '4': '理科', '5': '社会',
+        '6': '音楽', '7': '美術', '8': '体育', '9': '技家'
+      };
+      
+      data.subjects = sampleSubjects;
+      
+      // 空のデータ構造を作成
+      for (const subjectId in sampleSubjects) {
+        data.grades[subjectId] = {
+          1: {id: null, score: null},
+          2: {id: null, score: null},
+          3: {id: null, score: null}
+        };
+        data.internal_points[subjectId] = {
+          1: {id: null, point: null},
+          2: {id: null, point: null},
+          3: {id: null, point: null}
+        };
+      }
+    }
+    
+    // 科目ごとにデータを表示
+    for (const [subjectId, subjectName] of Object.entries(data.subjects)) {
+      // グレードデータが存在しない場合は初期化 (修正部分: nullチェックを追加)
+      if (!data.grades[subjectId]) {
+        data.grades[subjectId] = {};
+      }
+      
+      // 各学期データの存在確認 (修正部分: 学期データの初期化)
+      for (let term = 1; term <= 3; term++) {
+        if (!data.grades[subjectId][term]) {
+          data.grades[subjectId][term] = {id: null, score: null};
+        }
+      }
+      
+      // 内申点データが存在しない場合は初期化 (修正部分: nullチェックを追加)
+      if (!data.internal_points[subjectId]) {
+        data.internal_points[subjectId] = {};
+      }
+      
+      // 各学期データの存在確認 (修正部分: 学期データの初期化)
+      for (let term = 1; term <= 3; term++) {
+        if (!data.internal_points[subjectId][term]) {
+          data.internal_points[subjectId][term] = {id: null, point: null};
+        }
+      }
+      
+      // 成績テーブル行の作成
+      const gradeRow = document.createElement('tr');
+      gradeRow.innerHTML = `
+        <td class="subject-name">${subjectName}</td>
+        <td class="${canEdit ? 'editable' : ''}" 
+            data-type="grade" 
+            data-subject="${subjectId}" 
+            data-term="1" 
+            data-id="${data.grades[subjectId][1]?.id || ''}">${formatScore(data.grades[subjectId][1]?.score)}</td>
+        <td class="${canEdit ? 'editable' : ''}" 
+            data-type="grade" 
+            data-subject="${subjectId}" 
+            data-term="2" 
+            data-id="${data.grades[subjectId][2]?.id || ''}">${formatScore(data.grades[subjectId][2]?.score)}</td>
+        <td class="${canEdit ? 'editable' : ''}" 
+            data-type="grade" 
+            data-subject="${subjectId}" 
+            data-term="3" 
+            data-id="${data.grades[subjectId][3]?.id || ''}">${formatScore(data.grades[subjectId][3]?.score)}</td>
+      `;
+      gradesTable.appendChild(gradeRow);
+      
+      // 内申点テーブル行の作成
+      const pointRow = document.createElement('tr');
+      pointRow.innerHTML = `
+        <td class="subject-name">${subjectName}</td>
+        <td class="${canEdit ? 'editable' : ''}" 
+            data-type="point" 
+            data-subject="${subjectId}" 
+            data-term="1" 
+            data-id="${data.internal_points[subjectId][1]?.id || ''}">${formatPoint(data.internal_points[subjectId][1]?.point)}</td>
+        <td class="${canEdit ? 'editable' : ''}" 
+            data-type="point" 
+            data-subject="${subjectId}" 
+            data-term="2" 
+            data-id="${data.internal_points[subjectId][2]?.id || ''}">${formatPoint(data.internal_points[subjectId][2]?.point)}</td>
+        <td class="${canEdit ? 'editable' : ''}" 
+            data-type="point" 
+            data-subject="${subjectId}" 
+            data-term="3" 
+            data-id="${data.internal_points[subjectId][3]?.id || ''}">${formatPoint(data.internal_points[subjectId][3]?.point)}</td>
+      `;
+      internalPointsTable.appendChild(pointRow);
+    }
+    
+    // 編集可能にする
+    if (canEdit) {
+      setupEditableFields();
+    }
+    
+    // 志望校比較セクションを削除（更新時に再作成するため）
+    const existingComparison = document.getElementById('school-preference-comparison');
+    if (existingComparison) {
+      existingComparison.remove();
+    }
+  }
+  
+  // 内申点合計を計算する関数（2年生3学期 + 3年生2学期×2）
+  function calculateInternalPoints(data) {
+    if (!data || !data.internal_points) return 0;
+    
+    let secondYearPoints = {};
+    let thirdYearPoints = {};
+    let totalPoints = 0;
+    
+    // 各科目の内申点データを取得
+    for (const subjectId in data.internal_points) {
+      // 2年生3学期のデータ
+      if (data.grades[subjectId] && data.internal_points[subjectId]['3'] && data.internal_points[subjectId]['3'].point) {
+        const point = data.internal_points[subjectId]['3'].point;
+        secondYearPoints[subjectId] = point;
+      } else {
+        secondYearPoints[subjectId] = 0;
+      }
+      
+      // 3年生2学期のデータ
+      if (data.grades[subjectId] && data.internal_points[subjectId]['2'] && data.internal_points[subjectId]['2'].point) {
+        const point = data.internal_points[subjectId]['2'].point;
+        thirdYearPoints[subjectId] = point;
+      } else {
+        thirdYearPoints[subjectId] = 0;
+      }
+    }
+    
+    // すべての科目を集計
+    for (const subjectId in data.subjects) {
+      const secondYearPoint = secondYearPoints[subjectId] || 0;
+      const thirdYearPoint = thirdYearPoints[subjectId] || 0;
+      
+      // 合計に加算（2年生3学期 + 3年生2学期×2）
+      totalPoints += secondYearPoint + (thirdYearPoint * 2);
+    }
+    
+    return totalPoints;
+  }
+  
+  // 内申点テーブルを更新して志望校との差を表示
+  function updateInternalPointsTable() {
+    // 既に内申点テーブルが表示されている場合
+    const internalPointsContainer = document.getElementById('internal-points-container');
+    if (!internalPointsContainer || !currentData) return;
+    
+    // 既存の比較セクションを削除
+    const existingComparison = document.getElementById('school-preference-comparison');
+    if (existingComparison) {
+      existingComparison.remove();
+    }
+    
+    // 内申点合計を計算（2年生3学期 + 3年生2学期×2）
+    const totalPoints = calculateInternalPoints(currentData);
+    
+    // 志望校情報を表示するセクションを追加
+    const comparisonSection = document.createElement('div');
+    comparisonSection.id = 'school-preference-comparison';
+    comparisonSection.className = 'school-preference-comparison';
+    
+    // タイトル
+    const titleElem = document.createElement('h4');
+    titleElem.textContent = '内申点合計と志望校比較';
+    comparisonSection.appendChild(titleElem);
+    
+    // 内申点合計表示
+    const totalPointsElem = document.createElement('p');
+    totalPointsElem.innerHTML = `現在の内申点合計: <strong>${totalPoints}</strong> 点 <span style="font-size:0.9em;color:#666;font-style:italic;">(2年生3学期 + 3年生2学期×2)</span>`;
+    comparisonSection.appendChild(totalPointsElem);
+    
+    // 計算方法の説明
+    const explanationElem = document.createElement('div');
+    explanationElem.style.backgroundColor = '#f5f5f5';
+    explanationElem.style.padding = '10px';
+    explanationElem.style.borderRadius = '5px';
+    explanationElem.style.marginBottom = '15px';
+    explanationElem.style.fontSize = '0.9em';
+    
+    // 2年生、3年生の内申点を取得
+    let second_year_data = {};
+    let third_year_data = {};
+    
+    // 科目ごとの内申点データを表示するテーブル
+    const tableElem = document.createElement('table');
+    tableElem.className = 'data-table';
+    tableElem.style.marginTop = '10px';
+    tableElem.style.width = '100%';
+    
+    // テーブルヘッダー
+    const tableHeader = document.createElement('thead');
+    tableHeader.innerHTML = `
+      <tr>
+        <th>科目</th>
+        <th>2年生3学期</th>
+        <th>3年生2学期</th>
+        <th>計算結果<br><small>(2年3学期+3年2学期×2)</small></th>
+      </tr>
+    `;
+    tableElem.appendChild(tableHeader);
+    
+    // テーブルボディ
+    const tableBody = document.createElement('tbody');
+    
+    // 各科目のデータを追加
+    for (const subjectId in currentData.subjects) {
+      const row = document.createElement('tr');
+      
+      // 科目名
+      const subjectNameCell = document.createElement('td');
+      subjectNameCell.style.fontWeight = 'bold';
+      subjectNameCell.textContent = currentData.subjects[subjectId];
+      row.appendChild(subjectNameCell);
+      
+      // 2年生3学期の内申点
+      const secondYearCell = document.createElement('td');
+      const secondYearPoint = currentData.internal_points[subjectId]['3'] && 
+                             currentData.internal_points[subjectId]['3'].point ? 
+                             currentData.internal_points[subjectId]['3'].point : '-';
+      secondYearCell.textContent = secondYearPoint;
+      row.appendChild(secondYearCell);
+      
+      // 3年生2学期の内申点
+      const thirdYearCell = document.createElement('td');
+      const thirdYearPoint = currentData.internal_points[subjectId]['2'] && 
+                            currentData.internal_points[subjectId]['2'].point ? 
+                            currentData.internal_points[subjectId]['2'].point : '-';
+      thirdYearCell.textContent = thirdYearPoint;
+      row.appendChild(thirdYearCell);
+      
+      // 計算結果
+      const resultCell = document.createElement('td');
+      resultCell.style.fontWeight = 'bold';
+      
+      // 計算： 2年生3学期 + 3年生2学期×2
+      let calculatedValue = 0;
+      if (secondYearPoint !== '-') calculatedValue += parseInt(secondYearPoint);
+      if (thirdYearPoint !== '-') calculatedValue += parseInt(thirdYearPoint) * 2;
+      
+      resultCell.textContent = calculatedValue || '-';
+      row.appendChild(resultCell);
+      
+      tableBody.appendChild(row);
+    }
+    
+    tableElem.appendChild(tableBody);
+    explanationElem.appendChild(tableElem);
+    comparisonSection.appendChild(explanationElem);
+    
+    // 志望校情報がある場合
+    if (userPreferences && userPreferences.preferences && userPreferences.preferences.length > 0) {
+      // 各志望校との比較
+      for (const pref of userPreferences.preferences) {
+        const schoolItem = document.createElement('div');
+        schoolItem.className = 'school-item';
+        
+        // 学校名
+        const schoolHeader = document.createElement('div');
+        
+        const prefOrderSpan = document.createElement('span');
+        prefOrderSpan.className = 'preference-order';
+        prefOrderSpan.textContent = pref.preference_order;
+        
+        const schoolNameSpan = document.createElement('span');
+        schoolNameSpan.className = 'school-name';
+        schoolNameSpan.textContent = pref.name;
+        
+        schoolHeader.appendChild(prefOrderSpan);
+        schoolHeader.appendChild(schoolNameSpan);
+        
+        if (pref.course_type) {
+          const courseTypeSpan = document.createElement('span');
+          courseTypeSpan.textContent = ` (${pref.course_type})`;
+          schoolHeader.appendChild(courseTypeSpan);
+        }
+        
+        schoolItem.appendChild(schoolHeader);
+        
+        // 学校の詳細情報
+        const detailsDiv = document.createElement('div');
+        detailsDiv.className = 'school-details';
+        
+        // 調査書合計が存在する場合、それを比較に使用
+        if (pref.survey_report_total) {
+          const surveyReportSpan = document.createElement('span');
+          surveyReportSpan.className = 'school-detail-item';
+          surveyReportSpan.textContent = `調査書合計: ${pref.survey_report_total}`;
+          detailsDiv.appendChild(surveyReportSpan);
+          
+          // 点数差の表示（調査書合計と現在の内申点合計の差）
+          const pointDiff = totalPoints - pref.survey_report_total;
+          const diffDiv = document.createElement('div');
+          diffDiv.className = `point-difference ${pointDiff >= 0 ? 'positive' : 'negative'}`;
+          
+          if (pointDiff >= 0) {
+            diffDiv.textContent = `+${pointDiff} 点（調査書合計より上回っています）`;
+          } else {
+            diffDiv.textContent = `${pointDiff} 点（調査書合計より下回っています）`;
+          }
+          
+          schoolItem.appendChild(detailsDiv);
+          schoolItem.appendChild(diffDiv);
+        } else if (pref.min_required_points) {
+          // 調査書合計がない場合は最低必要内申点を表示
+          const requiredPointsSpan = document.createElement('span');
+          requiredPointsSpan.className = 'school-detail-item';
+          requiredPointsSpan.textContent = `最低必要内申: ${pref.min_required_points}`;
+          detailsDiv.appendChild(requiredPointsSpan);
+          
+          const avgPointsSpan = document.createElement('span');
+          avgPointsSpan.className = 'school-detail-item';
+          avgPointsSpan.textContent = `平均合格内申: ${pref.avg_accepted_points || '不明'}`;
+          detailsDiv.appendChild(avgPointsSpan);
+          
+          // 点数差の表示（最低必要内申点と現在の内申点合計の差）
+          const pointDiff = totalPoints - pref.min_required_points;
+          const diffDiv = document.createElement('div');
+          diffDiv.className = `point-difference ${pointDiff >= 0 ? 'positive' : 'negative'}`;
+          
+          if (pointDiff >= 0) {
+            diffDiv.textContent = `+${pointDiff} 点（最低必要内申より上回っています）`;
+            diffDiv.innerHTML += '<p>※調査書合計が設定されていないため、最低必要内申点との比較を表示しています</p>';
+          } else {
+            diffDiv.textContent = `${pointDiff} 点（最低必要内申より下回っています）`;
+            diffDiv.innerHTML += '<p>※調査書合計が設定されていないため、最低必要内申点との比較を表示しています</p>';
+          }
+          
+          schoolItem.appendChild(detailsDiv);
+          schoolItem.appendChild(diffDiv);
+        } else {
+          // 内申点関連の情報がない場合
+          const noPointsInfo = document.createElement('div');
+          noPointsInfo.className = 'alert alert-info';
+          noPointsInfo.textContent = 'この高校の内申点情報が設定されていません。';
+          schoolItem.appendChild(noPointsInfo);
+        }
+        
+        // その他の情報表示
+        const otherDetailsDiv = document.createElement('div');
+        otherDetailsDiv.className = 'school-details';
+        otherDetailsDiv.style.marginTop = '10px';
+        
+        if (pref.competition_rate) {
+          const rateSpan = document.createElement('span');
+          rateSpan.className = 'school-detail-item';
+          rateSpan.textContent = `倍率: ${pref.competition_rate}倍`;
+          otherDetailsDiv.appendChild(rateSpan);
+        }
+        
+        // 偏差値が存在する場合は表示
+        if (pref.deviation_score) {
+          const deviationSpan = document.createElement('span');
+          deviationSpan.className = 'school-detail-item';
+          deviationSpan.textContent = `偏差値: ${pref.deviation_score}`;
+          otherDetailsDiv.appendChild(deviationSpan);
+        }
+        
+        if (otherDetailsDiv.childNodes.length > 0) {
+          schoolItem.appendChild(otherDetailsDiv);
+        }
+        
+        comparisonSection.appendChild(schoolItem);
+      }
+    } else {
+      // 志望校が設定されていない場合
+      const noSchoolDiv = document.createElement('div');
+      noSchoolDiv.className = 'alert alert-info';
+      
+      const noSchoolText = document.createElement('p');
+      noSchoolText.textContent = '志望校が設定されていません。プロフィールページで志望校を設定すると、内申点との比較が表示されます。';
+      noSchoolDiv.appendChild(noSchoolText);
+      
+      const profileLink = document.createElement('a');
+      profileLink.href = '/myapp/index.cgi/student/profile';
+      profileLink.className = 'btn btn-primary';
+      profileLink.style.marginTop = '10px';
+      profileLink.textContent = 'プロフィールページで志望校を設定する';
+      noSchoolDiv.appendChild(profileLink);
+      
+      comparisonSection.appendChild(noSchoolDiv);
+    }
+    
+    // ページに追加
+    internalPointsContainer.appendChild(comparisonSection);
+  }
+  
+  // 編集可能フィールドの設定
+  function setupEditableFields() {
+    if (schoolType === 'elementary') {
+      // 小学生用のフィールド設定
+      setupElementaryEditableFields();
+    } else {
+      // 中学生用のフィールド設定
+      setupMiddleEditableFields();
+    }
+  }
+  
+  // 小学生用編集フィールド設定
+  function setupElementaryEditableFields() {
+    // 点数の編集
+    document.querySelectorAll('.score-cell').forEach(cell => {
+      cell.addEventListener('click', function() {
+        // 既に編集中なら何もしない
+        if (cell.querySelector('input')) {
+          return;
+        }
+        
+        const subject = cell.getAttribute('data-subject');
+        const month = cell.getAttribute('data-month');
+        const id = cell.getAttribute('data-id');
+        
+        let currentValue = '';
+        let currentComment = '';
+        
+        try {
+          // データ取得
+          if (currentData && currentData.scores[subject] && currentData.scores[subject][month]) {
+            currentValue = currentData.scores[subject][month].score || '';
+            currentComment = currentData.scores[subject][month].comment || '';
+          }
+        } catch (e) {
+          console.error('現在の値の取得中にエラーが発生しました:', e);
+        }
+        
+        // 現在の内容を保存
+        const originalContent = cell.innerHTML;
+        
+        // 入力フィールドに置き換え
+        cell.innerHTML = `<input type="number" class="edit-input" min="0" max="100" value="${currentValue}">`;
+        const input = cell.querySelector('input');
+        input.focus();
+        input.select();
+        
+        // 入力完了時の処理
+        function completeEdit(save) {
+          if (save) {
+            const newValue = parseInt(input.value);
+            if (!isNaN(newValue) && newValue >= 0 && newValue <= 100) {
+              // 更新状態表示
+              cell.innerHTML = `${newValue}<span class="status-dot status-updating"></span>`;
+              
+              // サーバーに更新を送信
+              updateElementaryScore(subject, month, newValue, currentComment, id, cell, originalContent);
+            } else {
+              cell.innerHTML = originalContent;
+            }
+          } else {
+            cell.innerHTML = originalContent;
+          }
+        }
+        
+        // 入力フィールドのイベント
+        input.addEventListener('blur', function() {
+          completeEdit(true);
+        });
+        
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            completeEdit(true);
+          } else if (e.key === 'Escape') {
+            completeEdit(false);
+          }
+        });
+      });
+    });
+    
+    // コメントの編集 - 修正版
+    document.querySelectorAll('.comment-display').forEach(display => {
+      display.addEventListener('click', function() {
+        // 月タブの参照を保持
+        const monthTabs = document.getElementById('month-tabs');
+        if (!monthTabs || monthTabs.style.display === 'none') {
+          console.warn('月タブが見つからないか表示されていません');
+          // 月タブを表示
+          if (monthTabs) {
+            monthTabs.style.display = 'flex';
+          }
+        }
+        
+        const commentCell = this.parentElement;
+        const row = commentCell.parentElement;
+        
+        // 科目IDを取得
+        const scoreCell = row.querySelector('.score-cell');
+        
+        if (!scoreCell) {
+          console.error('対応するスコアセルが見つかりません');
+          return;
+        }
+        
+        const subject = scoreCell.getAttribute('data-subject');
+        const month = parseInt(scoreCell.getAttribute('data-month'));
+        const id = scoreCell.getAttribute('data-id');
+        
+        let currentComment = '';
+        let currentScore = null;
+        
+        try {
+          // データ取得
+          if (currentData && currentData.scores[subject] && currentData.scores[subject][month]) {
+            currentComment = currentData.scores[subject][month].comment || '';
+            currentScore = currentData.scores[subject][month].score;
+          }
+        } catch (e) {
+          console.error('現在のコメントの取得中にエラーが発生しました:', e);
+        }
+        
+        // 編集UI作成
+        const editArea = document.createElement('div');
+        editArea.innerHTML = `
+          <textarea class="comment-input" placeholder="コメントを入力してください">${currentComment}</textarea>
+          <button class="save-button">保存</button>
+        `;
+        
+        // 表示を置き換え
+        const originalDisplay = commentCell.innerHTML;
+        commentCell.innerHTML = '';
+        commentCell.appendChild(editArea);
+        
+        // テキストエリアにフォーカス
+        const textarea = commentCell.querySelector('textarea');
+        textarea.focus();
+        
+        // 保存ボタンのイベント
+        const saveButton = commentCell.querySelector('.save-button');
+        saveButton.addEventListener('click', function() {
+          const newComment = textarea.value.trim();
+          
+          // サーバーに送信
+          updateElementaryScore(subject, month, currentScore, newComment, id, null, null);
+          
+          // データを更新
+          if (!currentData.scores) {
+            currentData.scores = {};
+          }
+          if (!currentData.scores[subject]) {
+            currentData.scores[subject] = {};
+          }
+          if (!currentData.scores[subject][month]) {
+            currentData.scores[subject][month] = {
+              score: currentScore,
+              id: id
+            };
+          }
+          currentData.scores[subject][month].comment = newComment;
+          
+          // コメント表示を直接更新（月タブ・成績表を再描画せずに）
+          commentCell.innerHTML = '';
+          const newDisplay = document.createElement('div');
+          newDisplay.className = 'comment-display';
+          newDisplay.textContent = newComment || '(クリックしてコメントを入力)';
+          newDisplay.style.color = newComment ? 'black' : '#999';
+          commentCell.appendChild(newDisplay);
+          
+          // 新しく作成した要素にイベントリスナーを設定
+          newDisplay.addEventListener('click', function() {
+            // コメントの編集処理を再度呼び出す
+            document.querySelectorAll('.comment-display').forEach(d => {
+              if (d === this) {
+                // このイベントハンドラを一時的に削除
+                const oldClickHandler = d.onclick;
+                d.onclick = null;
+                
+                // クリックイベントを作成して発火
+                const clickEvent = new MouseEvent('click', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window
+                });
+                
+                // セットアップ後にイベントを発火
+                setupElementaryEditableFields();
+                d.dispatchEvent(clickEvent);
+              }
+            });
+          });
+          
+          // 月タブが非表示になっていないか確認し、必要なら表示
+          const monthTabs = document.getElementById('month-tabs');
+          if (monthTabs) {
+            monthTabs.style.display = 'flex';
+            if (monthTabs.parentElement) {
+              monthTabs.parentElement.style.display = 'block';
+            }
+          }
+          
+          // 修正: 月の選択状態を保存
+          localStorage.setItem(getStorageKey('selectedMonth'), month.toString());
+        });
+      });
+    });
+  }
+  
+  // 中学生用編集フィールド設定
+  function setupMiddleEditableFields() {
+    document.querySelectorAll('.editable').forEach(function(cell) {
+      cell.addEventListener('click', function() {
+        // 既に編集中なら何もしない
+        if (cell.querySelector('input')) {
+          return;
+        }
+        
+        const type = cell.getAttribute('data-type');
+        const subject = cell.getAttribute('data-subject');
+        const term = cell.getAttribute('data-term');
+        const id = cell.getAttribute('data-id');
+        
+        let currentValue = '';
+        
+        try {
+          // データ取得
+          if (currentData) {
+            if (type === 'grade' && currentData.grades[subject] && currentData.grades[subject][term]) {
+              currentValue = currentData.grades[subject][term].score || '';
+            } else if (type === 'point' && currentData.internal_points[subject] && currentData.internal_points[subject][term]) {
+              currentValue = currentData.internal_points[subject][term].point || '';
+            }
+          }
+        } catch (e) {
+          console.error('Error getting current value:', e);
+        }
+        
+        // 現在の内容を保存
+        const originalContent = cell.innerHTML;
+        
+        // 入力フィールドに置き換え
+        cell.innerHTML = `<input type="number" class="edit-input" min="0" max="${type === 'grade' ? '100' : '5'}" value="${currentValue}">`;
+        const input = cell.querySelector('input');
+        input.focus();
+        input.select();
+        
+        // 入力完了時の処理
+        function completeEdit(save) {
+          if (save) {
+            const newValue = parseInt(input.value);
+            if (!isNaN(newValue)) {
+              // 入力値の検証
+              if ((type === 'grade' && newValue >= 0 && newValue <= 100) ||
+                  (type === 'point' && newValue >= 1 && newValue <= 5)) {
+                
+                // 更新状態表示
+                cell.innerHTML = `${newValue}<span class="status-dot status-updating"></span>`;
+                
+                // サーバーに更新を送信
+                const endpoint = type === 'grade' ? '/myapp/index.cgi/api/student/update-grade' : '/myapp/index.cgi/api/student/update-internal-point';
+                
+                // JSON形式のデータを準備
+                const postData = {
+                  student_id: currentUserId,
+                  grade_year: currentYear,
+                  subject_id: parseInt(subject),
+                  term: parseInt(term)
+                };
+                
+                // type によって異なるキーを追加
+                if (type === 'grade') {
+                  postData.score = newValue;
+                  if (id) postData.grade_id = parseInt(id);
+                } else {
+                  postData.point = newValue;
+                  if (id) postData.point_id = parseInt(id);
+                }
+                
+                fetch(endpoint, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(postData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.success) {
+                    // 更新成功
+                    cell.innerHTML = `${newValue}<span class="status-dot status-success"></span>`;
+                    
+                    // グローバルデータも更新
+                    try {
+                      if (type === 'grade') {
+                        if (!currentData.grades[subject]) {
+                          currentData.grades[subject] = {1:{}, 2:{}, 3:{}};
+                        }
+                        if (!currentData.grades[subject][term]) {
+                          currentData.grades[subject][term] = {};
+                        }
+                        currentData.grades[subject][term].score = newValue;
+                        currentData.grades[subject][term].id = data.grade_id;
+                        cell.setAttribute('data-id', data.grade_id);
+                      } else {
+                        if (!currentData.internal_points[subject]) {
+                          currentData.internal_points[subject] = {1:{}, 2:{}, 3:{}};
+                        }
+                        if (!currentData.internal_points[subject][term]) {
+                          currentData.internal_points[subject][term] = {};
+                        }
+                        currentData.internal_points[subject][term].point = newValue;
+                        currentData.internal_points[subject][term].id = data.point_id;
+                        cell.setAttribute('data-id', data.point_id);
+                      }
+                      
+                      // 内申点が更新された場合は志望校比較も更新
+                      if (type === 'point') {
+                        updateInternalPointsTable();
+                      }
+                    } catch (e) {
+                      console.error('Error updating data:', e);
+                    }
+                    
+                    // 成功表示を一定時間後に消す
+                    setTimeout(() => {
+                      cell.innerHTML = `${newValue}`;
+                    }, 2000);
+                  } else {
+                    // エラー
+                    cell.innerHTML = `${newValue}<span class="status-dot status-error"></span>`;
+                    console.error('Update error:', data.message);
+                    
+                    // エラー表示を一定時間後に消す
+                    setTimeout(() => {
+                      cell.innerHTML = originalContent;
+                    }, 2000);
+                  }
+                })
+                .catch(error => {
+                  console.error('Error:', error);
+                  cell.innerHTML = `${newValue}<span class="status-dot status-error"></span>`;
+                  
+                  // エラー表示を一定時間後に消す
+                  setTimeout(() => {
+                    cell.innerHTML = originalContent;
+                  }, 2000);
+                });
+                
+                return;
+              }
+            }
+          }
+          
+          // 検証に失敗した場合や保存しない場合は元に戻す
+          cell.innerHTML = originalContent;
+        }
+        
+        // 入力フィールドのイベント
+        input.addEventListener('blur', function() {
+          completeEdit(true);
+        });
+        
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            completeEdit(true);
+          } else if (e.key === 'Escape') {
+            completeEdit(false);
+          }
+        });
+      });
+    });
+  }
+  
+  // 小学生用の点数更新関数 - 強化版
+  function updateElementaryScore(subject, month, score, comment, id, cell, originalContent) {
+    // APIエンドポイント
+    const endpoint = '/myapp/index.cgi/api/student/update-elementary-grade';
+    // JSON形式のデータを準備
+    const postData = {
+      student_id: currentUserId,
+      grade_year: currentYear,
+      subject_id: parseInt(subject),
+      month: parseInt(month),
+      score: score,
+      comment: comment
+    };
+    
+    if (id) postData.grade_id = id;
+    
+    fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(postData)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // 更新成功
+        if (cell) { // 点数セルの場合
+          cell.innerHTML = `${score}<span class="status-dot status-success"></span>`;
+        }
+        
+        // グローバルデータも更新
+        try {
+          if (!currentData.scores) {
+            currentData.scores = {};
+          }
+          if (!currentData.scores[subject]) {
+            currentData.scores[subject] = {};
+          }
+          if (!currentData.scores[subject][month]) {
+            currentData.scores[subject][month] = {};
+          }
+          currentData.scores[subject][month].score = score;
+          currentData.scores[subject][month].comment = comment;
+          
+          if (data.grade_id) {
+            currentData.scores[subject][month].id = data.grade_id;
+            if (cell) {
+              cell.setAttribute('data-id', data.grade_id);
+            }
+          }
+          
+          // グラフを更新
+          updateChart(currentData);
+          
+          // 修正: 月の選択状態を保存 - 更新があっても選択した月を維持
+          localStorage.setItem(getStorageKey('selectedMonth'), month.toString());
+          
+          // 月タブの表示を確認・維持
+          const tabsContainer = document.getElementById('month-tabs');
+          if (tabsContainer) {
+            tabsContainer.style.display = 'flex';
+            
+            const tabsContainerParent = tabsContainer.parentElement;
+            if (tabsContainerParent) {
+              tabsContainerParent.style.display = 'block';
+            }
+          }
+          
+          // elementary-container を明示的に表示
+          const elementary = document.getElementById('elementary-container');
+          if (elementary) {
+            elementary.style.display = 'block';
+          }
+        } catch (e) {
+          console.error('データ更新中にエラーが発生しました:', e);
+        }
+        
+        // 成功表示を一定時間後に消す
+        if (cell) {
+          setTimeout(() => {
+            cell.innerHTML = `${score}`;
+            
+            // 修正: 全ての表示とタブを再確認
+            const elementary = document.getElementById('elementary-container');
+            if (elementary) {
+              elementary.style.display = 'block';
+            }
+            
+            const tabsContainer = document.getElementById('month-tabs');
+            if (tabsContainer) {
+              tabsContainer.style.display = 'flex';
+              
+              if (tabsContainer.parentElement) {
+                tabsContainer.parentElement.style.display = 'block';
+              }
+            }
+            
+            // 修正: データ更新後に現在の月を再選択して表示を確実にする
+            selectMonth(parseInt(month));
+          }, 2000);
+        }
+      } else {
+        // エラー
+        if (cell) {
+          cell.innerHTML = `${score}<span class="status-dot status-error"></span>`;
+          console.error('更新エラー:', data.message);
+          
+          // エラー表示を一定時間後に消す
+          setTimeout(() => {
+            cell.innerHTML = originalContent;
+            
+            // 月タブの表示状態を確認
+            const tabsContainer = document.getElementById('month-tabs');
+            if (tabsContainer && tabsContainer.parentElement) {
+              tabsContainer.parentElement.style.display = 'block';
+            }
+          }, 2000);
+        }
+      }
+    })
+    .catch(error => {
+      console.error('エラー:', error);
+      if (cell) {
+        cell.innerHTML = `${score}<span class="status-dot status-error"></span>`;
+        
+        // エラー表示を一定時間後に消す
+        setTimeout(() => {
+          cell.innerHTML = originalContent;
+        }, 2000);
+      }
+    });
+  }
+  
+  // グラフの更新（小学生用）
+  function updateChart(data) {
+    const ctx = document.getElementById('scoreChart').getContext('2d');
+    
+    // 既存のグラフを破棄
+    if (scoreChart) {
+      scoreChart.destroy();
+    }
+    
+    // データが存在しない場合は表示しない
+    if (!data || !data.scores || !data.months || data.months.length === 0) {
+      console.warn('グラフ用データが不足しています:', data);
+      return;
+    }
+    
+    // デバッグ情報
+    console.log('グラフ更新データ:', data);
+    
+    // データセットの準備
+    const datasets = [];
+    const months = data.months;
+    
+    // 科目リストを取得（APIレスポンスまたはデフォルト）
+    const subjects = data.subjects || ELEMENTARY_SUBJECTS;
+    
+    // 各科目のデータセットを作成
+    for (const [subjectId, subjectName] of Object.entries(subjects)) {
+      const scores = [];
+      
+      // 各月のスコアを取得
+      months.forEach(month => {
+        let score = null;
+        if (data.scores[subjectId] && 
+            data.scores[subjectId][month] && 
+            data.scores[subjectId][month].score !== null) {
+          // 確実に数値に変換
+          score = Number(data.scores[subjectId][month].score);
+        }
+        scores.push(score);
+      });
+      
+      // スコアがあるか確認
+      console.log(`${subjectName}の点数:`, scores);
+      
+      // 色の設定
+      let color;
+      switch(subjectId) {
+        case '1': color = 'rgba(255, 99, 132, 0.8)'; break; // 国語は赤
+        case '2': color = 'rgba(54, 162, 235, 0.8)'; break; // 算数は青
+        case '3': color = 'rgba(75, 192, 192, 0.8)'; break; // 英語は緑
+        default: color = 'rgba(153, 102, 255, 0.8)';
+      }
+      
+      // データセット追加
+      datasets.push({
+        label: subjectName,
+        data: scores,
+        backgroundColor: color.replace('0.8', '0.2'),
+        borderColor: color,
+        borderWidth: 2,
+        tension: 0.1
+      });
+    }
+    
+    // グラフの作成
+    try {
+      scoreChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: months.map(m => MONTHS[m]),
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: false,
+              min: 30,
+              max: 100
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: `${currentYear}年生 点数推移`
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.error('グラフ作成エラー:', e);
+    }
+  }
+  
+  // 点数フォーマット関数（成績）
+  function formatScore(score) {
+    return score !== null ? score : '<span class="no-data">-</span>';
+  }
+  
+  // 点数フォーマット関数（内申点）
+  function formatPoint(point) {
+    return point !== null ? point : '<span class="no-data">-</span>';
+  }
+  
+  // ページ表示時にタブの表示を再確認
+  window.addEventListener('load', function() {
+    if (schoolType === 'elementary') {
+      // 月タブの表示を確認
+      const tabsContainer = document.getElementById('month-tabs');
+      if (tabsContainer) {
+        tabsContainer.style.display = 'flex';
+      }
+      
+      // コンテナを表示
+      const elementary = document.getElementById('elementary-container');
+      if (elementary) {
+        elementary.style.display = 'block';
+      }
+      
+      // ローカルストレージから月を復元
+      const storedMonth = localStorage.getItem(getStorageKey('selectedMonth'));
+      if (storedMonth) {
+        selectMonth(parseInt(storedMonth));
+      }
+    }
+  });
+  
+  // ブラウザの「戻る」ボタンでページに戻ってきた場合にも表示を確認
+  window.addEventListener('pageshow', function(event) {
+    if (event.persisted && schoolType === 'elementary') {
+      // 月タブの表示を確認
+      const tabsContainer = document.getElementById('month-tabs');
+      if (tabsContainer) {
+        tabsContainer.style.display = 'flex';
+      }
+      
+      // コンテナを表示
+      const elementary = document.getElementById('elementary-container');
+      if (elementary) {
+        elementary.style.display = 'block';
+      }
+      
+      // ローカルストレージから月を復元
+      const storedMonth = localStorage.getItem(getStorageKey('selectedMonth'));
+      if (storedMonth) {
+        selectMonth(parseInt(storedMonth));
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

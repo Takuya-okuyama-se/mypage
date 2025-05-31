@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}通知{% endblock %}
+{% block content %}
+<h2>通知送信</h2>
+<form method="post" class="card">
+  <label>宛先
+    <select name="target">
+      <option value="all">全員</option>
+      {% for s in students %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>メッセージ<textarea name="message" required></textarea></label>
+  <button>送信</button>
+</form>
+{% endblock %}

@@ -1,0 +1,163 @@
+/* notification-center.css */
+/* 通知センターの表示スタイル */
+
+#notification-center {
+  position: fixed;
+  top: 60px;
+  right: 70px; /* 右上のハンバーガーメニューと競合しないように位置を調整 */
+  width: 350px;
+  max-width: 80%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 9991; /* メインメニューより上に表示 */
+  overflow: visible;
+  transition: all 0.3s ease;
+  max-height: 80vh;
+  display: none;
+}
+
+.notification-header {
+  background: #4a69bd;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification-header .close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 5px;
+  line-height: 1;
+}
+
+.notification-header h5 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.notification-count {
+  background: #ff6b6b;
+  color: white;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 5px;
+}
+
+.notification-body {
+  padding: 10px 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #f1f2f6;
+  display: flex;
+  align-items: center;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-icon {
+  font-size: 1.5rem;
+  margin-right: 10px;
+}
+
+.notification-icon.elementary {
+  color: #26de81;
+}
+
+.notification-icon.middle {
+  color: #4a69bd;
+}
+
+.notification-icon.high {
+  color: #fa8231;
+}
+
+.notification-text {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.notification-footer {
+  padding: 10px 15px;
+  border-top: 1px solid #f1f2f6;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 0 0 8px 8px;
+}
+
+.notification-link {
+  color: #4a69bd;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.notification-link:hover {
+  text-decoration: underline;
+}
+
+/* 通知ボタン */
+#notification-toggle-btn {
+  position: fixed;
+  top: 15px;
+  right: 70px; /* 右上のハンバーガーメニューと競合しないように位置を調整 */
+  background: #4a69bd;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9990; /* メインメニューより下のz-indexを設定 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#notification-toggle-btn .badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff6b6b;
+  color: white;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* モバイル用スタイル調整 */
+@media (max-width: 768px) {
+  #notification-center {
+    width: 90%;
+    max-width: none;
+    left: 5%;
+    right: 5%;
+    top: 70px;
+    z-index: 10000; /* モバイル表示では最前面に */
+  }
+  
+  .notification-body {
+    max-height: 50vh;
+  }
+  
+  #notification-toggle-btn {
+    top: 15px;
+    right: 70px; /* 右上のハンバーガーメニューと競合しないように */
+    z-index: 9999;
+  }
+}

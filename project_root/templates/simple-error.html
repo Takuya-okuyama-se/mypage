@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>エラー | 塾生徒サイト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    h1 {
+      color: #e74c3c;
+    }
+    
+    .error-message {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f8d7da;
+      border-left: 5px solid #e74c3c;
+      text-align: left;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 8px 16px;
+      background-color: #4285f4;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+    
+    .diagnostic {
+      margin-top: 30px;
+      text-align: left;
+      font-size: 0.9em;
+      color: #666;
+    }
+    
+    .diagnostic pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>エラーが発生しました</h1>
+    
+    <div class="error-message">
+      {{ error }}
+    </div>
+    
+    <div>
+      <a href="{{ back_url|default('/myapp/index.cgi/') }}" class="btn">戻る</a>
+    </div>
+    
+    <div class="diagnostic">
+      <p>診断情報:</p>
+      <ul>
+        <li><a href="/myapp/index.cgi/test/basic">基本機能テスト</a></li>
+        <li><a href="/myapp/index.cgi/test/session">セッションテスト</a></li>
+        <li><a href="/myapp/index.cgi/test/db">データベーステスト</a></li>
+        <li><a href="/myapp/index.cgi/test/high-schools">高校テーブルテスト</a></li>
+        <li><a href="/myapp/index.cgi/test/direct">診断メニュー</a></li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

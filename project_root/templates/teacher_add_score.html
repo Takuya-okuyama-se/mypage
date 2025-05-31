@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}試験点数登録{% endblock %}
+{% block content %}
+<h2>試験点数登録</h2>
+<form method="post" class="card">
+  <label>生徒メール<input type="email" name="student_email" required></label>
+  <label>科目      <input type="text" name="subject" required></label>
+  <label>点数      <input type="number" name="score" required></label>
+  <button>登録</button>
+  {% if msg %}<p class="info">{{ msg }}</p>{% endif %}
+</form>
+{% endblock %}

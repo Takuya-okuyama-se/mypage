@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ハンバーガーメニューデバッグ</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        nav {
+            background: #fff;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+        
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        /* ハンバーガーボタン */
+        #nav-hamburger-toggle {
+            display: none;
+            flex-direction: column;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 10001;
+        }
+        
+        .hamburger-line {
+            width: 25px;
+            height: 3px;
+            background-color: #4361ee;
+            margin: 2px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            text-decoration: none;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        /* モバイル設定 */
+        @media (max-width: 768px) {
+            #nav-hamburger-toggle {
+                display: flex !important;
+            }
+            
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                border: 1px solid #ddd;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            
+            .nav-links.open {
+                display: flex !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>ハンバーガーメニューデバッグページ</h1>
+    
+    <nav>
+        <div class="container">
+            <button id="nav-hamburger-toggle" class="hamburger-button" aria-label="メニューを開く">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            
+            <div class="nav-links" id="nav-links">
+                <a href="#" class="tab">リンク1</a>
+                <a href="#" class="tab">リンク2</a>
+                <a href="#" class="tab">リンク3</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div style="margin-top: 20px;">
+        <p>ブラウザの幅を768px以下にしてハンバーガーボタンを確認してください。</p>
+        <p id="debug-info"></p>
+    </div>
+    
+    <script>
+        // デバッグ情報表示
+        function updateDebugInfo() {
+            const info = document.getElementById('debug-info');
+            info.innerHTML = `
+                画面幅: ${window.innerWidth}px<br>
+                ハンバーガーボタン表示: ${window.getComputedStyle(document.getElementById('nav-hamburger-toggle')).display}<br>
+                時刻: ${new Date().toLocaleTimeString()}
+            `;
+        }
+        
+        // 初期表示
+        updateDebugInfo();
+        
+        // リサイズ時更新
+        window.addEventListener('resize', updateDebugInfo);
+        
+        // ハンバーガーメニュー機能
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburgerButton = document.getElementById('nav-hamburger-toggle');
+            const navLinks = document.getElementById('nav-links');
+            
+            if (hamburgerButton && navLinks) {
+                hamburgerButton.addEventListener('click', function() {
+                    navLinks.classList.toggle('open');
+                    console.log('ハンバーガーボタンクリック - メニュー状態:', navLinks.classList.contains('open'));
+                });
+                
+                console.log('ハンバーガーメニュー初期化完了');
+            } else {
+                console.error('ハンバーガーボタンまたはナビリンクが見つかりません');
+            }
+        });
+    </script>
+</body>
+</html>

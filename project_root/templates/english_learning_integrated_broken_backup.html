@@ -1,0 +1,3805 @@
+{% extends "base.html" %}
+
+{% block title %}英語学習システム - 高機能版{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    .english-learning-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-title {
+        color: #5a4fcf;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 2.5em;
+    }
+
+    .user-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f0f8ff;
+        border-radius: 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .user-profile {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .user-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .stats-btn, .settings-btn {
+        background: #17a2b8;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+
+    .stats-btn:hover, .settings-btn:hover {
+        background: #138496;
+        transform: translateY(-2px);
+    }
+
+    .stage-info {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .stage-selector {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .stage-button {
+        padding: 10px 15px;
+        border: none;
+        background: #f8f9fa;
+        color: #495057;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .stage-button:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+    }
+
+    .stage-button.active {
+        background: #5a4fcf;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(90, 79, 207, 0.3);
+    }
+
+    .tabs {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .tab-button {
+        padding: 12px 24px;
+        border: none;
+        background: #e9ecef;
+        color: #495057;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .tab-button.active {
+        background: #28a745;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }    .problem-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border: 1px solid #dee2e6;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .problem-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, #5a4fcf, #28a745, #007bff);
+    }
+
+    .problem-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .problem-number {
+        font-weight: bold;
+        color: #5a4fcf;
+        font-size: 18px;
+    }
+
+    .problem-type {
+        background: #5a4fcf;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 12px;
+    }    .japanese-sentence {
+        font-size: 22px;
+        font-weight: 600;
+        color: #2d3436;
+        margin-bottom: 20px;
+        padding: 20px;
+        background: linear-gradient(135deg, #ffffff 0%, #f1f3f4 100%);
+        border-radius: 12px;
+        border-left: 6px solid #5a4fcf;
+        border-right: 6px solid #28a745;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        position: relative;
+    }    .japanese-sentence::after {
+        content: '🇯🇵→🇺🇸';
+        position: absolute;
+        top: -10px;
+        right: 15px;
+        background: #5a4fcf;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: normal;
+    }
+
+    /* 手書き文法練習用のスタイル */
+    .handwriting-area {
+        margin-bottom: 15px;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+    }
+
+    .input-label {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #666;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .input-label i {
+        color: #5a4fcf;
+    }
+
+    .canvas-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .word-canvas-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 5px;
+    }
+
+    .word-canvas {
+        border: 2px solid #5a4fcf;
+        border-radius: 8px;
+        background: white;
+        cursor: crosshair;
+        touch-action: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .word-canvas:hover {
+        border-color: #28a745;
+        transform: scale(1.05);
+    }
+
+    .clear-button {
+        margin-top: 8px;
+        padding: 5px 12px;
+        border: none;
+        background: #dc3545;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .clear-button:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+    }
+
+    .recognition-area {
+        background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+        padding: 15px;
+        border-radius: 10px;
+        min-height: 60px;
+        margin-bottom: 15px;
+        border: 1px solid #dee2e6;
+    }
+
+    .recognized-words {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .recognized-word {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #e7f3ff;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #0056b3;
+        font-weight: 500;
+    }
+
+    .hint {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .hint i {
+        color: #f39c12;
+        font-size: 18px;
+    }
+
+    .handwriting-submit-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .handwriting-submit-btn:active {
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        .word-canvas {
+            width: 80px !important;
+            height: 80px !important;
+        }
+        
+        .canvas-container {
+            justify-content: center;
+        }
+          .handwriting-area {
+            padding: 15px;
+        }
+    }
+
+    /* 手書きタブコンテンツ用のスタイル */
+    .handwriting-tab-content {
+        display: none;
+    }
+
+    .handwriting-tab-content.active {
+        display: block;
+    }
+
+    .handwriting-tabs {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .handwriting-tabs .tab-button {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: none;
+    }
+
+    .handwriting-tabs .tab-button:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #3d4142 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .handwriting-tabs .tab-button.active {
+        background: linear-gradient(135deg, #5a4fcf 0%, #4834d4 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(90, 79, 207, 0.3);
+    }
+
+    .handwriting-stage-selector {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .handwriting-stage-selector .stage-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        margin: 0 3px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 80px;
+    }
+
+    .handwriting-stage-selector .stage-button:hover {
+        background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-stage-selector .stage-button.active {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+    }.hint {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        padding: 18px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 2px solid #f39c12;
+        color: #8b6914;
+        font-weight: 500;
+        position: relative;
+        box-shadow: 0 3px 10px rgba(243, 156, 18, 0.2);
+    }
+
+    .hint::before {
+        content: '💡 ヒント';
+        position: absolute;
+        top: -12px;
+        left: 15px;
+        background: #f39c12;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .handwriting-area {
+        margin-bottom: 20px;
+    }    .input-label {
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #5a4fcf;
+        font-size: 18px;
+        text-align: center;
+        display: block;
+        background: linear-gradient(90deg, #5a4fcf, #28a745);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }.canvas-container {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px dashed #5a4fcf;
+        margin: 15px 0;
+    }
+
+    .canvas-container input {
+        margin: 5px;
+        padding: 15px 10px;
+        border: 3px solid #5a4fcf;
+        border-radius: 8px;
+        font-size: 18px;
+        text-align: center;
+        min-width: 100px;
+        background: #f8f9fa;
+        color: #333;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .canvas-container input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        background: white;
+        transform: scale(1.05);
+    }
+
+    .canvas-container input:hover {
+        border-color: #28a745;
+        background: white;
+    }
+
+    .canvas-container input::placeholder {
+        color: #6c757d;
+        font-size: 14px;
+    }    .submit-button, .score-button, .next-stage-button {
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 10px 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .submit-button {
+        background: linear-gradient(135deg, #5a4fcf 0%, #4834d4 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(90, 79, 207, 0.4);
+    }
+
+    .score-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .next-stage-button {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+    }
+
+    .submit-button:hover, .score-button:hover, .next-stage-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    .submit-button::before, .score-button::before, .next-stage-button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: width 0.6s, height 0.6s;
+        transform: translate(-50%, -50%);
+    }
+
+    .submit-button:active::before, .score-button:active::before, .next-stage-button:active::before {
+        width: 300px;
+        height: 300px;
+    }
+
+    .answer-result {
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 2px solid;
+        background: #f8f9fa;
+    }
+
+    .answer-result.correct {
+        border-color: #28a745;
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .answer-result.incorrect {
+        border-color: #dc3545;
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .result-status {
+        font-weight: bold;
+        margin-top: 10px;
+        font-size: 18px;
+    }
+
+    .score-display {
+        background: #e3f2fd;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid #2196f3;
+        margin: 20px 0;
+        text-align: center;
+    }
+
+    .score-display h3 {
+        color: #1976d2;
+        margin-bottom: 15px;
+    }
+
+    .score-display p {
+        font-size: 18px;
+        margin: 10px 0;
+        font-weight: 500;
+    }
+
+    .vocabulary-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }    .vocabulary-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 3px solid #e9ecef;
+        border-radius: 15px;
+        padding: 25px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vocabulary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(90, 79, 207, 0.1), transparent);
+        transition: left 0.5s;
+    }
+
+    .vocabulary-card:hover::before {
+        left: 100%;
+    }
+
+    .vocabulary-card:hover {
+        border-color: #5a4fcf;
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(90, 79, 207, 0.3);
+    }
+
+    .vocab-word {
+        font-size: 24px;
+        font-weight: bold;
+        color: #5a4fcf;
+        margin-bottom: 5px;
+    }
+
+    .vocab-pronunciation {
+        font-size: 16px;
+        color: #666;
+        font-style: italic;
+        margin-bottom: 10px;
+    }
+
+    .vocab-meaning {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .vocab-example {
+        font-size: 14px;
+        color: #666;
+        font-style: italic;
+        border-left: 3px solid #5a4fcf;
+        padding-left: 10px;
+        margin-bottom: 10px;
+    }
+
+    .vocab-audio-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        margin: 2px;
+    }
+
+    .vocab-audio-btn:hover {
+        background: #218838;
+    }
+
+    .vocab-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .vocab-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s ease;
+    }
+
+    .vocab-btn:hover {
+        background: #218838;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.3s ease;
+    }
+
+    #error-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: none;
+    }
+
+    .error-alert, .success-alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 300px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .error-alert {
+        background: #dc3545;
+        color: white;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .success-alert {
+        background: #28a745;
+        color: white;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .english-learning-container {
+            padding: 15px;
+            margin: 10px;
+        }
+
+        .header-title {
+            font-size: 2em;
+        }
+
+        .user-info {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .stage-selector {
+            gap: 5px;
+        }
+
+        .stage-button {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .tabs {
+            gap: 5px;
+        }
+
+        .tab-button {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+
+        .vocabulary-list {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* 手書き認識関連のスタイル */
+    .recognition-loading {
+        color: #007bff;
+        font-size: 14px;
+        margin-left: 10px;
+        animation: fadeInOut 1.5s infinite;
+    }
+
+    .recognition-loading i {
+        margin-right: 5px;
+    }
+
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+
+    .recognized-word {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #e7f3ff;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #0056b3;
+        font-weight: 500;
+    }
+
+    .handwriting-submit-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .handwriting-submit-btn:active {
+        transform: translateY(0);
+    }
+
+    /* 手書き文法練習用のスタイル */
+    .handwriting-area {
+        margin-bottom: 15px;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+    }
+
+    .input-label {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #666;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .input-label i {
+        color: #5a4fcf;
+    }
+
+    .canvas-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .word-canvas-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 5px;
+    }
+
+    .word-canvas {
+        border: 2px solid #5a4fcf;
+        border-radius: 8px;
+        background: white;
+        cursor: crosshair;
+        touch-action: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .word-canvas:hover {
+        border-color: #28a745;
+        transform: scale(1.05);
+    }
+
+    .clear-button {
+        margin-top: 8px;
+        padding: 5px 12px;
+        border: none;
+        background: #dc3545;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .clear-button:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+    }
+
+    .recognition-area {
+        background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+        padding: 15px;
+        border-radius: 10px;
+        min-height: 60px;
+        margin-bottom: 15px;
+        border: 1px solid #dee2e6;
+    }
+
+    .recognized-words {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .recognized-word {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #e7f3ff;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #0056b3;
+        font-weight: 500;
+    }
+
+    .hint {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .hint i {
+        color: #f39c12;
+        font-size: 18px;
+    }
+
+    .handwriting-submit-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .handwriting-submit-btn:active {
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        .word-canvas {
+            width: 80px !important;
+            height: 80px !important;
+        }
+        
+        .canvas-container {
+            justify-content: center;
+        }
+          .handwriting-area {
+            padding: 15px;
+        }
+    }
+
+    /* 手書きタブコンテンツ用のスタイル */
+    .handwriting-tab-content {
+        display: none;
+    }
+
+    .handwriting-tab-content.active {
+        display: block;
+    }
+
+    .handwriting-tabs {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .handwriting-tabs .tab-button {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: none;
+    }
+
+    .handwriting-tabs .tab-button:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #3d4142 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .handwriting-tabs .tab-button.active {
+        background: linear-gradient(135deg, #5a4fcf 0%, #4834d4 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(90, 79, 207, 0.3);
+    }
+
+    .handwriting-stage-selector {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .handwriting-stage-selector .stage-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        margin: 0 3px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 80px;
+    }
+
+    .handwriting-stage-selector .stage-button:hover {
+        background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-stage-selector .stage-button.active {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+    }.hint {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        padding: 18px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 2px solid #f39c12;
+        color: #8b6914;
+        font-weight: 500;
+        position: relative;
+        box-shadow: 0 3px 10px rgba(243, 156, 18, 0.2);
+    }
+
+    .hint::before {
+        content: '💡 ヒント';
+        position: absolute;
+        top: -12px;
+        left: 15px;
+        background: #f39c12;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .handwriting-area {
+        margin-bottom: 20px;
+    }    .input-label {
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #5a4fcf;
+        font-size: 18px;
+        text-align: center;
+        display: block;
+        background: linear-gradient(90deg, #5a4fcf, #28a745);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }.canvas-container {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px dashed #5a4fcf;
+        margin: 15px 0;
+    }
+
+    .canvas-container input {
+        margin: 5px;
+        padding: 15px 10px;
+        border: 3px solid #5a4fcf;
+        border-radius: 8px;
+        font-size: 18px;
+        text-align: center;
+        min-width: 100px;
+        background: #f8f9fa;
+        color: #333;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .canvas-container input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        background: white;
+        transform: scale(1.05);
+    }
+
+    .canvas-container input:hover {
+        border-color: #28a745;
+        background: white;
+    }
+
+    .canvas-container input::placeholder {
+        color: #6c757d;
+        font-size: 14px;
+    }    .submit-button, .score-button, .next-stage-button {
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 10px 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .submit-button {
+        background: linear-gradient(135deg, #5a4fcf 0%, #4834d4 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(90, 79, 207, 0.4);
+    }
+
+    .score-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .next-stage-button {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+    }
+
+    .submit-button:hover, .score-button:hover, .next-stage-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    .submit-button::before, .score-button::before, .next-stage-button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: width 0.6s, height 0.6s;
+        transform: translate(-50%, -50%);
+    }
+
+    .submit-button:active::before, .score-button:active::before, .next-stage-button:active::before {
+        width: 300px;
+        height: 300px;
+    }
+
+    .answer-result {
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 2px solid;
+        background: #f8f9fa;
+    }
+
+    .answer-result.correct {
+        border-color: #28a745;
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .answer-result.incorrect {
+        border-color: #dc3545;
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .result-status {
+        font-weight: bold;
+        margin-top: 10px;
+        font-size: 18px;
+    }
+
+    .score-display {
+        background: #e3f2fd;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid #2196f3;
+        margin: 20px 0;
+        text-align: center;
+    }
+
+    .score-display h3 {
+        color: #1976d2;
+        margin-bottom: 15px;
+    }
+
+    .score-display p {
+        font-size: 18px;
+        margin: 10px 0;
+        font-weight: 500;
+    }
+
+    .vocabulary-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }    .vocabulary-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 3px solid #e9ecef;
+        border-radius: 15px;
+        padding: 25px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vocabulary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(90, 79, 207, 0.1), transparent);
+        transition: left 0.5s;
+    }
+
+    .vocabulary-card:hover::before {
+        left: 100%;
+    }
+
+    .vocabulary-card:hover {
+        border-color: #5a4fcf;
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(90, 79, 207, 0.3);
+    }
+
+    .vocab-word {
+        font-size: 24px;
+        font-weight: bold;
+        color: #5a4fcf;
+        margin-bottom: 5px;
+    }
+
+    .vocab-pronunciation {
+        font-size: 16px;
+        color: #666;
+        font-style: italic;
+        margin-bottom: 10px;
+    }
+
+    .vocab-meaning {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .vocab-example {
+        font-size: 14px;
+        color: #666;
+        font-style: italic;
+        border-left: 3px solid #5a4fcf;
+        padding-left: 10px;
+        margin-bottom: 10px;
+    }
+
+    .vocab-audio-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        margin: 2px;
+    }
+
+    .vocab-audio-btn:hover {
+        background: #218838;
+    }
+
+    .vocab-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .vocab-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s ease;
+    }
+
+    .vocab-btn:hover {
+        background: #218838;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.3s ease;
+    }
+
+    #error-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: none;
+    }
+
+    .error-alert, .success-alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 300px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .error-alert {
+        background: #dc3545;
+        color: white;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .success-alert {
+        background: #28a745;
+        color: white;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .english-learning-container {
+            padding: 15px;
+            margin: 10px;
+        }
+
+        .header-title {
+            font-size: 2em;
+        }
+
+        .user-info {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .stage-selector {
+            gap: 5px;
+        }
+
+        .stage-button {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .tabs {
+            gap: 5px;
+        }
+
+        .tab-button {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+
+        .vocabulary-list {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* 手書き認識関連のスタイル */
+    .recognition-loading {
+        color: #007bff;
+        font-size: 14px;
+        margin-left: 10px;
+        animation: fadeInOut 1.5s infinite;
+    }
+
+    .recognition-loading i {
+        margin-right: 5px;
+    }
+
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+
+    .recognized-word {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #e7f3ff;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #0056b3;
+        font-weight: 500;
+    }
+
+    .handwriting-submit-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .handwriting-submit-btn:active {
+        transform: translateY(0);
+    }
+
+    /* 手書き文法練習用のスタイル */
+    .handwriting-area {
+        margin-bottom: 15px;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+    }
+
+    .input-label {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #666;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .input-label i {
+        color: #5a4fcf;
+    }
+
+    .canvas-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .word-canvas-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 5px;
+    }
+
+    .word-canvas {
+        border: 2px solid #5a4fcf;
+        border-radius: 8px;
+        background: white;
+        cursor: crosshair;
+        touch-action: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .word-canvas:hover {
+        border-color: #28a745;
+        transform: scale(1.05);
+    }
+
+    .clear-button {
+        margin-top: 8px;
+        padding: 5px 12px;
+        border: none;
+        background: #dc3545;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .clear-button:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+    }
+
+    .recognition-area {
+        background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+        padding: 15px;
+        border-radius: 10px;
+        min-height: 60px;
+        margin-bottom: 15px;
+        border: 1px solid #dee2e6;
+    }
+
+    .recognized-words {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .recognized-word {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #e7f3ff;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #0056b3;
+        font-weight: 500;
+    }
+
+    .hint {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .hint i {
+        color: #f39c12;
+        font-size: 18px;
+    }
+
+    .handwriting-submit-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .handwriting-submit-btn:active {
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        .word-canvas {
+            width: 80px !important;
+            height: 80px !important;
+        }
+        
+        .canvas-container {
+            justify-content: center;
+        }
+          .handwriting-area {
+            padding: 15px;
+        }
+    }
+
+    /* 手書きタブコンテンツ用のスタイル */
+    .handwriting-tab-content {
+        display: none;
+    }
+
+    .handwriting-tab-content.active {
+        display: block;
+    }
+
+    .handwriting-tabs {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .handwriting-tabs .tab-button {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: none;
+    }
+
+    .handwriting-tabs .tab-button:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #3d4142 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .handwriting-tabs .tab-button.active {
+        background: linear-gradient(135deg, #5a4fcf 0%, #4834d4 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(90, 79, 207, 0.3);
+    }
+
+    .handwriting-stage-selector {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .handwriting-stage-selector .stage-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        margin: 0 3px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 80px;
+    }
+
+    .handwriting-stage-selector .stage-button:hover {
+        background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-stage-selector .stage-button.active {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+    }.hint {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        padding: 18px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 2px solid #f39c12;
+        color: #8b6914;
+        font-weight: 500;
+        position: relative;
+        box-shadow: 0 3px 10px rgba(243, 156, 18, 0.2);
+    }
+
+    .hint::before {
+        content: '💡 ヒント';
+        position: absolute;
+        top: -12px;
+        left: 15px;
+        background: #f39c12;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .handwriting-area {
+        margin-bottom: 20px;
+    }    .input-label {
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #5a4fcf;
+        font-size: 18px;
+        text-align: center;
+        display: block;
+        background: linear-gradient(90deg, #5a4fcf, #28a745);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }.canvas-container {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px dashed #5a4fcf;
+        margin: 15px 0;
+    }
+
+    .canvas-container input {
+        margin: 5px;
+        padding: 15px 10px;
+        border: 3px solid #5a4fcf;
+        border-radius: 8px;
+        font-size: 18px;
+        text-align: center;
+        min-width: 100px;
+        background: #f8f9fa;
+        color: #333;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .canvas-container input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        background: white;
+        transform: scale(1.05);
+    }
+
+    .canvas-container input:hover {
+        border-color: #28a745;
+        background: white;
+    }
+
+    .canvas-container input::placeholder {
+        color: #6c757d;
+        font-size: 14px;
+    }    .submit-button, .score-button, .next-stage-button {
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 10px 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .submit-button {
+        background: linear-gradient(135deg, #5a4fcf 0%, #4834d4 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(90, 79, 207, 0.4);
+    }
+
+    .score-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .next-stage-button {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+    }
+
+    .submit-button:hover, .score-button:hover, .next-stage-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    .submit-button::before, .score-button::before, .next-stage-button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: width 0.6s, height 0.6s;
+        transform: translate(-50%, -50%);
+    }
+
+    .submit-button:active::before, .score-button:active::before, .next-stage-button:active::before {
+        width: 300px;
+        height: 300px;
+    }
+
+    .answer-result {
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 2px solid;
+        background: #f8f9fa;
+    }
+
+    .answer-result.correct {
+        border-color: #28a745;
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .answer-result.incorrect {
+        border-color: #dc3545;
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .result-status {
+        font-weight: bold;
+        margin-top: 10px;
+        font-size: 18px;
+    }
+
+    .score-display {
+        background: #e3f2fd;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid #2196f3;
+        margin: 20px 0;
+        text-align: center;
+    }
+
+    .score-display h3 {
+        color: #1976d2;
+        margin-bottom: 15px;
+    }
+
+    .score-display p {
+        font-size: 18px;
+        margin: 10px 0;
+        font-weight: 500;
+    }
+
+    .vocabulary-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }    .vocabulary-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 3px solid #e9ecef;
+        border-radius: 15px;
+        padding: 25px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vocabulary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(90, 79, 207, 0.1), transparent);
+        transition: left 0.5s;
+    }
+
+    .vocabulary-card:hover::before {
+        left: 100%;
+    }
+
+    .vocabulary-card:hover {
+        border-color: #5a4fcf;
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(90, 79, 207, 0.3);
+    }
+
+    .vocab-word {
+        font-size: 24px;
+        font-weight: bold;
+        color: #5a4fcf;
+        margin-bottom: 5px;
+    }
+
+    .vocab-pronunciation {
+        font-size: 16px;
+        color: #666;
+        font-style: italic;
+        margin-bottom: 10px;
+    }
+
+    .vocab-meaning {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .vocab-example {
+        font-size: 14px;
+        color: #666;
+        font-style: italic;
+        border-left: 3px solid #5a4fcf;
+        padding-left: 10px;
+        margin-bottom: 10px;
+    }
+
+    .vocab-audio-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        margin: 2px;
+    }
+
+    .vocab-audio-btn:hover {
+        background: #218838;
+    }
+
+    .vocab-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .vocab-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s ease;
+    }
+
+    .vocab-btn:hover {
+        background: #218838;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.3s ease;
+    }
+
+    #error-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: none;
+    }
+
+    .error-alert, .success-alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 300px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .error-alert {
+        background: #dc3545;
+        color: white;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .success-alert {
+        background: #28a745;
+        color: white;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .english-learning-container {
+            padding: 15px;
+            margin: 10px;
+        }
+
+        .header-title {
+            font-size: 2em;
+        }
+
+        .user-info {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .stage-selector {
+            gap: 5px;
+        }
+
+        .stage-button {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .tabs {
+            gap: 5px;
+        }
+
+        .tab-button {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+
+        .vocabulary-list {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* 手書き認識関連のスタイル */
+    .recognition-loading {
+        color: #007bff;
+        font-size: 14px;
+        margin-left: 10px;
+        animation: fadeInOut 1.5s infinite;
+    }
+
+    .recognition-loading i {
+        margin-right: 5px;
+    }
+
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+
+    .recognized-word {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #e7f3ff;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #0056b3;
+        font-weight: 500;
+    }
+
+    .handwriting-submit-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .handwriting-submit-btn:active {
+        transform: translateY(0);
+    }
+
+    /* 手書き文法練習用のスタイル */
+    .handwriting-area {
+        margin-bottom: 15px;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        border: 
+    }
+
+    .input-label {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #666;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .input-label i {
+        color: #5a4fcf;
+    }
+
+    .canvas-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .word-canvas-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 5px;
+    }
+
+    .word-canvas {
+        border: 2px solid #5a4fcf;
+        border-radius: 8px;
+        background: white;
+        cursor: crosshair;
+        touch-action: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .word-canvas:hover {
+        border-color: #28a745;
+        transform: scale(1.05);
+    }
+
+    .clear-button {
+        margin-top: 8px;
+        padding: 5px 12px;
+        border: none;
+        background: #dc3545;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .clear-button:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+    }
+
+    .recognition-area {
+        background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+        padding: 15px;
+        border-radius: 10px;
+        min-height: 60px;
+        margin-bottom: 15px;
+        border: 1px solid #dee2e6;
+    }
+
+    .recognized-words {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .recognized-word {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #e7f3ff;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #0056b3;
+        font-weight: 500;
+    }
+
+    .hint {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .hint i {
+        color: #f39c12;
+        font-size: 18px;
+    }
+
+    .handwriting-submit-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .handwriting-submit-btn:active {
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        .word-canvas {
+            width: 80px !important;
+            height: 80px !important;
+        }
+        
+        .canvas-container {
+            justify-content: center;
+        }
+          .handwriting-area {
+            padding: 15px;
+        }
+    }
+
+    /* 手書きタブコンテンツ用のスタイル */
+    .handwriting-tab-content {
+        display: none;
+    }
+
+    .handwriting-tab-content.active {
+        display: block;
+    }
+
+    .handwriting-tabs {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .handwriting-tabs .tab-button {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: none;
+    }
+
+    .handwriting-tabs .tab-button:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #3d4142 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .handwriting-tabs .tab-button.active {
+        background: linear-gradient(135deg, #5a4fcf 0%, #4834d4 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(90, 79, 207, 0.3);
+    }
+
+    .handwriting-stage-selector {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .handwriting-stage-selector .stage-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        margin: 0 3px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 80px;
+    }
+
+    .handwriting-stage-selector .stage-button:hover {
+        background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .handwriting-stage-selector .stage-button.active {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+    }.hint {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        padding: 18px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 2px solid #f39c12;
+        color: #8b6914;
+        font-weight: 500;
+        position: relative;
+        box-shadow: 0 3px 10px rgba(243, 156, 18, 0.2);
+    }
+
+    .hint::before {
+        content: '💡 ヒント';
+        position: absolute;
+        top: -12px;
+        left: 15px;
+        background: #f39c12;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .handwriting-area {
+        margin-bottom: 20px;
+    }    .input-label {
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #5a4fcf;
+        font-size: 18px;
+        text-align: center;
+        display: block;
+        background: linear-gradient(90deg, #5a4fcf, #28a745);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }.canvas-container {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px dashed #5a4fcf;
+        margin: 15px 0;
+    }
+
+    .canvas-container input {
+        margin: 5px;
+        padding: 15px 10px;
+        border: 3px solid #5a4fcf;
+        border-radius: 8px;
+        font-size: 18px;
+        text-align: center;
+        min-width: 100px;
+        background: #f8f9fa;
+        color: #333;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .canvas-container input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        background: white;
+        transform: scale(1.05);
+    }
+
+    .canvas-container input:hover {
+        border-color: #28a745;
+        background: white;
+    }
+
+    .canvas-container input::placeholder {
+        color: #6c757d;
+        font-size: 14px;
+    }    .submit-button, .score-button, .next-stage-button {
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 10px 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .submit-button {
+        background: linear-gradient(135deg, #5a4fcf 0%, #4834d4 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(90, 79, 207, 0.4);
+    }
+
+    .score-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .next-stage-button {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+    }
+
+    .submit-button:hover, .score-button:hover, .next-stage-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    .submit-button::before, .score-button::before, .next-stage-button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: width 0.6s, height 0.6s;
+        transform: translate(-50%, -50%);
+    }
+
+    .submit-button:active::before, .score-button:active::before, .next-stage-button:active::before {
+        width: 300px;
+        height: 300px;
+    }
+
+    .answer-result {
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 2px solid;
+        background: #f8f9fa;
+    }
+
+    .answer-result.correct {
+        border-color: #28a745;
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .answer-result.incorrect {
+        border-color: #dc3545;
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .result-status {
+        font-weight: bold;
+        margin-top: 10px;
+        font-size: 18px;
+    }
+
+    .score-display {
+        background: #e3f2fd;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid #2196f3;
+        margin: 20px 0;
+        text-align: center;
+    }
+
+    .score-display h3 {
+        color: #1976d2;
+        margin-bottom: 15px;
+    }
+
+    .score-display p {
+        font-size: 18px;
+        margin: 10px 0;
+        font-weight: 500;
+    }
+
+    .vocabulary-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }    .vocabulary-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 3px solid #e9ecef;
+        border-radius: 15px;
+        padding: 25px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vocabulary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(90, 79, 207, 0.1), transparent);
+        transition: left 0.5s;
+    }
+
+    .vocabulary-card:hover::before {
+        left: 100%;
+    }
+
+    .vocabulary-card:hover {
+        border-color: #5a4fcf;
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(90, 79, 207, 0.3);
+    }
+
+    .vocab-word {
+        font-size: 24px;
+        font-weight: bold;
+        color: #5a4fcf;
+        margin-bottom: 5px;
+    }
+
+    .vocab-pronunciation {
+        font-size: 16px;
+        color: #666;
+        font-style: italic;
+        margin-bottom: 10px;
+    }
+
+    .vocab-meaning {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .vocab-example {
+        font-size: 14px;
+        color: #666;
+        font-style: italic;
+        border-left: 3px solid #5a4fcf;
+        padding-left: 10px;
+        margin-bottom: 10px;
+    }
+
+    .vocab-audio-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        margin: 2px;
+    }
+
+    .vocab-audio-btn:hover {
+        background: #218838;
+    }
+
+    .vocab-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .vocab-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s ease;
+    }
+
+    .vocab-btn:hover {
+        background: #218838;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.3s ease;
+    }
+
+    #error-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: none;
+    }
+
+    .error-alert, .success-alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 300px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .error-alert {
+        background: #dc3545;
+        color: white;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .success-alert {
+        background: #28a745;
+        color: white;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .english-learning-container {
+            padding: 15px;
+            margin: 10px;
+        }
+
+        .header-title {
+            font-size: 2em;
+        }
+
+        .user-info {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .stage-selector {
+            gap: 5px;
+        }
+
+        .stage-button {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .tabs {
+            gap: 5px;
+        }
+
+        .tab-button {
+            padding: 10px 16px;
+            font-size: 14px;
+        }        .vocabulary-list {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="english-learning-container">
+    <h1 class="header-title">
+        <i class="fas fa-book-open"></i>
+        英語学習システム - 高機能版
+    </h1>
+    
+    <div class="user-info">
+        <div class="user-profile">
+            <span class="user-name">{{ name or 'ユーザー' }}さん</span>
+            <span class="user-points">現在のポイント: <strong>{{ current_points or 0 }}</strong></span>
+        </div>
+        <div class="user-controls">
+            <button class="stats-btn" onclick="showStatistics()">
+                <i class="fas fa-chart-bar"></i> 統計
+            </button>
+            <button class="settings-btn" onclick="showSettings()">
+                <i class="fas fa-cog"></i> 設定
+            </button>
+        </div>
+    </div>
+    
+    <div class="learning-sections">
+        <div class="section-card" id="vocabulary-section">
+            <h2><i class="fas fa-spell-check"></i> 語彙練習</h2>
+            <p>英単語を覚えて語彙力を向上させよう！</p>
+            <button class="start-btn" onclick="startVocabularyPractice()">
+                <i class="fas fa-play"></i> 開始
+            </button>
+        </div>
+        
+        <div class="section-card" id="grammar-section">
+            <h2><i class="fas fa-pen"></i> 文法練習</h2>
+            <p>文法問題を解いて英語力をアップ！</p>
+            <button class="start-btn" onclick="startGrammarPractice()">
+                <i class="fas fa-play"></i> 開始
+            </button>
+        </div>
+        
+        <div class="section-card" id="writing-section">
+            <h2><i class="fas fa-edit"></i> 手書き練習</h2>
+            <p>手書きで英語を練習しよう！</p>
+            <button class="start-btn" onclick="startWritingPractice()">
+                <i class="fas fa-play"></i> 開始
+            </button>
+        </div>
+    </div>
+    
+    <div id="practice-area" class="practice-area" style="display: none;">
+        <!-- 練習エリアの内容は JavaScript で動的に生成 -->
+    </div>
+    
+    <div id="error-message" class="error-message" style="display: none;">
+        <!-- エラーメッセージエリア -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>    // グローバル変数
+    let currentUser = "{{ name or 'Unknown' }}";
+    let currentPoints = parseInt('{{ current_points|default("0") }}') || 0;    // 音声合成の設定
+    let speechSynthesis = window.speechSynthesis;
+    let englishVoice = null;// 手書き文字認識（Google Cloud Vision API）
+    async function recognizeHandwriting(type, problemIndex, wordIndex) {
+        const key = `${type}-${problemIndex}-${wordIndex}`;
+        const canvas = document.getElementById(`${type}-canvas-${problemIndex}-${wordIndex}`);
+        
+        if (!canvas) return;
+        
+        // 認識中の表示を更新
+        const recognitionDiv = document.getElementById(`${type}-recognition-${problemIndex}`);
+        if (recognitionDiv) {
+            const loadingSpan = document.createElement('span');
+            loadingSpan.className = 'recognition-loading';
+            loadingSpan.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 認識中...';
+            recognitionDiv.appendChild(loadingSpan);
+        }
+        
+        try {
+            // キャンバスを画像データに変換
+            const imageData = canvas.toDataURL('image/png');
+            
+            // APIに送信
+            const response = await fetch('/api/english/recognize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: imageData
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                if (result.text && result.text.trim()) {
+                    handwritingData[key].recognized = result.text.toLowerCase().trim();
+                    console.log(`認識成功: ${result.text} (信頼度: ${result.confidence || 'N/A'})`);                } else {
+                    handwritingData[key].recognized = '';
+                    console.log('文字を認識できませんでした');
+                }
+            } else {
+                console.error('認識API エラー:', result.message || response.status);
+                handwritingData[key].recognized = '';
+                
+                // エラーメッセージを表示
+                if (response.status === 401) {
+                    showError('認証が必要です。ページを再読み込みしてください。');
+                    setTimeout(() => window.location.reload(), 2000);
+                } else if (response.status === 504) {
+                    showError('認識処理がタイムアウトしました。もう一度お試しください。');
+                } else if (response.status === 503) {
+                    showError('ネットワークエラーです。接続を確認してください。');
+                } else {
+                    showError('文字認識でエラーが発生しました。');
+                }
+            }
+        } catch (error) {
+            console.error('手書き認識エラー:', error);
+            handwritingData[key].recognized = '';
+            showError('認識処理で予期しないエラーが発生しました。');
+        } finally {
+            // ローディング表示を削除
+            if (recognitionDiv) {
+                const loadingSpan = recognitionDiv.querySelector('.recognition-loading');
+                if (loadingSpan) {
+                    loadingSpan.remove();
+                }
+            }
+        }
+        
+        updateHandwritingRecognition(type, problemIndex);
+    }
+
+    // 手書き認識結果の更新
+    function updateHandwritingRecognition(type, problemIndex) {
+        const recognitionDiv = document.getElementById(`${type}-recognition-${problemIndex}`);
+        if (!recognitionDiv) return;
+        
+        const problems = handwritingStageProblems[currentHandwritingStage][type];
+        if (!problems || !problems[problemIndex]) return;
+        
+        const wordCount = problems[problemIndex].answer.length;
+        
+        const recognizedWords = [];
+        for (let i = 0; i < wordCount; i++) {
+            const key = `${type}-${problemIndex}-${i}`;
+            if (handwritingData[key] && handwritingData[key].recognized) {
+                recognizedWords.push(handwritingData[key].recognized);
+            }
+        }
+        
+        recognitionDiv.innerHTML = recognizedWords.map(word => 
+            `<span class="recognized-word">${word}</span>`
+        ).join('');
+    }
+
+    // 手書き回答の送信
+    function submitHandwritingAnswer(type, problemIndex) {
+        const problems = handwritingStageProblems[currentHandwritingStage][type];
+        if (!problems || !problems[problemIndex]) return;
+        
+        const wordCount = problems[problemIndex].answer.length;
+        
+        const answer = [];
+        for (let i = 0; i < wordCount; i++) {
+            const key = `${type}-${problemIndex}-${i}`;
+            answer.push(handwritingData[key]?.recognized || '');
+        }
+        
+        handwritingUserAnswers[type][problemIndex] = answer;
+        
+        const answerDiv = document.getElementById(`${type}-answer-${problemIndex}`);
+        answerDiv.style.display = 'block';
+        answerDiv.innerHTML = `
+            <strong>提出した回答：</strong> ${answer.join(' ')}
+        `;
+        
+        showSuccess('回答を送信しました！');
+    }
+    window.submitHandwritingAnswer = submitHandwritingAnswer;
+
+    // 手書き採点機能
+    function calculateHandwritingScore(type) {
+        const problems = handwritingStageProblems[currentHandwritingStage][type];
+        if (!problems) return;
+        
+        let correct = 0;
+        const total = problems.length;
+        let feedback = '';
+        
+        problems.forEach((problem, index) => {
+            const userAnswer = handwritingUserAnswers[type][index] || [];
+            const isCorrect = JSON.stringify(userAnswer) === JSON.stringify(problem.answer);
+            
+            if (isCorrect) {
+                correct++;
+                feedback += `<div class="correct-answer">問題 ${index + 1}: ✓ 正解！</div>`;
+            } else {
+                feedback += `<div class="incorrect-answer">
+                    問題 ${index + 1}: ✗ 不正解<br>
+                    あなたの回答: ${userAnswer.join(' ')}<br>
+                    正解: ${problem.answer.join(' ')}
+                </div>`;
+            }
+        });
+        
+        const resultDiv = document.getElementById(`${type}-result`);
+        if (resultDiv) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="score-display">${correct} / ${total}</div>
+                <div class="feedback">
+                    ${correct === total ? '全問正解！素晴らしいです！' : 
+                      correct >= total * 0.7 ? 'よくできました！' : 
+                      'もう一度復習してみましょう。'}
+                </div>
+                ${feedback}
+            `;
+            
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        showSuccess(`採点完了: ${correct}/${total}問正解`);    }
+    window.calculateHandwritingScore = calculateHandwritingScore;
+
+    // API接続テスト機能
+    async function testVisionAPI() {
+        console.log('Google Cloud Vision API接続テストを開始...');
+        
+        // テスト用の小さなキャンバスを作成
+        const testCanvas = document.createElement('canvas');
+        testCanvas.width = 100;
+        testCanvas.height = 100;
+        const ctx = testCanvas.getContext('2d');
+        
+        // 簡単な「I」の文字を描画
+        ctx.fillStyle = '#000';
+        ctx.fillRect(45, 20, 10, 60);
+        ctx.fillRect(35, 20, 30, 8);
+        ctx.fillRect(35, 72, 30, 8);
+        
+        try {
+            const imageData = testCanvas.toDataURL('image/png');
+            const response = await fetch('/api/english/recognize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: imageData
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                console.log('✅ Vision API接続成功:', result);
+                showSuccess('手書き認識APIが正常に動作しています');
+                return true;
+            } else {
+                console.error('❌ Vision API接続失敗:', result);
+                showError('手書き認識APIの接続に問題があります');
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ Vision APIテストエラー:', error);
+            showError('手書き認識APIのテストでエラーが発生しました');
+            return false;
+        }
+    }
+    window.testVisionAPI = testVisionAPI;
+
+    // 手書き問題データ生成（ステージ2-7）
+    (function generateHandwritingStages() {
+        for (let stage = 2; stage <= 7; stage++) {
+            handwritingStageProblems[stage] = {
+                'handwriting-basic': [
+                    {
+                        type: 'be動詞・肯定文',
+                        japanese: stage === 2 ? '彼らは友達です。' : 
+                                 stage === 3 ? '私は幸せです。' :
+                                 stage === 4 ? 'これは本です。' :
+                                 stage === 5 ? '彼女は親切です。' :
+                                 stage === 6 ? '私たちは日本人です。' :
+                                 'それは大きいです。',
+                        answer: stage === 2 ? ['They', 'are', 'friends', '.'] :
+                               stage === 3 ? ['I', 'am', 'happy', '.'] :
+                               stage === 4 ? ['This', 'is', 'a', 'book', '.'] :
+                               stage === 5 ? ['She', 'is', 'kind', '.'] :
+                               stage === 6 ? ['We', 'are', 'Japanese', '.'] :
+                               ['It', 'is', 'big', '.'],
+                        hint: 'be動詞（am/is/are）を使います。'
+                    },
+                    {
+                        type: 'be動詞・否定文',
+                        japanese: stage === 2 ? '私は忙しくありません。' :
+                                 stage === 3 ? 'それは高くありません。' :
+                                 stage === 4 ? '彼らは学生ではありません。' :
+                                 stage === 5 ? '私は疲れていません。' :
+                                 stage === 6 ? 'これは新しくありません。' :
+                                 '彼女は看護師ではありません。',
+                        answer: stage === 2 ? ['I', 'am', 'not', 'busy', '.'] :
+                               stage === 3 ? ['It', 'is', 'not', 'expensive', '.'] :
+                               stage === 4 ? ['They', 'are', 'not', 'students', '.'] :
+                               stage === 5 ? ['I', 'am', 'not', 'tired', '.'] :
+                               stage === 6 ? ['This', 'is', 'not', 'new', '.'] :
+                               ['She', 'is', 'not', 'a', 'nurse', '.'],
+                        hint: 'be動詞の否定文は「be動詞 + not」の形です。'
+                    },
+                    {
+                        type: 'be動詞・疑問文',
+                        japanese: stage === 2 ? 'あなたは準備ができていますか？' :
+                                 stage === 3 ? 'これはあなたのペンですか？' :
+                                 stage === 4 ? '彼らは家にいますか？' :
+                                 stage === 5 ? 'それは難しいですか？' :
+                                 stage === 6 ? 'あなたは大丈夫ですか？' :
+                                 '彼は忙しいですか？',
+                        answer: stage === 2 ? ['Are', 'you', 'ready', '?'] :
+                               stage === 3 ? ['Is', 'this', 'your', 'pen', '?'] :
+                               stage === 4 ? ['Are', 'they', 'at', 'home', '?'] :
+                               stage === 5 ? ['Is', 'it', 'difficult', '?'] :
+                               stage === 6 ? ['Are', 'you', 'OK', '?'] :
+                               ['Is', 'he', 'busy', '?'],
+                        hint: 'be動詞の疑問文は「be動詞 + 主語」の順番です。'
+                    },
+                    {
+                        type: '一般動詞・肯定文',
+                        japanese: stage === 2 ? '彼女は本を読みます。' :
+                                 stage === 3 ? '私たちはテニスをします。' :
+                                 stage === 4 ? '彼は早く起きます。' :
+                                 stage === 5 ? '私は犬を飼っています。' :
+                                 stage === 6 ? '彼女は料理を作ります。' :
+                                 '彼らは英語を話します。',
+                        answer: stage === 2 ? ['She', 'reads', 'books', '.'] :
+                               stage === 3 ? ['We', 'play', 'tennis', '.'] :
+                               stage === 4 ? ['He', 'gets', 'up', 'early', '.'] :
+                               stage === 5 ? ['I', 'have', 'a', 'dog', '.'] :
+                               stage === 6 ? ['She', 'cooks', 'food', '.'] :
+                               ['They', 'speak', 'English', '.'],
+                        hint: '一般動詞の現在形を使います。'
+                    },
+                    {
+                        type: '一般動詞・否定文',
+                        japanese: stage === 2 ? '私はテレビを見ません。' :
+                                 stage === 3 ? '彼女は肉を食べません。' :
+                                 stage === 4 ? '彼らは宿題をしません。' :
+                                 stage === 5 ? '私は車を運転しません。' :
+                                 stage === 6 ? '彼は水泳をしません。' :
+                                 '私たちはコーヒーを飲みません。',
+                        answer: stage === 2 ? ['I', 'do', 'not', 'watch', 'TV', '.'] :
+                               stage === 3 ? ['She', 'does', 'not', 'eat', 'meat', '.'] :
+                               stage === 4 ? ['They', 'do', 'not', 'do', 'homework', '.'] :
+                               stage === 5 ? ['I', 'do', 'not', 'drive', 'a', 'car', '.'] :
+                               stage === 6 ? ['He', 'does', 'not', 'swim', '.'] :
+                               ['We', 'do', 'not', 'drink', 'coffee', '.'],
+                        hint: '一般動詞の否定文は「do/does + not + 動詞の原形」です。'
+                    },
+                    {
+                        type: '一般動詞・疑問文',
+                        japanese: stage === 2 ? '彼はギターを弾きますか？' :
+                                 stage === 3 ? 'あなたは朝食を食べますか？' :
+                                 stage === 4 ? '彼女は日本語を話しますか？' :
+                                 stage === 5 ? '彼らは野球をしますか？' :
+                                 stage === 6 ? 'あなたは本を読みますか？' :
+                                 '彼は料理をしますか？',
+                        answer: stage === 2 ? ['Does', 'he', 'play', 'the', 'guitar', '?'] :
+                               stage === 3 ? ['Do', 'you', 'eat', 'breakfast', '?'] :
+                               stage === 4 ? ['Does', 'she', 'speak', 'Japanese', '?'] :
+                               stage === 5 ? ['Do', 'they', 'play', 'baseball', '?'] :
+                               stage === 6 ? ['Do', 'you', 'read', 'books', '?'] :
+                               ['Does', 'he', 'cook', '?'],
+                        hint: '一般動詞の疑問文は「Do/Does + 主語 + 動詞の原形」です。'
+                    }
+                ],
+                'handwriting-question': [
+                    {
+                        type: '疑問詞・What',
+                        japanese: stage === 2 ? 'あなたの名前は何ですか？' :
+                                 stage === 3 ? '何時ですか？' :
+                                 stage === 4 ? '何を食べましたか？' :
+                                 stage === 5 ? '趣味は何ですか？' :
+                                 stage === 6 ? '何色が好きですか？' :
+                                 '何を勉強していますか？',
+                        answer: stage === 2 ? ['What', 'is', 'your', 'name', '?'] :
+                               stage === 3 ? ['What', 'time', 'is', 'it', '?'] :
+                               stage === 4 ? ['What', 'did', 'you', 'eat', '?'] :
+                               stage === 5 ? ['What', 'is', 'your', 'hobby', '?'] :
+                               stage === 6 ? ['What', 'color', 'do', 'you', 'like', '?'] :
+                               ['What', 'are', 'you', 'studying', '?'],
+                        hint: 'Whatは「何」を表す疑問詞です。'
+                    },
+                    {
+                        type: '疑問詞・Where',
+                        japanese: stage === 2 ? '駅はどこですか？' :
+                                 stage === 3 ? 'どこで生まれましたか？' :
+                                 stage === 4 ? '本はどこにありますか？' :
+                                 stage === 5 ? 'どこで働いていますか？' :
+                                 stage === 6 ? 'どこに行きたいですか？' :
+                                 'カギはどこですか？',
+                        answer: stage === 2 ? ['Where', 'is', 'the', 'station', '?'] :
+                               stage === 3 ? ['Where', 'were', 'you', 'born', '?'] :
+                               stage === 4 ? ['Where', 'is', 'the', 'book', '?'] :
+                               stage === 5 ? ['Where', 'do', 'you', 'work', '?'] :
+                               stage === 6 ? ['Where', 'do', 'you', 'want', 'to', 'go', '?'] :
+                               ['Where', 'is', 'the', 'key', '?'],
+                        hint: 'Whereは「どこ」を表す疑問詞です。'
+                    },
+                    {
+                        type: '疑問詞・When',
+                        japanese: stage === 2 ? 'いつ帰りますか？' :
+                                 stage === 3 ? '誕生日はいつですか？' :
+                                 stage === 4 ? 'いつ会いましょうか？' :
+                                 stage === 5 ? 'いつ始まりますか？' :
+                                 stage === 6 ? 'いつ勉強しますか？' :
+                                 'いつ寝ますか？',
+                        answer: stage === 2 ? ['When', 'will', 'you', 'go', 'home', '?'] :
+                               stage === 3 ? ['When', 'is', 'your', 'birthday', '?'] :
+                               stage === 4 ? ['When', 'shall', 'we', 'meet', '?'] :
+                               stage === 5 ? ['When', 'does', 'it', 'start', '?'] :
+                               stage === 6 ? ['When', 'do', 'you', 'study', '?'] :
+                               ['When', 'do', 'you', 'sleep', '?'],
+                        hint: 'Whenは「いつ」を表す疑問詞です。'
+                    },
+                    {
+                        type: '疑問詞・Who',
+                        japanese: stage === 2 ? '誰が来ましたか？' :
+                                 stage === 3 ? 'あれは誰ですか？' :
+                                 stage === 4 ? '誰と行きますか？' :
+                                 stage === 5 ? '誰が教えてくれましたか？' :
+                                 stage === 6 ? '誰が好きですか？' :
+                                 '誰が料理をしますか？',
+                        answer: stage === 2 ? ['Who', 'came', '?'] :
+                               stage === 3 ? ['Who', 'is', 'that', '?'] :
+                               stage === 4 ? ['Who', 'will', 'you', 'go', 'with', '?'] :
+                               stage === 5 ? ['Who', 'told', 'you', '?'] :
+                               stage === 6 ? ['Who', 'do', 'you', 'like', '?'] :
+                               ['Who', 'cooks', '?'],
+                        hint: 'Whoは「誰」を表す疑問詞です。'
+                    },
+                    {
+                        type: '疑問詞・Why',
+                        japanese: stage === 2 ? 'なぜ遅れたのですか？' :
+                                 stage === 3 ? 'なぜ日本に来ましたか？' :
+                                 stage === 4 ? 'なぜそれが好きですか？' :
+                                 stage === 5 ? 'なぜ勉強しますか？' :
+                                 stage === 6 ? 'なぜ泣いているのですか？' :
+                                 'なぜここにいるのですか？',
+                        answer: stage === 2 ? ['Why', 'were', 'you', 'late', '?'] :
+                               stage === 3 ? ['Why', 'did', 'you', 'come', 'to', 'Japan', '?'] :
+                               stage === 4 ? ['Why', 'do', 'you', 'like', 'it', '?'] :
+                               stage === 5 ? ['Why', 'do', 'you', 'study', '?'] :
+                               stage === 6 ? ['Why', 'are', 'you', 'crying', '?'] :
+                               ['Why', 'are', 'you', 'here', '?'],
+                        hint: 'Whyは「なぜ」を表す疑問詞です。'
+                    },
+                    {
+                        type: '疑問詞・How',
+                        japanese: stage === 2 ? 'どのくらい時間がかかりますか？' :
+                                 stage === 3 ? '元気ですか？' :
+                                 stage === 4 ? 'どうやって作りますか？' :
+                                 stage === 5 ? 'いくつありますか？' :
+                                 stage === 6 ? 'どのくらい遠いですか？' :
+                                 'どうでしたか？',
+                        answer: stage === 2 ? ['How', 'long', 'does', 'it', 'take', '?'] :
+                               stage === 3 ? ['How', 'are', 'you', '?'] :
+                               stage === 4 ? ['How', 'do', 'you', 'make', 'it', '?'] :
+                               stage === 5 ? ['How', 'many', 'are', 'there', '?'] :
+                               stage === 6 ? ['How', 'far', 'is', 'it', '?'] :
+                               ['How', 'was', 'it', '?'],
+                        hint: 'Howは「どのように」を表す疑問詞です。'
+                    }
+                ]
+            };
+        }
+    })();// 採点機能（グローバル関数として定義）
+    function calculateScore(type) {
+        calculateScoreWithApi(type);
+    }
+
+    // calculateScore関数をグローバルスコープに明示的に追加
+    window.calculateScore = calculateScore;
+
+    // 音声合成機能
+    function speakText(text, rate = 0.8) {
+        if ('speechSynthesis' in window && text) {
+            try {
+                speechSynthesis.cancel(); // 既存の音声を停止
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = rate;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                if (englishVoice) {
+                    utterance.voice = englishVoice;
+                }
+                
+                speechSynthesis.speak(utterance);
+            } catch (error) {
+                console.error('音声合成エラー:', error);
+            }
+        }
+    }
+
+    function speakTextSlow(text) {
+        speakText(text, 0.5);
+    }    // 全単語音声再生（グローバル関数として定義）
+    function playAllVocabulary() {
+        const words = stageVocabulary[currentStage] || [];
+        if (words.length === 0) {
+            showError('このステージには単語データがありません');
+            return;
+        }
+        
+        let index = 0;
+        function playNext() {
+            if (index < words.length) {
+                speakText(words[index].word);
+                index++;
+                setTimeout(playNext, 2000);
+            }
+        }
+        playNext();
+    }
+    window.playAllVocabulary = playAllVocabulary;
+
+    // ユーザー情報更新
+    function updateUserInfo() {
+        const studentNameElement = document.getElementById('student-name-display');
+        const currentPointsElement = document.getElementById('current-points');
+        
+        if (studentNameElement) {
+            studentNameElement.textContent = currentUser || 'Unknown';
+        }
+        
+        if (currentPointsElement) {
+            currentPointsElement.textContent = currentPoints;
+        }
+    }
+
+    // ステージごとの問題データ
+    const stageProblems = {
+        1: {
+            basic: [
+                {
+                    type: 'be動詞・肯定文',
+                    japanese: '私は学生です。',
+                    answer: ['I', 'am', 'a', 'student', '.'],
+                    hint: 'be動詞（am/is/are）を使います。主語がIの場合はamです。'
+                },
+                {
+                    type: 'be動詞・否定文',
+                    japanese: '彼は医者ではありません。',
+                    answer: ['He', 'is', 'not', 'a', 'doctor', '.'],
+                    hint: 'be動詞の否定文は「be動詞 + not」の形です。'
+                },
+                {
+                    type: 'be動詞・疑問文',
+                    japanese: 'あなたは忙しいですか？',
+                    answer: ['Are', 'you', 'busy', '?'],
+                    hint: 'be動詞の疑問文は「be動詞 + 主語」の順番です。'
+                },
+                {
+                    type: 'be動詞・肯定文',
+                    japanese: '彼女は先生です。',
+                    answer: ['She', 'is', 'a', 'teacher', '.'],
+                    hint: '主語がShe/He/Itの場合はisを使います。'
+                },
+                {
+                    type: 'be動詞・否定文',
+                    japanese: '私たちは日本人ではありません。',
+                    answer: ['We', 'are', 'not', 'Japanese', '.'],
+                    hint: '主語がWe/You/Theyの場合はareを使います。'
+                },
+                {
+                    type: 'be動詞・疑問文',
+                    japanese: '彼は親切ですか？',
+                    answer: ['Is', 'he', 'kind', '?'],
+                    hint: '三人称単数の疑問文は「Is + 主語」から始まります。'
+                }
+            ],
+            question: [
+                {
+                    type: '疑問詞・What',
+                    japanese: 'これは何ですか？',
+                    answer: ['What', 'is', 'this', '?'],
+                    hint: 'Whatは「何」を表す疑問詞です。'
+                },
+                {
+                    type: '疑問詞・Who',
+                    japanese: 'あの人は誰ですか？',
+                    answer: ['Who', 'is', 'that', 'person', '?'],
+                    hint: 'Whoは「誰」を表す疑問詞です。'
+                },
+                {
+                    type: '疑問詞・What',
+                    japanese: 'あなたの名前は何ですか？',
+                    answer: ['What', 'is', 'your', 'name', '?'],
+                    hint: '「あなたの」はyourで表現します。'
+                },
+                {
+                    type: '疑問詞・Who',
+                    japanese: '彼女は誰ですか？',
+                    answer: ['Who', 'is', 'she', '?'],
+                    hint: 'Whoの後にbe動詞と主語が続きます。'
+                }
+            ]
+        },
+        2: {
+            basic: [
+                {
+                    type: '一般動詞・現在形',
+                    japanese: '私は毎日英語を勉強します。',
+                    answer: ['I', 'study', 'English', 'every', 'day', '.'],
+                    hint: '一般動詞の現在形です。主語がI/you/we/theyの場合は動詞の原形を使います。'
+                },
+                {
+                    type: '一般動詞・否定文',
+                    japanese: '彼は野球をしません。',
+                    answer: ['He', 'does', 'not', 'play', 'baseball', '.'],
+                    hint: '一般動詞の否定文は「do/does + not + 動詞の原形」です。'
+                },
+                {
+                    type: '一般動詞・疑問文',
+                    japanese: 'あなたは音楽が好きですか？',
+                    answer: ['Do', 'you', 'like', 'music', '?'],
+                    hint: '一般動詞の疑問文は「Do/Does + 主語 + 動詞の原形」です。'
+                },
+                {
+                    type: '一般動詞・現在形',
+                    japanese: '彼女は毎朝コーヒーを飲みます。',
+                    answer: ['She', 'drinks', 'coffee', 'every', 'morning', '.'],
+                    hint: '三人称単数の場合、動詞にsまたはesをつけます。'
+                },
+                {
+                    type: '一般動詞・否定文',
+                    japanese: '私は肉を食べません。',
+                    answer: ['I', 'do', 'not', 'eat', 'meat', '.'],
+                    hint: 'I/you/we/theyの否定文は「do not + 動詞の原形」です。'
+                },
+                {
+                    type: '一般動詞・疑問文',
+                    japanese: '彼は本を読みますか？',
+                    answer: ['Does', 'he', 'read', 'books', '?'],
+                    hint: '三人称単数の疑問文は「Does + 主語 + 動詞の原形」です。'
+                }
+            ],
+            question: [
+                {
+                    type: '疑問詞・Where',
+                    japanese: 'あなたはどこに住んでいますか？',
+                    answer: ['Where', 'do', 'you', 'live', '?'],
+                    hint: 'Whereは「どこ」を表す疑問詞です。'
+                },
+                {
+                    type: '疑問詞・When',
+                    japanese: 'いつ学校に行きますか？',
+                    answer: ['When', 'do', 'you', 'go', 'to', 'school', '?'],
+                    hint: 'Whenは「いつ」を表す疑問詞です。'
+                },
+                {
+                    type: '疑問詞・Where',
+                    japanese: '彼はどこで働いていますか？',
+                    answer: ['Where', 'does', 'he', 'work', '?'],
+                    hint: '三人称単数では「Where does + 主語 + 動詞の原形」です。'
+                },
+                {
+                    type: '疑問詞・When',
+                    japanese: '彼女はいつテニスをしますか？',
+                    answer: ['When', 'does', 'she', 'play', 'tennis', '?'],
+                    hint: 'Whenの後はdoesを使って疑問文を作ります。'
+                },
+                {
+                    type: '疑問詞・What',
+                    japanese: 'あなたは何を勉強しますか？',
+                    answer: ['What', 'do', 'you', 'study', '?'],
+                    hint: '「何を」はwhatで表現し、doを使って疑問文を作ります。'
+                }
+            ]
+        },
+        3: {
+            basic: [
+                {
+                    type: '現在進行形・肯定文',
+                    japanese: '彼は今テレビを見ています。',
+                    answer: ['He', 'is', 'watching', 'TV', 'now', '.'],
+                    hint: '現在進行形は「be動詞 + 動詞のing形」です。'
+                },
+                {
+                    type: '現在進行形・否定文',
+                    japanese: '私は今勉強していません。',
+                    answer: ['I', 'am', 'not', 'studying', 'now', '.'],
+                    hint: '現在進行形の否定文は「be動詞 + not + 動詞のing形」です。'
+                },
+                {
+                    type: '現在進行形・疑問文',
+                    japanese: 'あなたは今何をしていますか？',
+                    answer: ['What', 'are', 'you', 'doing', 'now', '?'],
+                    hint: '現在進行形の疑問文は「be動詞 + 主語 + 動詞のing形」です。'
+                },
+                {
+                    type: '現在進行形・肯定文',
+                    japanese: '彼女は今料理をしています。',
+                    answer: ['She', 'is', 'cooking', 'now', '.'],
+                    hint: 'cookの進行形はcookingです。'
+                },
+                {
+                    type: '現在進行形・否定文',
+                    japanese: '私たちは今働いていません。',
+                    answer: ['We', 'are', 'not', 'working', 'now', '.'],
+                    hint: 'Weの場合はareを使います。'
+                },
+                {
+                    type: '現在進行形・疑問文',
+                    japanese: '彼は今走っていますか？',
+                    answer: ['Is', 'he', 'running', 'now', '?'],
+                    hint: 'runの進行形はrunningです（nを重ねる）。'
+                }
+            ],
+            question: [
+                {
+                    type: '疑問詞・How',
+                    japanese: 'どうやって学校に行きますか？',
+                    answer: ['How', 'do', 'you', 'go', 'to', 'school', '?'],
+                    hint: 'Howは「どのように」を表す疑問詞です。'
+                },
+                {
+                    type: '疑問詞・Why',
+                    japanese: 'なぜ英語を勉強するのですか？',
+                    answer: ['Why', 'do', 'you', 'study', 'English', '?'],
+                    hint: 'Whyは「なぜ」を表す疑問詞です。'
+                },
+                {
+                    type: '疑問詞・How',
+                    japanese: '彼女はどうやって仕事に行きますか？',
+                    answer: ['How', 'does', 'she', 'go', 'to', 'work', '?'],
+                    hint: '三人称単数では「How does + 主語 + 動詞の原形」です。'
+                },
+                {
+                    type: '疑問詞・Why',
+                    japanese: 'なぜ彼は遅刻したのですか？',
+                    answer: ['Why', 'is', 'he', 'late', '?'],
+                    hint: '「遅刻している」状態なので、be動詞を使います。'
+                },
+                {
+                    type: '疑問詞・What',
+                    japanese: '今何時ですか？',
+                    answer: ['What', 'time', 'is', 'it', 'now', '?'],
+                    hint: '時刻を聞くときは「What time is it?」を使います。'
+                }
+            ]
+        }
+    };    // ステージごとの単語データ
+    const stageVocabulary = {
+        1: [
+            { word: 'student', pronunciation: '/ˈstudənt/', meaning: '学生', example: 'I am a student.' },
+            { word: 'teacher', pronunciation: '/ˈtitʃər/', meaning: '先生', example: 'She is a teacher.' },
+            { word: 'doctor', pronunciation: '/ˈdɔktər/', meaning: '医者', example: 'He is not a doctor.' },
+            { word: 'busy', pronunciation: '/ˈbɪzi/', meaning: '忙しい', example: 'Are you busy?' },
+            { word: 'happy', pronunciation: '/ˈhæpi/', meaning: '幸せな', example: 'I am happy.' },
+            { word: 'kind', pronunciation: '/kaɪnd/', meaning: '親切な', example: 'He is kind.' },
+            { word: 'young', pronunciation: '/jʌŋ/', meaning: '若い', example: 'She is young.' },
+            { word: 'old', pronunciation: '/oʊld/', meaning: '年老いた', example: 'My grandfather is old.' },
+            { word: 'new', pronunciation: '/nu/', meaning: '新しい', example: 'This is a new book.' },
+            { word: 'big', pronunciation: '/bɪɡ/', meaning: '大きい', example: 'The elephant is big.' }
+        ],
+        2: [
+            { word: 'study', pronunciation: '/ˈstʌdi/', meaning: '勉強する', example: 'I study English every day.' },
+            { word: 'play', pronunciation: '/pleɪ/', meaning: '遊ぶ、演奏する', example: 'He plays baseball.' },
+            { word: 'like', pronunciation: '/laɪk/', meaning: '好き', example: 'Do you like music?' },
+            { word: 'live', pronunciation: '/lɪv/', meaning: '住む', example: 'Where do you live?' },
+            { word: 'music', pronunciation: '/ˈmjuzɪk/', meaning: '音楽', example: 'I like music.' },
+            { word: 'work', pronunciation: '/wɜrk/', meaning: '働く', example: 'He works in a hospital.' },
+            { word: 'eat', pronunciation: '/it/', meaning: '食べる', example: 'I eat breakfast every morning.' },
+            { word: 'drink', pronunciation: '/drɪŋk/', meaning: '飲む', example: 'She drinks coffee.' },
+            { word: 'speak', pronunciation: '/spik/', meaning: '話す', example: 'Do you speak Japanese?' },
+            { word: 'read', pronunciation: '/rid/', meaning: '読む', example: 'I read books.' }
+        ],
+        3: [
+            { word: 'watching', pronunciation: '/ˈwɑtʃɪŋ/', meaning: '見ている', example: 'He is watching TV.' },
+            { word: 'studying', pronunciation: '/ˈstʌdiɪŋ/', meaning: '勉強している', example: 'I am studying now.' },
+            { word: 'doing', pronunciation: '/ˈduɪŋ/', meaning: 'している', example: 'What are you doing?' },
+            { word: 'reading', pronunciation: '/ˈridɪŋ/', meaning: '読んでいる', example: 'She is reading a book.' },
+            { word: 'writing', pronunciation: '/ˈraɪtɪŋ/', meaning: '書いている', example: 'I am writing a letter.' },
+            { word: 'cooking', pronunciation: '/ˈkʊkɪŋ/', meaning: '料理している', example: 'Mom is cooking dinner.' },
+            { word: 'running', pronunciation: '/ˈrʌnɪŋ/', meaning: '走っている', example: 'He is running in the park.' },
+            { word: 'sleeping', pronunciation: '/ˈslipɪŋ/', meaning: '眠っている', example: 'The baby is sleeping.' },
+            { word: 'walking', pronunciation: '/ˈwɔkɪŋ/', meaning: '歩いている', example: 'We are walking to school.' },
+            { word: 'playing', pronunciation: '/ˈpleɪɪŋ/', meaning: '遊んでいる', example: 'Children are playing soccer.' }
+        ]
+    };
+
+    // 初期化処理
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM読み込み完了 - 初期化開始');
+        initializeAudio();
+        selectStage(1);
+        updateUserInfo();
+        switchTab('basic');
+    });
+
+    // 音声の初期化
+    function initializeAudio() {
+        if (speechSynthesis.getVoices().length === 0) {
+            speechSynthesis.addEventListener('voiceschanged', function() {
+                englishVoice = getEnglishVoice();
+            });
+        } else {
+            englishVoice = getEnglishVoice();
+        }
+    }
+
+    // 英語音声の取得
+    function getEnglishVoice() {
+        const voices = speechSynthesis.getVoices();
+        return voices.find(voice => voice.lang === 'en-US') || 
+               voices.find(voice => voice.lang.startsWith('en-')) || 
+               voices[0];
+    }
+
+    // 音声読み上げ機能
+    function speakText(text, lang = 'en-US', rate = 0.8) {
+        if (!speechSynthesis || !text) return;
+        
+        try {
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            utterance.rate = rate;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            if (lang.startsWith('en') && englishVoice) {
+                utterance.voice = englishVoice;
+            }
+            
+            speechSynthesis.speak(utterance);
+        } catch (error) {
+            console.error('音声合成エラー:', error);
+        }
+    }    // ゆっくり音声再生
+    function speakTextSlow(text, lang = 'en-US') {
+        speakText(text, lang, 0.6);
+    }
+
+    // 音声関数をグローバルスコープに明示的に追加
+    window.speakText = speakText;
+    window.speakTextSlow = speakTextSlow;// ユーザー情報の更新
+    function updateUserInfo() {
+        const userNameElement = document.getElementById('student-name-display');
+        const userPointsElement = document.getElementById('current-points');
+        
+        if (userNameElement) {
+            userNameElement.textContent = currentUser;
+        }
+        if (userPointsElement) {
+            userPointsElement.textContent = currentPoints;
+        }
+    }
+
+    // 問題初期化
+    function initializeProblems() {
+        userAnswers = { basic: {}, question: {} };
+        handwritingData = {};
+        
+        const currentProblems = stageProblems[currentStage] || { basic: [], question: [] };
+        renderProblems('basic', currentProblems.basic);
+        renderProblems('question', currentProblems.question);
+        initializeVocabulary();
+    }
+
+    // 単語学習の初期化
+    function initializeVocabulary() {
+        document.getElementById('vocab-stage-number').textContent = currentStage;
+        const vocabularyList = document.getElementById('vocabulary-list');
+        vocabularyList.innerHTML = '';
+        
+        const words = stageVocabulary[currentStage] || [];
+        words.forEach((wordData, index) => {
+            const wordCard = document.createElement('div');
+            wordCard.className = 'vocabulary-card';
+            wordCard.innerHTML = `
+                <div class="vocab-word">${wordData.word}</div>
+                <div class="vocab-pronunciation">${wordData.pronunciation}</div>
+                <div class="vocab-meaning">${wordData.meaning}</div>
+                <div class="vocab-example">${wordData.example}</div>
+                <button class="vocab-audio-btn" onclick="speakText('${wordData.word}')">
+                    <i class="fas fa-volume-up"></i> 通常速度
+                </button>
+                <button class="vocab-audio-btn" onclick="speakTextSlow('${wordData.word}')" style="background: #007bff; margin-left: 5px;">
+                    <i class="fas fa-volume-down"></i> ゆっくり
+                </button>
+            `;
+            vocabularyList.appendChild(wordCard);
+        });
+    }
+
+    // 問題表示
+    function renderProblems(type, problems) {
+        const container = document.getElementById(`${type}-problems`);
+        container.innerHTML = '';
+        
+        problems.forEach((problem, index) => {
+            const problemDiv = document.createElement('div');
+            problemDiv.className = 'problem-container';
+            problemDiv.innerHTML = `
+                <div class="problem-header">
+                    <span class="problem-number">問題 ${index + 1}</span>
+                    <span class="problem-type">${problem.type}</span>
+                </div>
+                <div class="japanese-sentence">${problem.japanese}</div>
+                <div class="hint">${problem.hint}</div>
+                <div class="handwriting-area">
+                    <div class="input-label">記入欄：</div>
+                    <div class="canvas-container" id="${type}-canvas-${index}"></div>
+                </div>
+                <div class="buttons-container">
+                    <button class="submit-button" onclick="submitAnswer('${type}', ${index})">送信</button>
+                </div>
+                <div id="${type}-answer-${index}" class="answer-display" style="display: none;"></div>
+            `;
+            container.appendChild(problemDiv);
+            
+            // 入力フィールドを作成
+            const canvasContainer = document.getElementById(`${type}-canvas-${index}`);
+            problem.answer.forEach((word, wordIndex) => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = `単語 ${wordIndex + 1}`;
+                input.id = `${type}-input-${index}-${wordIndex}`;
+                canvasContainer.appendChild(input);
+            });
+        });
+    }    // 回答送信（個別問題用）
+    async function submitAnswer(type, problemIndex) {
+        const problems = stageProblems[currentStage][type];
+        if (!problems || !problems[problemIndex]) {
+            showError('問題データが見つかりません');
+            return;
+        }
+        
+        const problem = problems[problemIndex];
+        const userAnswer = getUserAnswer(type, problemIndex);
+        const correctAnswer = problem.answer.join(' ');
+        const isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+        
+        // 結果を表示
+        const answerDisplay = document.getElementById(`${type}-answer-${problemIndex}`);
+        if (answerDisplay) {
+            answerDisplay.innerHTML = `
+                <div class="answer-result ${isCorrect ? 'correct' : 'incorrect'}">
+                    <div><strong>あなたの答え:</strong> ${userAnswer}</div>
+                    <div><strong>正解:</strong> ${correctAnswer}</div>
+                    <div class="result-status">${isCorrect ? '✅ 正解！' : '❌ 不正解'}</div>
+                </div>
+            `;
+            answerDisplay.style.display = 'block';
+        }
+        
+        // ポイント獲得
+        if (isCorrect) {
+            const earnedPoints = 10;
+            currentPoints += earnedPoints;
+            updateUserInfo();
+            showSuccess(`+${earnedPoints}ポイント獲得！`);
+        }
+          // 回答を記録
+        if (!userAnswers[type]) {
+            userAnswers[type] = {};
+        }
+        userAnswers[type][problemIndex] = userAnswer.split(' ');
+    }
+    window.submitAnswer = submitAnswer;
+
+    // ユーザーの回答を取得
+    function getUserAnswer(type, problemIndex) {
+        const problem = stageProblems[currentStage][type][problemIndex];
+        if (!problem) return '';
+        
+        const words = [];
+        problem.answer.forEach((_, wordIndex) => {
+            const input = document.getElementById(`${type}-input-${problemIndex}-${wordIndex}`);
+            if (input) {
+                words.push(input.value.trim());
+            }
+        });
+        
+        return words.join(' ');
+    }    // 採点機能（API統合版）
+    function calculateScore(type) {
+        calculateScoreWithApi(type);    }
+
+    // エラー表示機能
+    function showError(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.innerHTML = `
+                <div class="error-alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>${message}</span>
+                    <button onclick="hideError()" style="background: none; border: none; color: white; font-size: 18px; margin-left: 10px; cursor: pointer;">×</button>
+                </div>
+            `;
+            errorContainer.style.display = 'block';
+            
+            setTimeout(hideError, 5000);
+        }
+    }
+      function hideError() {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.style.display = 'none';
+        }
+    }
+    window.hideError = hideError;
+    
+    // 成功メッセージ表示機能
+    function showSuccess(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.innerHTML = `
+                <div class="success-alert">
+                    <i class="fas fa-check-circle"></i>
+                    <span>${message}</span>
+                    <button onclick="hideError()" style="background: none; border: none; color: white; font-size: 18px; margin-left: 10px; cursor: pointer;">×</button>
+                </div>
+            `;
+            errorContainer.style.display = 'block';
+            
+            setTimeout(hideError, 3000);
+        }    }    // 統計・設定関連    function showStatistics() {
+        showError('統計機能は準備中です。');
+    }
+    window.showStatistics = showStatistics;
+</script>
+{% endblock %}

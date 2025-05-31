@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-content">
+  <div class="card edit-form">
+    <h2>{{ mode == 'grade' and '成績編集' or '内申点編集' }}</h2>
+    <form method="post">
+      <div class="form-group">
+        {% if mode == 'grade' %}
+          <label for="score">点数 (1〜100)</label>
+          <input
+            type="number"
+            id="score"
+            name="score"
+            min="1"
+            max="100"
+            value="{{ item.score }}"
+            class="input-normal"
+            required
+          >
+        {% else %}
+          <label for="point">内申点 (1〜5)</label>
+          <select id="point" name="point" class="input-normal" required>
+            {% for p in range(1, 6) %}
+              <option value="{{ p }}" {% if item.point == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      </div>
+      <div class="form-group inline-form" style="justify-content:flex-start;">
+        <button type="submit" class="btn-primary btn-small">更新</button>
+        <a href="{{ url_for('student_performance', year=item.grade_year) }}" class="btn-secondary btn-small">キャンセル</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

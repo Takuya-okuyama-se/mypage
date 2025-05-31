@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}高校情報一覧 | 塾生徒サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .search-form {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  
+  .search-form .form-group {
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 10px;
+  }
+  
+  .search-form .btn {
+    margin-bottom: 10px;
+  }
+  
+  .sort-link {
+    display: inline-block;
+    color: #1976d2;
+    text-decoration: none;
+  }
+  
+  .sort-link.active {
+    font-weight: bold;
+  }
+  
+  .sort-link.active:after {
+    content: " ↑";
+  }
+  
+  .sort-link.active.desc:after {
+    content: " ↓";
+  }
+  
+  .school-item {
+    display: flex;
+    flex-wrap: wrap;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    background-color: white;
+    transition: all 0.2s ease;
+  }
+  
+  .school-item:hover {
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+  }
+  
+  .school-info {
+    flex: 2;
+    min-width: 250px;
+  }
+  
+  .school-stats {
+    flex: 1;
+    min-width: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .school-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+  }
+  
+  .school-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .school-course {
+    display: inline-block;
+    padding: 2px 6px;
+    margin-left: 5px;
+    background-color: #e3f2fd;
+    border-radius: 3px;
+    font-size: 0.8rem;
+  }
+  
+  .school-location {
+    color: #757575;
+    margin-bottom: 5px;
+  }
+  
+  .school-feature {
+    margin-top: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .stat-item {
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .stat-label {
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .stat-value {
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+  
+  .pagination {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .page-link {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 0 3px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    text-decoration: none;
+    color: #1976d2;
+  }
+  
+  .page-link.active {
+    background-color: #1976d2;
+    color: white;
+    border-color: #1976d2;
+  }
+  @media (max-width: 768px) {
+    .school-item {
+      flex-direction: column;
+      padding: 16px;
+    }
+    
+    .school-stats {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
+      width: 100%;
+    }
+    
+    .stat-item {
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    
+    .stat-label {
+      flex: 0 0 40%;
+      margin-right: 10px;
+      font-size: 0.9rem;
+    }
+    
+    .stat-value {
+      flex: 0 0 55%;
+      text-align: right;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    
+    .school-name {
+      font-size: 1.1rem;
+    }
+    
+    .school-actions {
+      justify-content: space-between;
+      padding-top: 12px;
+    }
+    
+    .school-actions .btn {
+      padding: 10px;
+      width: calc(50% - 5px);
+      text-align: center;
+      display: flex;
+      justify-content: center;
+    }
+      word-break: break-all; /* 長い数値でも改行 */
+      hyphens: auto;
+      max-width: 55%;
+      overflow: hidden;
+      text-overflow: ellipsis;      font-size: 0.85rem; /* スマホでは少し小さくする */
+    }
+  }
+  
+  /* さらに小さいスマホ画面向け最適化 */
+  @media (max-width: 480px) {
+    .stat-label {
+      flex: 0 0 35%;
+      font-size: 0.8rem;
+    }
+    
+    .stat-value {
+      flex: 0 0 60%;
+      font-size: 0.8rem;
+      max-width: 60%;
+    }
+    
+    .school-name {
+      font-size: 1rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>高校情報一覧</h3>
+  
+  <div class="search-form">
+    <form method="get" action="/myapp/index.cgi/student/high-schools">
+      <div class="form-group">
+        <label class="form-label" for="search">キーワード検索</label>
+        <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="学校名、コース、部活動など">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="district">地区</label>
+        <select class="form-control" id="district" name="district">
+          <option value="">すべての地区</option>
+          {% for d in districts %}
+            <option value="{{ d }}" {% if district == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <input type="hidden" name="sort" value="{{ sort_by }}">
+      <input type="hidden" name="order" value="{{ sort_order }}">
+      
+      <button type="submit" class="btn btn-primary">検索</button>
+      <a href="/myapp/index.cgi/student/high-schools" class="btn btn-secondary">リセット</a>
+    </form>
+  </div>
+  
+  <div class="sort-options">
+    <span class="stat-label">並び替え:</span>
+    <a href="/myapp/index.cgi/student/high-schools?search={{ search }}&district={{ district }}&sort=name&order={% if sort_by == 'name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_by == 'name' %}active {% if sort_order == 'desc' %}desc{% endif %}{% endif %}">学校名</a> |
+    <a href="/myapp/index.cgi/student/high-schools?search={{ search }}&district={{ district }}&sort=deviation_score&order={% if sort_by == 'deviation_score' and sort_order == 'desc' %}asc{% else %}desc{% endif %}" class="sort-link {% if sort_by == 'deviation_score' %}active {% if sort_order == 'asc' %}desc{% endif %}{% endif %}">偏差値</a> |
+    <a href="/myapp/index.cgi/student/high-schools?search={{ search }}&district={{ district }}&sort=min_required_points&order={% if sort_by == 'min_required_points' and sort_order == 'desc' %}asc{% else %}desc{% endif %}" class="sort-link {% if sort_by == 'min_required_points' %}active {% if sort_order == 'asc' %}desc{% endif %}{% endif %}">内申点</a> |
+    <a href="/myapp/index.cgi/student/high-schools?search={{ search }}&district={{ district }}&sort=competition_rate&order={% if sort_by == 'competition_rate' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_by == 'competition_rate' %}active {% if sort_order == 'desc' %}desc{% endif %}{% endif %}">倍率</a>
+  </div>
+  
+  {% if high_schools %}
+    <div class="schools-list">
+      {% for school in high_schools %}
+        <div class="school-item">
+          <div class="school-info">
+            <div class="school-name">
+              {{ school.name }}
+              {% if school.course_type != '普通科' %}
+                <span class="school-course">{{ school.course_type }}</span>
+              {% endif %}
+            </div>
+            <div class="school-location">{{ school.district }}</div>
+            {% if school.strong_club_activities %}
+              <div class="school-feature">
+                <strong>強い部活:</strong> {{ school.strong_club_activities }}
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="school-stats">
+            {% if school.deviation_score %}
+              <div class="stat-item">
+                <span class="stat-label">偏差値:</span>
+                <span class="stat-value">{{ school.deviation_score }}</span>
+              </div>
+            {% endif %}
+              {% if school.min_required_points %}
+              <div class="stat-item">
+                <span class="stat-label">必要内申点:</span>
+                <span class="stat-value">{{ school.min_required_points }}</span>
+              </div>
+            {% endif %}
+            
+            {% if school.competition_rate %}
+              <div class="stat-item">
+                <span class="stat-label">倍率:</span>
+                <span class="stat-value">{{ school.competition_rate }}倍</span>
+              </div>
+            {% endif %}
+          </div>
+          
+          <div class="school-actions">
+            <a href="/myapp/index.cgi/student/high-school/{{ school.id }}" class="btn btn-primary">詳細を見る</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>条件に合う高校が見つかりませんでした。検索条件を変更してお試しください。</p>
+  {% endif %}
+</div>
+{% endblock %}

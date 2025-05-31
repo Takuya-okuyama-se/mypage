@@ -1,0 +1,1285 @@
+{% extends "base.html" %}
+{% block title %}成績向上フィルター | 塾講師サイト{% endblock %}
+
+{% block content %}
+<style>
+/* リセットと基本設定 */
+.teacher-improvement-filter {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  color: #333;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.teacher-improvement-filter * {
+  box-sizing: border-box;
+}
+
+/* アニメーション */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* コンテナ */
+.filter-container,
+.results-container {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+
+/* ヘッダー */
+.filter-header,
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.filter-title,
+.results-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.results-title {
+  font-size: 18px;
+}
+
+/* フィルターコントロール */
+.control-label {
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.control-input {
+  padding: 10px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+  width: 100%;
+}
+
+.control-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* アクションボタン */
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn-filter,
+.btn-reset {
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.btn-filter {
+  background: #007bff;
+  color: white;
+}
+
+.btn-filter:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.btn-reset {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-reset:hover {
+  background: #545b62;
+}
+
+/* 統計情報 */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.stat-value.success {
+  color: #28a745;
+}
+
+.stat-value.warning {
+  color: #ffc107;
+}
+
+/* 学生カード */
+.student-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.student-card {
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.student-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+
+.student-card.selected {
+  border-color: #28a745;
+  background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+}
+
+.student-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 15px;
+}
+
+.student-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.student-grade {
+  background: #f8f9fa;
+  color: #666;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* 向上情報 */
+.improvement-info {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+/* ポイント付与済みのスタイル */
+.student-card.points-awarded {
+  opacity: 0.7;
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.student-card.points-awarded .selection-checkbox {
+  display: none;
+}
+
+.points-awarded-badge {
+  background: #28a745;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.improvement-scores {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.score-box {
+  text-align: center;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.previous-score {
+  background: #e9ecef;
+  color: #6c757d;
+}
+
+.current-score {
+  background: #d4edda;
+  color: #155724;
+}
+
+.improvement-arrow {
+  font-size: 18px;
+  color: #28a745;
+  font-weight: bold;
+}
+
+/* バッジ */
+.improvement-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.improvement-large {
+  background: #dc3545;
+  color: white;
+}
+
+.improvement-medium {
+  background: #ffc107;
+  color: #333;
+}
+
+.improvement-small {
+  background: #6c757d;
+  color: white;
+}
+
+.suggested-points,
+.points-awarded {
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.suggested-points {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.points-awarded {
+  background: #d4edda;
+  color: #155724;
+}
+
+/* チェックボックス */
+.selection-checkbox {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  transform: scale(1.3);
+  cursor: pointer;
+}
+
+/* 一括操作 */
+.bulk-actions {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.bulk-actions.show {
+  display: block;
+}
+
+.bulk-info {
+  margin-bottom: 10px;
+  font-weight: 500;
+  color: #333;
+}
+
+.bulk-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-bulk {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-bulk:hover {
+  background: #218838;
+}
+
+.btn-bulk.large {
+  background: #dc3545;
+}
+
+.btn-bulk.large:hover {
+  background: #c82333;
+}
+
+.btn-bulk.medium {
+  background: #ffc107;
+  color: #333;
+}
+
+.btn-bulk.medium:hover {
+  background: #e0a800;
+}
+
+/* 状態表示 */
+.empty-state,
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(0,0,0,0.1);
+  border-radius: 50%;
+  border-top-color: #007bff;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 15px;
+}
+
+/* 付与済み学生の表示 */
+.student-card.points-awarded {
+  opacity: 0.7;
+  background: #f8f9fa;
+  border-color: #e9ecef;
+}
+
+.student-card.points-awarded .selection-checkbox {
+  display: none;
+}
+
+.student-card.points-awarded:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* エラー・成功メッセージ */
+.error-display {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 6px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+.success-display {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 6px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .teacher-improvement-filter {
+    padding: 10px;
+  }
+  
+  .filter-container,
+  .results-container {
+    padding: 15px;
+  }
+  
+  .filter-controls {
+    grid-template-columns: 1fr;
+  }
+  
+  .student-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .filter-actions {
+    justify-content: center;
+  }
+}
+</style>
+
+<div class="teacher-improvement-filter">
+  <!-- ページヘッダー -->
+  <div style="margin-bottom: 30px;">
+    <h1 style="font-size: 28px; font-weight: 600; color: #333; margin: 0;">
+      <i class="fas fa-filter" style="color: #007bff; margin-right: 10px;"></i>
+      成績向上フィルター
+    </h1>
+    <p style="color: #666; margin: 8px 0 0 0;">成績向上を効率的に管理し、ポイント付与を行います</p>
+  </div>
+
+  <!-- タブ切り替え -->
+  <div class="tab-container" style="margin-bottom: 25px;">
+    <div class="tab-buttons" style="display: flex; gap: 10px; border-bottom: 2px solid #e9ecef; padding-bottom: 0;">
+      <button id="tab-elementary" class="tab-button active" onclick="switchTab('elementary')" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 500; transition: all 0.3s;">
+        <i class="fas fa-child"></i> 小学生
+      </button>
+      <button id="tab-middle" class="tab-button" onclick="switchTab('middle')" style="padding: 10px 20px; background: #f8f9fa; color: #333; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 500; transition: all 0.3s;">
+        <i class="fas fa-graduation-cap"></i> 中学生
+      </button>
+    </div>
+  </div>
+
+  <!-- フィルター設定 -->
+  <div class="filter-container">
+    <div class="filter-header">
+      <h2 class="filter-title">
+        <i class="fas fa-sliders-h" style="color: #007bff; margin-right: 8px;"></i>
+        フィルター設定
+      </h2>
+      <button onclick="resetFilters()" class="btn-reset">
+        <i class="fas fa-undo"></i> リセット
+      </button>
+    </div>
+
+    <div class="filter-controls">
+      <!-- 小学生用フィルター -->
+      <div id="elementary-filters" class="school-type-filters">
+        <div class="control-group">
+          <label class="control-label">対象月</label>
+          <select id="filter-month" class="control-input">
+            <option value="">すべての月</option>
+            <option value="1">1月</option>
+            <option value="2">2月</option>
+            <option value="3">3月</option>
+            <option value="4">4月</option>
+            <option value="5">5月</option>
+            <option value="6">6月</option>
+            <option value="7">7月</option>
+            <option value="8">8月</option>
+            <option value="9">9月</option>
+            <option value="10">10月</option>
+            <option value="11">11月</option>
+            <option value="12">12月</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 中学生用フィルター -->
+      <div id="middle-filters" class="school-type-filters" style="display: none;">
+        <div class="control-group">
+          <label class="control-label">比較タイプ</label>
+          <select id="filter-comparison-type" class="control-input" onchange="updateMiddleFilters()">
+            <option value="exam">定期テスト</option>
+            <option value="internal">内申点</option>
+          </select>
+        </div>
+
+        <!-- 定期テスト用フィルター -->
+        <div id="exam-filters" class="comparison-filters">
+          <div class="control-group">
+            <label class="control-label">比較元</label>
+            <select id="filter-exam-from" class="control-input">
+              <option value="1-1">1年1学期中間</option>
+              <option value="1-1-final">1年1学期期末</option>
+              <option value="1-2">1年2学期中間</option>
+              <option value="1-2-final">1年2学期期末</option>
+              <option value="1-3">1年3学期学年末</option>
+              <option value="2-1">2年1学期中間</option>
+              <option value="2-1-final">2年1学期期末</option>
+              <option value="2-2">2年2学期中間</option>
+              <option value="2-2-final">2年2学期期末</option>
+              <option value="2-3">2年3学期学年末</option>
+              <option value="3-1">3年1学期中間</option>
+              <option value="3-1-final">3年1学期期末</option>
+              <option value="3-2">3年2学期中間</option>
+              <option value="3-2-final">3年2学期期末</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label class="control-label">比較先</label>
+            <select id="filter-exam-to" class="control-input">
+              <option value="1-1-final">1年1学期期末</option>
+              <option value="1-2">1年2学期中間</option>
+              <option value="1-2-final">1年2学期期末</option>
+              <option value="1-3">1年3学期学年末</option>
+              <option value="2-1">2年1学期中間</option>
+              <option value="2-1-final">2年1学期期末</option>
+              <option value="2-2">2年2学期中間</option>
+              <option value="2-2-final">2年2学期期末</option>
+              <option value="2-3">2年3学期学年末</option>
+              <option value="3-1">3年1学期中間</option>
+              <option value="3-1-final">3年1学期期末</option>
+              <option value="3-2">3年2学期中間</option>
+              <option value="3-2-final">3年2学期期末</option>
+              <option value="3-3">3年3学期学年末</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 内申点用フィルター -->
+        <div id="internal-filters" class="comparison-filters" style="display: none;">
+          <div class="control-group">
+            <label class="control-label">比較元</label>
+            <select id="filter-internal-from" class="control-input">
+              <option value="1-1">1年1学期</option>
+              <option value="1-2">1年2学期</option>
+              <option value="1-3">1年3学期</option>
+              <option value="2-1">2年1学期</option>
+              <option value="2-2">2年2学期</option>
+              <option value="2-3">2年3学期</option>
+              <option value="3-1">3年1学期</option>
+              <option value="3-2">3年2学期</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label class="control-label">比較先</label>
+            <select id="filter-internal-to" class="control-input">
+              <option value="1-2">1年2学期</option>
+              <option value="1-3">1年3学期</option>
+              <option value="2-1">2年1学期</option>
+              <option value="2-2">2年2学期</option>
+              <option value="2-3">2年3学期</option>
+              <option value="3-1">3年1学期</option>
+              <option value="3-2">3年2学期</option>
+              <option value="3-3">3年3学期</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">科目</label>
+        <select id="filter-subject" class="control-input">
+          <option value="">すべての科目</option>
+          <option value="1">国語</option>
+          <option value="2">算数</option>
+          <option value="3">理科</option>
+          <option value="4">社会</option>
+          <option value="5">英語</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">最小向上点数</label>
+        <select id="filter-improvement" class="control-input">
+          <option value="0">制限なし</option>
+          <option value="5">5点以上</option>
+          <option value="10">10点以上</option>
+          <option value="15">15点以上</option>
+          <option value="20">20点以上</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">ポイント付与状況</label>
+        <select id="filter-points-status" class="control-input">
+          <option value="">すべて</option>
+          <option value="pending">未付与のみ</option>
+          <option value="awarded">付与済みのみ</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button onclick="applyFilters()" class="btn-filter">
+        <i class="fas fa-search"></i> フィルター適用
+      </button>
+    </div>
+  </div>
+
+  <!-- 一括操作 -->
+  <div id="bulk-actions" class="bulk-actions">
+    <div class="bulk-info">
+      <span id="selected-count">0</span>人の生徒が選択されています
+    </div>
+    <div class="bulk-buttons">
+      <button onclick="bulkAwardPoints('small')" class="btn-bulk">
+        小幅向上(20pt)
+      </button>
+      <button onclick="bulkAwardPoints('medium')" class="btn-bulk medium">
+        中幅向上(30pt)
+      </button>
+      <button onclick="bulkAwardPoints('large')" class="btn-bulk large">
+        大幅向上(50pt)
+      </button>
+      <button onclick="clearSelection()" class="btn-reset">
+        選択解除
+      </button>
+    </div>
+  </div>
+
+  <!-- 結果表示 -->
+  <div class="results-container">
+    <div class="results-header">
+      <h2 class="results-title">
+        <i class="fas fa-chart-line" style="color: #28a745; margin-right: 8px;"></i>
+        成績向上者一覧
+      </h2>
+      <button onclick="refreshData()" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px 15px; cursor: pointer; color: #333;">
+        <i class="fas fa-sync-alt"></i> 更新
+      </button>
+    </div>
+
+    <!-- 統計情報 -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">成績向上者数</div>
+        <div id="stat-total" class="stat-value success">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">平均向上点数</div>
+        <div id="stat-average" class="stat-value">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">未付与ポイント</div>
+        <div id="stat-pending" class="stat-value warning">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">付与済みポイント</div>
+        <div id="stat-awarded" class="stat-value">-</div>
+      </div>
+    </div>
+
+    <!-- ローディング状態 -->
+    <div id="loading-state" class="loading-state">
+      <div class="loading-spinner"></div>
+      <div>データを読み込み中...</div>
+    </div>
+
+    <!-- 空の状態 -->
+    <div id="empty-state" class="empty-state" style="display: none;">
+      <div class="empty-state-icon">
+        <i class="fas fa-search"></i>
+      </div>
+      <div>条件に一致する成績向上者が見つかりませんでした</div>
+      <div style="font-size: 14px; margin-top: 10px; color: #999;">
+        フィルター条件を変更して再度検索してください
+      </div>
+    </div>
+
+    <!-- 学生カード -->
+    <div id="student-cards" class="student-cards">
+      <!-- 動的に生成される -->
+    </div>
+  </div>
+</div>
+
+<script>
+// グローバル変数
+let allStudents = [];
+let filteredStudents = [];
+let selectedStudents = new Set();
+let currentSchoolType = 'elementary'; // 現在選択されている学校タイプ
+
+// ページ読み込み時の初期化
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('成績向上フィルターページが読み込まれました');
+  
+  // 初期データを読み込み
+  loadData();
+  
+  // 現在の月を初期値として設定
+  const currentMonth = new Date().getMonth() + 1;
+  document.getElementById('filter-month').value = currentMonth;
+});
+
+// タブ切り替え関数
+function switchTab(schoolType) {
+  currentSchoolType = schoolType;
+  
+  // タブボタンのスタイル更新
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('active');
+    btn.style.background = '#f8f9fa';
+    btn.style.color = '#333';
+  });
+  
+  const activeTab = document.getElementById(`tab-${schoolType}`);
+  activeTab.classList.add('active');
+  activeTab.style.background = '#007bff';
+  activeTab.style.color = 'white';
+  
+  // フィルターの表示切り替え
+  document.querySelectorAll('.school-type-filters').forEach(filter => {
+    filter.style.display = 'none';
+  });
+  document.getElementById(`${schoolType}-filters`).style.display = 'block';
+  
+  // 選択をクリア
+  clearSelection();
+  
+  // データを再読み込み
+  loadData();
+}
+
+// 中学生フィルターの更新
+function updateMiddleFilters() {
+  const comparisonType = document.getElementById('filter-comparison-type').value;
+  
+  document.querySelectorAll('.comparison-filters').forEach(filter => {
+    filter.style.display = 'none';
+  });
+  
+  document.getElementById(`${comparisonType}-filters`).style.display = 'block';
+}
+
+// データを読み込む
+async function loadData(filters = {}) {
+  showLoading();
+  
+  try {
+    // フィルターパラメータを構築
+    const params = new URLSearchParams();
+    params.append('type', currentSchoolType);
+    
+    if (currentSchoolType === 'elementary') {
+      if (filters.month) params.append('month', filters.month);
+      if (filters.subject) params.append('subject', filters.subject);
+      if (filters.min_improvement) params.append('min_improvement', filters.min_improvement);
+      if (filters.points_status) params.append('points_status', filters.points_status);
+    } else {
+      // 中学生用パラメータ
+      const comparisonType = document.getElementById('filter-comparison-type')?.value || 'exam';
+      params.append('comparison_type', comparisonType);
+      
+      if (comparisonType === 'exam') {
+        const fromExam = document.getElementById('filter-exam-from')?.value;
+        const toExam = document.getElementById('filter-exam-to')?.value;
+        if (fromExam) params.append('from_exam', fromExam);
+        if (toExam) params.append('to_exam', toExam);
+      } else {
+        const fromInternal = document.getElementById('filter-internal-from')?.value;
+        const toInternal = document.getElementById('filter-internal-to')?.value;
+        if (fromInternal) params.append('from_internal', fromInternal);
+        if (toInternal) params.append('to_internal', toInternal);
+      }
+      
+      if (filters.subject) params.append('subject', filters.subject);
+      if (filters.min_improvement) params.append('min_improvement', filters.min_improvement);
+      if (filters.points_status) params.append('points_status', filters.points_status);
+    }
+    
+    const response = await fetch(`/myapp/index.cgi/api/improvement-filter-advanced?${params}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      allStudents = data.students || [];
+      filteredStudents = [...allStudents];
+      
+      updateStats(data.stats);
+      renderStudentCards();
+      hideLoading();
+    } else {
+      throw new Error(data.message || 'データの取得に失敗しました');
+    }  } catch (error) {
+    console.error('データ読み込みエラー:', error);
+    showError(error.message);
+    hideLoading();
+  }
+}
+
+// フィルターを適用
+function applyFilters() {
+  const filters = {};
+  
+  if (currentSchoolType === 'elementary') {
+    filters.month = document.getElementById('filter-month').value;
+  }
+  
+  filters.subject = document.getElementById('filter-subject').value;
+  filters.min_improvement = document.getElementById('filter-improvement').value;
+  filters.points_status = document.getElementById('filter-points-status').value;
+  
+  // 空の値を除外
+  Object.keys(filters).forEach(key => {
+    if (!filters[key]) {
+      delete filters[key];
+    }
+  });
+  
+  console.log('適用するフィルター:', filters);
+  loadData(filters);
+}
+
+// フィルターをリセット
+function resetFilters() {
+  document.getElementById('filter-month').value = '';
+  document.getElementById('filter-subject').value = '';
+  document.getElementById('filter-improvement').value = '0';
+  document.getElementById('filter-points-status').value = '';
+  
+  loadData();
+}
+
+// データを更新
+function refreshData() {
+  applyFilters();
+}
+
+// 統計情報を更新
+function updateStats(stats) {
+  if (!stats) return;
+  
+  document.getElementById('stat-total').textContent = stats.total || 0;
+  document.getElementById('stat-average').textContent = stats.average ? `${stats.average}点` : '-';
+  document.getElementById('stat-pending').textContent = stats.pending_points || 0;
+  document.getElementById('stat-awarded').textContent = stats.awarded_points || 0;
+}
+
+// 学生カードをレンダリング
+function renderStudentCards() {
+  const container = document.getElementById('student-cards');
+  
+  if (filteredStudents.length === 0) {
+    container.innerHTML = '';
+    showEmpty();
+    return;
+  }
+  
+  hideEmpty();
+  
+  const html = filteredStudents.map(student => {
+    const isSelected = selectedStudents.has(student.id);
+    const improvementLevel = getImprovementLevel(student.improvement_points);
+    const hasPointsAwarded = student.points_awarded || student.is_points_awarded;
+    
+    return `
+      <div class="student-card ${isSelected ? 'selected' : ''} ${hasPointsAwarded ? 'points-awarded' : ''}" data-id="${student.id}">
+        ${!hasPointsAwarded ? `
+          <input type="checkbox" 
+                 class="selection-checkbox" 
+                 ${isSelected ? 'checked' : ''}
+                 onchange="toggleSelection(${student.id})">
+        ` : ''}
+        
+        <div class="student-header">
+          <h3 class="student-name">${student.name}</h3>
+          <span class="student-grade">${student.grade || '小学生'}</span>
+        </div>
+        
+        <div class="improvement-info">
+          <div class="improvement-scores">
+            <div class="score-box previous-score">
+              <div style="font-size: 12px; margin-bottom: 2px;">${currentSchoolType === 'elementary' ? '前回' : getPeriodLabel(student.previous_period)}</div>
+              <div style="font-weight: bold;">${student.previous_score || student.previous_point || 0}${currentSchoolType === 'middle' && student.comparison_type === 'internal' ? '' : '点'}</div>
+            </div>
+            <div class="improvement-arrow">→</div>
+            <div class="score-box current-score">
+              <div style="font-size: 12px; margin-bottom: 2px;">${currentSchoolType === 'elementary' ? '今回' : getPeriodLabel(student.current_period)}</div>
+              <div style="font-weight: bold;">${student.current_score || student.current_point || 0}${currentSchoolType === 'middle' && student.comparison_type === 'internal' ? '' : '点'}</div>
+            </div>
+          </div>
+          
+          <div class="improvement-badge ${improvementLevel.class}">
+            +${student.improvement_points || student.improvement}${currentSchoolType === 'middle' && student.comparison_type === 'internal' ? '' : '点'}向上 (${improvementLevel.label})
+          </div>
+          
+          ${!hasPointsAwarded && student.suggested_points ? `
+            <div class="suggested-points">
+              推奨: ${student.suggested_points}ポイント
+            </div>
+          ` : ''}
+          
+          ${hasPointsAwarded ? `
+            <div class="points-awarded">
+              <i class="fas fa-check-circle"></i> ${student.awarded_points || student.suggested_points || ''}ポイント付与済み
+              ${student.awarded_date ? `<br><small style="color: #666;">${student.awarded_date}</small>` : ''}
+            </div>
+          ` : ''}
+        </div>
+        
+        <div style="font-size: 12px; color: #666; text-align: center;">
+          ${student.subject_name || '全科目'} | ${student.month || '-'}月
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  container.innerHTML = html;
+  updateBulkActions();
+}
+
+// 向上レベルを取得
+function getImprovementLevel(points) {
+  if (points >= 15) {
+    return { class: 'improvement-large', label: '大幅' };
+  } else if (points >= 10) {
+    return { class: 'improvement-medium', label: '中幅' };
+  } else if (points >= 5) {
+    return { class: 'improvement-small', label: '小幅' };
+  } else {
+    return { class: 'improvement-small', label: '微増' };
+  }
+}
+
+// 期間ラベルを取得
+function getPeriodLabel(period) {
+  if (!period) return '-';
+  
+  const parts = period.split('-');
+  if (parts.length === 2) {
+    return `${parts[0]}年${parts[1]}学期`;
+  } else if (parts.length === 3) {
+    if (parts[2] === 'final') {
+      return `${parts[0]}年${parts[1]}学期期末`;
+    } else {
+      return `${parts[0]}年${parts[1]}学期中間`;
+    }
+  }
+  return period;
+}
+
+// 選択状態を切り替え
+function toggleSelection(studentId) {
+  // 対象の学生データを取得
+  const student = filteredStudents.find(s => s.id === studentId);
+  
+  // 既にポイントが付与されている場合は選択不可
+  if (student && (student.points_awarded || student.is_points_awarded)) {
+    showErrorMessage('この生徒には既にポイントが付与されています');
+    return;
+  }
+  
+  if (selectedStudents.has(studentId)) {
+    selectedStudents.delete(studentId);
+  } else {
+    selectedStudents.add(studentId);
+  }
+  
+  // カードの見た目を更新
+  const card = document.querySelector(`.student-card[data-id="${studentId}"]`);
+  if (card) {
+    if (selectedStudents.has(studentId)) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  }
+  
+  updateBulkActions();
+}
+
+// 一括操作UIを更新
+function updateBulkActions() {
+  const bulkActions = document.getElementById('bulk-actions');
+  const selectedCount = document.getElementById('selected-count');
+  
+  selectedCount.textContent = selectedStudents.size;
+  
+  if (selectedStudents.size > 0) {
+    bulkActions.classList.add('show');
+  } else {
+    bulkActions.classList.remove('show');
+  }
+}
+
+// 選択をクリア
+function clearSelection() {
+  selectedStudents.clear();
+  
+  // すべてのチェックボックスをクリア
+  document.querySelectorAll('.selection-checkbox').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // すべてのカードから選択状態を除去
+  document.querySelectorAll('.student-card').forEach(card => {
+    card.classList.remove('selected');
+  });
+  
+  updateBulkActions();
+}
+
+// 一括ポイント付与
+async function bulkAwardPoints(level) {
+  if (selectedStudents.size === 0) {
+    showErrorMessage('ポイントを付与する生徒が選択されていません');
+    return;
+  }
+  
+  // 選択された学生が既に付与済みでないかチェック
+  const selectedStudentList = Array.from(selectedStudents);
+  const alreadyAwarded = selectedStudentList.filter(studentId => {
+    const student = filteredStudents.find(s => s.id === studentId);
+    return student && (student.points_awarded || student.is_points_awarded);
+  });
+  
+  if (alreadyAwarded.length > 0) {
+    showErrorMessage('選択された生徒の中に既にポイントが付与されている生徒が含まれています');
+    clearSelection(); // 選択をクリアして再選択を促す
+    refreshData(); // データを更新
+    return;
+  }
+  
+  let points = 0;
+  let levelText = '';
+  
+  switch (level) {
+    case 'small':
+      points = 20;
+      levelText = '小幅向上';
+      break;
+    case 'medium':
+      points = 30;
+      levelText = '中幅向上';
+      break;
+    case 'large':
+      points = 50;
+      levelText = '大幅向上';
+      break;
+    default:
+      showErrorMessage('無効な向上レベルです');
+      return;
+  }
+  
+  const confirmed = confirm(
+    `${selectedStudents.size}人の生徒に${points}ポイント（${levelText}）を付与しますか？\n\n※付与後は取り消しできません。`
+  );
+  
+  if (!confirmed) return;
+  
+  try {
+    const studentIds = Array.from(selectedStudents);
+    
+    // 選択された学生の詳細情報を収集
+    const studentsData = studentIds.map(studentId => {
+      const student = filteredStudents.find(s => s.id === studentId);
+      return {
+        student_id: studentId,
+        month: student ? student.month : null,
+        subject_id: student ? student.subject_id : null,
+        subject_name: student ? student.subject_name : null
+      };
+    });
+    
+    const response = await fetch('/myapp/index.cgi/api/award-improvement-points', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        student_ids: studentIds,
+        students_data: studentsData,
+        points: points,
+        reason: `成績向上(${levelText})`,
+        improvement_type: level
+      }),
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // 成功メッセージを表示
+      showSuccessMessage(`${selectedStudents.size}人に${points}ポイントを付与しました。`);
+      
+      // 選択をクリア
+      clearSelection();
+      
+      // データを再読み込みして付与状況を更新
+      setTimeout(() => {
+        refreshData();
+      }, 1000);
+    } else {
+      throw new Error(data.message || 'ポイント付与に失敗しました');
+    }
+  } catch (error) {
+    console.error('ポイント付与エラー:', error);
+    showErrorMessage('ポイント付与に失敗しました: ' + error.message);
+  }
+}
+
+// ローディング表示
+function showLoading() {
+  document.getElementById('loading-state').style.display = 'block';
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('student-cards').style.display = 'none';
+}
+
+// ローディング非表示
+function hideLoading() {
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('student-cards').style.display = 'grid';
+}
+
+// 空の状態を表示
+function showEmpty() {
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('student-cards').style.display = 'none';
+}
+
+// 空の状態を非表示
+function hideEmpty() {
+  document.getElementById('empty-state').style.display = 'none';
+}
+
+// エラー表示
+function showError(message) {
+  const container = document.getElementById('student-cards');
+  container.innerHTML = `
+    <div style="grid-column: 1 / -1;" class="error-display">
+      <div style="font-size: 48px; margin-bottom: 15px; text-align: center;">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div style="font-size: 18px; margin-bottom: 10px; text-align: center;">エラーが発生しました</div>
+      <div style="font-size: 14px; color: #666; text-align: center;">${message}</div>
+    </div>
+  `;
+}
+
+// 成功メッセージ表示
+function showSuccessMessage(message) {
+  // 既存のメッセージがあれば削除
+  const existingMessage = document.querySelector('.success-message-overlay');
+  if (existingMessage) {
+    existingMessage.remove();
+  }
+  
+  // 成功メッセージを作成
+  const successDiv = document.createElement('div');
+  successDiv.className = 'success-message-overlay';
+  successDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 6px;
+    padding: 15px 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    font-family: inherit;
+    max-width: 400px;
+  `;
+  
+  successDiv.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <i class="fas fa-check-circle" style="color: #28a745; font-size: 18px;"></i>
+      <span>${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(successDiv);
+  
+  // 3秒後に自動的に削除
+  setTimeout(() => {
+    if (successDiv && successDiv.parentNode) {
+      successDiv.remove();
+    }
+  }, 3000);
+}
+
+// エラーメッセージ表示
+function showErrorMessage(message) {
+  // 既存のメッセージがあれば削除
+  const existingMessage = document.querySelector('.error-message-overlay');
+  if (existingMessage) {
+    existingMessage.remove();
+  }
+  
+  // エラーメッセージを作成
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'error-message-overlay';
+  errorDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 6px;
+    padding: 15px 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    font-family: inherit;
+    max-width: 400px;
+  `;
+  
+  errorDiv.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <i class="fas fa-exclamation-triangle" style="color: #dc3545; font-size: 18px;"></i>
+      <span>${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(errorDiv);
+  
+  // 5秒後に自動的に削除
+  setTimeout(() => {
+    if (errorDiv && errorDiv.parentNode) {
+      errorDiv.remove();
+    }
+  }, 5000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}英語学習システム{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    .english-learning-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-title {
+        color: #5a4fcf;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 2.5em;
+    }
+
+    .user-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f0f8ff;
+        border-radius: 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .user-profile {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .user-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .stats-btn, .settings-btn {
+        background: #17a2b8;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .learning-sections {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .section-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+
+    .section-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .start-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .start-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .practice-area {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-top: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        border: 1px solid #f5c6cb;
+    }
+
+    .success-message {
+        background: #d4edda;
+        color: #155724;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        border: 1px solid #c3e6cb;
+    }
+
+    .canvas-container {
+        border: 2px dashed #ccc;
+        width: 300px;
+        height: 100px;
+        margin: 10px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f9f9f9;
+    }
+
+    .recognition-result {
+        margin-top: 10px;
+        padding: 10px;
+        background: #e9ecef;
+        border-radius: 5px;
+    }
+
+    @media (max-width: 768px) {
+        .user-info {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .learning-sections {
+            grid-template-columns: 1fr;
+        }
+
+        .english-learning-container {
+            padding: 15px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="english-learning-container">
+    <h1 class="header-title">
+        <i class="fas fa-book-open"></i>
+        英語学習システム
+    </h1>
+    
+    <div class="user-info">
+        <div class="user-profile">
+            <span class="user-name">{{ name or 'ユーザー' }}さん</span>
+            <span class="user-points">現在のポイント: <strong>{{ current_points or 0 }}</strong></span>
+        </div>
+        <div class="user-controls">
+            <button class="stats-btn" onclick="showStatistics()">
+                <i class="fas fa-chart-bar"></i> 統計
+            </button>
+            <button class="settings-btn" onclick="showSettings()">
+                <i class="fas fa-cog"></i> 設定
+            </button>
+        </div>
+    </div>
+    
+    <div class="learning-sections">
+        <div class="section-card" id="vocabulary-section">
+            <h2><i class="fas fa-spell-check"></i> 語彙練習</h2>
+            <p>英単語を覚えて語彙力を向上させよう！</p>
+            <button class="start-btn" onclick="startVocabularyPractice()">
+                <i class="fas fa-play"></i> 開始
+            </button>
+        </div>
+        
+        <div class="section-card" id="grammar-section">
+            <h2><i class="fas fa-pen"></i> 文法練習</h2>
+            <p>文法問題を解いて英語力をアップ！</p>
+            <button class="start-btn" onclick="startGrammarPractice()">
+                <i class="fas fa-play"></i> 開始
+            </button>
+        </div>
+        
+        <div class="section-card" id="writing-section">
+            <h2><i class="fas fa-edit"></i> 手書き練習</h2>
+            <p>手書きで英語を練習しよう！Google Vision APIで認識！</p>
+            <button class="start-btn" onclick="startWritingPractice()">
+                <i class="fas fa-play"></i> 開始
+            </button>
+        </div>
+    </div>
+    
+    <div id="practice-area" class="practice-area" style="display: none;">
+        <!-- 練習エリアの内容は JavaScript で動的に生成 -->
+    </div>
+    
+    <div id="error-message" class="error-message" style="display: none;">
+        <!-- エラーメッセージエリア -->
+    </div>
+    
+    <div id="success-message" class="success-message" style="display: none;">
+        <!-- 成功メッセージエリア -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // グローバル変数
+    let currentUser = "{{ name or 'Unknown' }}";
+    let currentPoints = parseInt('{{ current_points|default("0") }}') || 0;
+    let speechSynthesis = window.speechSynthesis;
+    let englishVoice = null;
+
+    // 音声合成の初期化
+    function initializeVoice() {
+        const voices = speechSynthesis.getVoices();
+        englishVoice = voices.find(voice => voice.lang.startsWith('en')) || voices[0];
+    }
+
+    // ページ読み込み時に音声を初期化
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = initializeVoice;
+    }
+    initializeVoice();
+
+    // 語彙練習開始
+    function startVocabularyPractice() {
+        showPracticeArea();
+        document.getElementById('practice-area').innerHTML = `
+            <h3><i class="fas fa-spell-check"></i> 語彙練習</h3>
+            <p>実装中...</p>
+            <button onclick="hidePracticeArea()">戻る</button>
+        `;
+    }
+
+    // 文法練習開始
+    function startGrammarPractice() {
+        showPracticeArea();
+        document.getElementById('practice-area').innerHTML = `
+            <h3><i class="fas fa-pen"></i> 文法練習</h3>
+            <p>実装中...</p>
+            <button onclick="hidePracticeArea()">戻る</button>
+        `;
+    }
+
+    // 手書き練習開始
+    function startWritingPractice() {
+        showPracticeArea();
+        document.getElementById('practice-area').innerHTML = `
+            <h3><i class="fas fa-edit"></i> 手書き練習</h3>
+            <p>以下のエリアに英語を手書きしてください：</p>
+            <div class="canvas-container" id="handwriting-canvas">
+                手書きエリア（実装中）
+            </div>
+            <div style="margin-top: 15px;">
+                <button onclick="recognizeHandwriting()">手書きを認識</button>
+                <button onclick="clearCanvas()">クリア</button>
+                <button onclick="hidePracticeArea()">戻る</button>
+            </div>
+            <div id="recognition-result" class="recognition-result" style="display: none;">
+                認識結果がここに表示されます
+            </div>
+        `;
+    }
+
+    // 手書き文字認識（Google Cloud Vision API）
+    async function recognizeHandwriting() {
+        try {
+            showMessage('手書き認識機能は実装中です...', 'success');
+            
+            // 実際の実装では、キャンバスの画像データを取得して API に送信
+            // const canvas = document.getElementById('handwriting-canvas');
+            // const imageData = canvas.toDataURL('image/png');
+            
+            // const response = await fetch('/api/english/recognize', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ image: imageData })
+            // });
+            
+            // const result = await response.json();
+            // document.getElementById('recognition-result').style.display = 'block';
+            // document.getElementById('recognition-result').innerHTML = 
+            //     'Recognition result: ' + result.text;
+            
+        } catch (error) {
+            showMessage('認識エラー: ' + error.message, 'error');
+        }
+    }
+
+    // キャンバスクリア
+    function clearCanvas() {
+        showMessage('キャンバスをクリアしました', 'success');
+    }
+
+    // 練習エリア表示
+    function showPracticeArea() {
+        document.getElementById('practice-area').style.display = 'block';
+        document.querySelector('.learning-sections').style.display = 'none';
+    }
+
+    // 練習エリア非表示
+    function hidePracticeArea() {
+        document.getElementById('practice-area').style.display = 'none';
+        document.querySelector('.learning-sections').style.display = 'grid';
+    }
+
+    // 統計表示
+    function showStatistics() {
+        showMessage('統計機能は準備中です。', 'success');
+    }
+
+    // 設定表示
+    function showSettings() {
+        showMessage('設定機能は準備中です。', 'success');
+    }
+
+    // メッセージ表示
+    function showMessage(message, type = 'success') {
+        const messageDiv = document.getElementById(type + '-message');
+        if (messageDiv) {
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+    }
+
+    // エラーメッセージ表示
+    function showError(message) {
+        showMessage(message, 'error');
+    }
+
+    // 初期化
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('英語学習システムが初期化されました');
+        showMessage('英語学習システムへようこそ！', 'success');
+    });
+</script>
+{% endblock %}

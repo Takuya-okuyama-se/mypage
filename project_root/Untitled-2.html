@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+
+{% block title %}成績・内申向上通知 | 塾講師サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .notification-list {
+    margin-top: 20px;
+  }
+  
+  .notification-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 15px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    border-left: 4px solid #4285f4;
+  }
+  
+  .notification-card.elementary {
+    border-left-color: #e83e8c;
+  }
+  
+  .notification-card.middle {
+    border-left-color: #007bff;
+  }
+  
+  .notification-card.processed {
+    opacity: 0.75;
+    border-left-color: #ccc;
+  }
+  
+  .notification-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  
+  .student-name {
+    font-weight: bold;
+    font-size: 1.1em;
+  }
+  
+  .notification-date {
+    color: #666;
+    font-size: 0.9em;
+  }
+  
+  .notification-content {
+    flex: 2;
+    padding-right: 15px;
+  }
+  
+  .notification-details {
+    margin-top: 10px;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  
+  .detail-item {
+    margin-bottom: 5px;
+  }
+  
+  .score-diff {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+    margin-left: 5px;
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .improvement-level {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    margin-left: 5px;
+  }
+  
+  .level-small {
+    background-color: #cce5ff;
+    color: #004085;
+  }
+  
+  .level-medium {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  
+  .level-large {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .notification-actions {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  
+  .award-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  
+  .award-points-btn {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 15px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .award-points-btn:hover {
+    background-color: #3367d6;
+  }
+  
+  .award-points-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .processed-by {
+    color: #666;
+    font-size: 0.85em;
+    margin-top: 5px;
+  }
+  
+  .filter-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .filter-label {
+    font-weight: bold;
+    margin-right: 5px;
+  }
+  
+  .type-filter {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .type-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    margin-right: 5px;
+    color: white;
+    font-weight: bold;
+  }
+  
+  .elementary-badge {
+    background-color: #e83e8c;
+  }
+  
+  .middle-badge {
+    background-color: #007bff;
+  }
+  
+  @media (max-width: 768px) {
+    .notification-card {
+      flex-direction: column;
+    }
+    
+    .notification-actions {
+      width: 100%;
+      align-items: flex-start;
+      margin-top: 15px;
+    }
+    
+    .award-form {
+      align-items: flex-start;
+    }
+    
+    .filter-section {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+  
+  /* モーダル関連 */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+    position: relative;
+  }
+  
+  .close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    cursor: pointer;
+  }
+  
+  .modal-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .modal-footer {
+    margin-top: 15px;
+    text-align: right;
+  }
+  
+  .confirm-btn {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .cancel-btn {
+    background-color: #f1f1f1;
+    color: #333;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    margin-right: 10px;
+    cursor: pointer;
+  }
+  
+  .no-notifications {
+    padding: 30px;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 20px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>成績・内申向上通知 
+    {% if unprocessed_count > 0 %}
+      <span class="notification-count-badge">{{ unprocessed_count }}</span>
+    {% endif %}
+  </h3>
+  <p>以下の生徒の成績・内申点に向上が見られました。確認してボーナスポイントを付与してください。</p>
+  
+  <div class="filter-section">
+    <div>
+      <span class="filter-label">表示：</span>
+      <select id="status-filter" class="form-control">
+        <option value="unprocessed">未処理のみ</option>
+        <option value="all">すべて表示</option>
+        <option value="processed">処理済みのみ</option>
+      </select>
+    </div>
+    
+    <div>
+      <span class="filter-label">種類：</span>
+      <select id="type-filter" class="form-control">
+        <option value="all">すべて</option>
+        <option value="elementary">小学生のみ</option>
+        <option value="middle">中学生のみ</option>
+      </select>
+    </div>
+    
+    <div>
+      <span class="filter-label">並び順：</span>
+      <select id="sort-filter" class="form-control">
+        <option value="newest">新しい順</option>
+        <option value="oldest">古い順</option>
+        <option value="improvement">向上幅順</option>
+      </select>
+    </div>
+    
+    <div class="type-filter">
+      <span class="type-badge elementary-badge">小学生</span>
+      <span class="type-badge middle-badge">中学生</span>
+    </div>
+  </div>
+  
+  {% if notifications %}
+  <div class="notification-list">
+    {% for notification in notifications %}
+      <div class="notification-card {% if notification.is_processed %}processed{% endif %} {{ notification.student_type }}" 
+           data-processed="{{ notification.is_processed }}"
+           data-type="{{ notification.student_type }}">
+        <div class="notification-header">
+          <span class="student-name">{{ notification.student_name }} 
+            <span class="improvement-level 
+              {% if notification.improvement_level == '大' %}level-large
+              {% elif notification.improvement_level == '中' %}level-medium
+              {% else %}level-small{% endif %}">
+              {{ notification.improvement_level }}
+            </span>
+          </span>
+          <span class="notification-date">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        
+        <div class="notification-content">
+          <div>
+            {% if notification.student_type == 'elementary' %}
+              科目「{{ notification.subject_name }}」の成績が向上しました。
+            {% else %}
+              科目「{{ notification.subject_name }}」の内申点が向上しました。
+            {% endif %}
+          </div>
+          
+          <div class="notification-details">
+            <div class="detail-item">学年：{{ notification.grade_year }}年生 {{ notification.current_term }}学期</div>
+            <div class="detail-item">
+              {% if notification.student_type == 'elementary' %}
+                前回：{{ notification.previous_score }}点 → 今回：{{ notification.new_score }}点
+                <span class="score-diff">+{{ notification.new_score - notification.previous_score }}点</span>
+              {% else %}
+                前回：{{ notification.previous_point }} → 今回：{{ notification.new_point }}
+                <span class="score-diff">+{{ notification.new_point - notification.previous_point }}</span>
+              {% endif %}
+            </div>
+            <div class="detail-item">学期：{{ notification.previous_term_display }} → {{ notification.current_term_display }}</div>
+            <div class="detail-item">推奨ボーナス：{{ notification.potential_points }}ポイント</div>
+          </div>
+        </div>
+        
+        <div class="notification-actions">
+          {% if not notification.is_processed %}
+            <form class="award-form" method="post">
+              <input type="hidden" name="notification_id" value="{{ notification.id }}">
+              <input type="hidden" name="notification_type" value="{{ notification.student_type }}">
+              <input type="hidden" name="student_id" value="{{ notification.student_id }}">
+              <input type="hidden" name="points" value="{{ notification.potential_points }}">
+              <button type="button" class="award-points-btn" data-id="{{ notification.id }}" data-type="{{ notification.student_type }}">
+                {{ notification.potential_points }}ポイントを付与
+              </button>
+            </form>
+          {% else %}
+            <div class="processed-by">
+              処理済み：{{ notification.processed_at.strftime('%Y-%m-%d') }}
+              {% if notification.teacher_name %}
+                by {{ notification.teacher_name }}
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="no-notifications">
+      <p>現在、未処理の成績・内申向上通知はありません。</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- 確認モーダル -->
+<div id="confirm-modal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <div class="modal-header">
+      <h4>ボーナスポイント付与の確認</h4>
+    </div>
+    <div class="modal-body">
+      <p><span id="student-name-display"></span>さんに<span id="points-display"></span>ポイントを付与しますか？</p>
+      <p id="notification-type-display"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="cancel-btn">キャンセル</button>
+      <form id="award-form" method="post">
+        <input type="hidden" name="action" value="award_points">
+        <input type="hidden" id="notification-id-input" name="notification_id" value="">
+        <input type="hidden" id="notification-type-input" name="notification_type" value="">
+        <input type="hidden" id="student-id-input" name="student_id" value="">
+        <input type="hidden" id="points-input" name="points" value="">
+        <button type="submit" class="confirm-btn">ポイントを付与</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // フィルター処理
+    const statusFilter = document.getElementById('status-filter');
+    const typeFilter = document.getElementById('type-filter');
+    const sortFilter = document.getElementById('sort-filter');
+    const notificationCards = document.querySelectorAll('.notification-card');
+    
+    // フィルター適用関数
+    function applyFilters() {
+      const statusValue = statusFilter.value;
+      const typeValue = typeFilter.value;
+      
+      notificationCards.forEach(function(card) {
+        const isProcessed = card.getAttribute('data-processed') === '1';
+        const cardType = card.getAttribute('data-type');
+        let show = true;
+        
+        // ステータスフィルター
+        if (statusValue === 'unprocessed' && isProcessed) {
+          show = false;
+        } else if (statusValue === 'processed' && !isProcessed) {
+          show = false;
+        }
+        
+        // タイプフィルター
+        if (typeValue !== 'all' && cardType !== typeValue) {
+          show = false;
+        }
+        
+        card.style.display = show ? '' : 'none';
+      });
+    }
+    
+    // フィルター変更イベント
+    statusFilter.addEventListener('change', applyFilters);
+    typeFilter.addEventListener('change', applyFilters);
+    
+    // 並び順の変更
+    sortFilter.addEventListener('change', function() {
+      const sortValue = this.value;
+      const container = document.querySelector('.notification-list');
+      const cards = Array.from(container.querySelectorAll('.notification-card'));
+      
+      // ソート関数
+      let sortFunction;
+      
+      if (sortValue === 'newest') {
+        sortFunction = function(a, b) {
+          const dateA = new Date(a.querySelector('.notification-date').textContent);
+          const dateB = new Date(b.querySelector('.notification-date').textContent);
+          return dateB - dateA;
+        };
+      } else if (sortValue === 'oldest') {
+        sortFunction = function(a, b) {
+          const dateA = new Date(a.querySelector('.notification-date').textContent);
+          const dateB = new Date(b.querySelector('.notification-date').textContent);
+          return dateA - dateB;
+        };
+      } else if (sortValue === 'improvement') {
+        sortFunction = function(a, b) {
+          // 向上幅を取得
+          const diffA = parseFloat(a.querySelector('.score-diff').textContent.replace(/[^0-9.]/g, ''));
+          const diffB = parseFloat(b.querySelector('.score-diff').textContent.replace(/[^0-9.]/g, ''));
+          return diffB - diffA;
+        };
+      }
+      
+      // ソートして再配置
+      cards.sort(sortFunction).forEach(function(card) {
+        container.appendChild(card);
+      });
+    });
+    
+    // モーダル関連
+    const modal = document.getElementById('confirm-modal');
+    const closeBtn = modal.querySelector('.close');
+    const cancelBtn = modal.querySelector('.cancel-btn');
+    const studentNameDisplay = document.getElementById('student-name-display');
+    const notificationTypeDisplay = document.getElementById('notification-type-display');
+    const pointsDisplay = document.getElementById('points-display');
+    const notificationIdInput = document.getElementById('notification-id-input');
+    const notificationTypeInput = document.getElementById('notification-type-input');
+    const studentIdInput = document.getElementById('student-id-input');
+    const pointsInput = document.getElementById('points-input');
+    
+    // ポイント付与ボタンのクリックイベント
+    document.querySelectorAll('.award-points-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const card = this.closest('.notification-card');
+        const studentName = card.querySelector('.student-name').textContent.trim().split(' ')[0];
+        const pointsValue = this.closest('.award-form').querySelector('input[name="points"]').value;
+        const notificationId = this.closest('.award-form').querySelector('input[name="notification_id"]').value;
+        const notificationTypeValue = this.getAttribute('data-type');
+        const notificationTypeText = notificationTypeValue === 'elementary' ? '成績向上ボーナス' : '内申点向上ボーナス';
+        const studentId = this.closest('.award-form').querySelector('input[name="student_id"]').value;
+        
+        // モーダルに値をセット
+        studentNameDisplay.textContent = studentName;
+        notificationTypeDisplay.textContent = notificationTypeText + 'として付与します。';
+        pointsDisplay.textContent = pointsValue;
+        notificationIdInput.value = notificationId;
+        notificationTypeInput.value = notificationTypeValue;
+        studentIdInput.value = studentId;
+        pointsInput.value = pointsValue;
+        
+        // モーダルを表示
+        modal.style.display = 'block';
+      });
+    });
+    
+    // モーダルを閉じる
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+    
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    
+    // モーダルの外側をクリックしても閉じる
+    window.addEventListener('click', function(event) {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+    
+    // 初期フィルター適用
+    applyFilters();
+  });
+</script>
+{% endblock %}

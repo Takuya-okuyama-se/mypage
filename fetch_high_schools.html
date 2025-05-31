@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}高校情報取得 | 塾生徒サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
+  .info-table th,
+  .info-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  .info-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+  }
+  .info-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  .action-form {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  
+  .info-section {
+    margin-top: 30px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>神奈川県公立高校情報取得</h3>
+  <p>ウェブから神奈川県の公立高校情報を自動取得します。取得したデータは志望校設定で使用されます。</p>
+  
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+  
+  {% if success %}
+    <div class="alert alert-success">{{ success }}</div>
+  {% endif %}
+  
+  <div class="action-form">
+    <h4>高校情報取得</h4>
+    <form method="post">
+      <div class="form-group">
+        <label class="form-label" for="year">対象年度</label>
+        <input class="form-control" type="number" id="year" name="year" value="{{ current_year }}" min="2020" max="2030" required>
+        <small>取得する高校情報の年度を指定してください</small>
+      </div>
+      
+      <div class="button-group">
+        <button type="submit" class="btn btn-primary">ウェブから高校情報を取得</button>
+      </div>
+    </form>
+  </div>
+  
+  <div class="info-section">
+    <h4>取得履歴</h4>
+    {% if import_history %}
+      <table class="info-table">
+        <thead>
+          <tr>
+            <th>取得日時</th>
+            <th>年度</th>
+            <th>取得件数</th>
+            <th>取得元</th>
+            <th>実行者</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for history in import_history %}
+            <tr>
+              <td>{{ history.import_date.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ history.year }}</td>
+              <td>{{ history.record_count }}</td>
+              <td>{{ history.file_name }}</td>
+              <td>{{ history.teacher_name }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>取得履歴はありません。</p>
+    {% endif %}
+  </div>
+  
+  <div class="info-section">
+    <h4>注意事項</h4>
+    <ul>
+      <li>取得した高校情報は、同じ年度の既存データを上書きします。</li>
+      <li>取得できる情報は、神奈川県内の主要な公立高校の内申点ボーダーや倍率などです。</li>
+      <li>データソースの状況によっては、正確な情報が取得できない場合があります。</li>
+      <li>データ取得後は内容を確認し、必要に応じて手動で修正してください。</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

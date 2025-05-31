@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}生徒編集{% endblock %}
+{% block content %}
+<h1>{{ student.name }} さん編集</h1>
+{% if msg_exam %}<p>{{ msg_exam }}</p>{% endif %}
+{% if msg_internal %}<p>{{ msg_internal }}</p>{% endif %}
+<form method="post">
+  <!-- 編集フォーム（省略） -->
+</form>
+{% endblock %}

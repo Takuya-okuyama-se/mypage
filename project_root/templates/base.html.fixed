@@ -1,0 +1,621 @@
+<!-- filepath: c:\Users\takuy\mypage\project_root\templates\base.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="user-id" content="{{ session.user_id|default('') }}">
+  <meta name="csrf-token" content="{{ csrf_token }}">  <meta name="theme-color" content="#4361ee">
+  <meta name="description" content="塾生徒専用サイト - ポイント管理とクレーンゲーム">
+  <title>{% block title %}塾生徒サイト{% endblock %}</title>
+  
+  <!-- Favicon設定 -->
+  <link rel="icon" type="image/x-icon" href="/myapp/index.cgi/static/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/myapp/index.cgi/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/myapp/index.cgi/static/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/myapp/index.cgi/static/apple-touch-icon.png">
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- 基本的なCSSファイルのみ -->
+  <link rel="stylesheet" href="/myapp/index.cgi/static/style.css">
+  <link rel="stylesheet" href="/myapp/index.cgi/static/modern-style.css">
+  
+  <!-- JavaScript -->
+  <script src="/myapp/index.cgi/static/js/csrf_utils.js"></script>
+  
+  <style>
+    /* 基本スタイル */
+    :root {
+      --primary: #4361ee;
+      --primary-light: #4cc9f0;
+      --primary-dark: #3a0ca3;
+      --secondary: #f72585;
+      --accent: #7209b7;
+      --bg-gradient-start: #4361ee;
+      --bg-gradient-end: #3a0ca3;
+      --header-height: 60px;
+    }
+    
+    body {
+      font-family: 'Noto Sans JP', 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* ヘッダー */
+    header {
+      background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+      color: white;
+      padding: 15px 0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+    }
+    
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo::before {
+      content: '\f19d';
+      font-family: 'Font Awesome 6 Free';
+      margin-right: 10px;
+      font-weight: 900;
+      font-size: 1.5rem;
+    }
+    
+    .user-info {
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+    
+    .user-points {
+      margin-left: 15px;
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 6px 12px;
+      border-radius: 15px;
+      font-weight: 700;
+    }
+    
+    .user-points::before {
+      content: '\f3d1';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      margin-right: 5px;
+    }
+    
+    /* ナビゲーション */
+    nav {
+      background-color: white;
+      border-bottom: 1px solid #e0e0e0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    
+    nav .container {
+      display: flex;
+      padding: 0;
+    }
+    
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+    
+    .tab {
+      padding: 15px 20px;
+      text-decoration: none;
+      color: #666;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+      display: flex;
+      align-items: center;
+      border-bottom: 3px solid transparent;
+    }
+    
+    .tab:hover, .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+    
+    .tab i {
+      margin-right: 5px;
+    }
+    
+    .logout-tab {
+      margin-left: auto;
+      color: #ea4335;
+    }
+    
+    .logout-tab:hover {
+      color: #c62828;
+      border-bottom-color: #ea4335;
+      background-color: rgba(234, 67, 53, 0.05);
+    }
+    
+    /* 講師が生徒としてログインしているときの表示スタイル */
+    .teacher-name {
+      font-weight: bold;
+      color: #ffeb3b; /* 黄色 */
+    }
+    
+    .student-view {
+      font-weight: bold;
+      color: #8bc34a; /* 薄緑 */
+    }
+    
+    /* メインコンテンツ */
+    .main-content {
+      padding: 20px 0;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .card h3 {
+      color: #333;
+      font-weight: 600;
+      margin-top: 0;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    /* フォーム */
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #444;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+    
+    .form-control:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+    }
+    
+    /* ボタン */
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #5a6268;
+    }
+    
+    .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #c82333;
+    }
+    
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.875rem;
+    }
+    
+    /* アラート */
+    .alert {
+      padding: 15px;
+      margin-bottom: 20px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+    }
+    
+    .alert-danger {
+      color: #721c24;
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+    }
+    
+    .alert-success {
+      color: #155724;
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+    
+    .alert-info {
+      color: #0c5460;
+      background-color: #d1ecf1;
+      border-color: #bee5eb;
+    }
+    
+    /* テーブル */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background-color: white;
+    }
+    
+    .data-table th,
+    .data-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .data-table th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .data-table tr:hover {
+      background-color: #f5f5f5;
+    }
+    
+    /* ハンバーガーメニューボタン */
+    .hamburger-button {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 15px;
+      margin-right: 5px;
+    }
+    
+    .hamburger-button:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    .hamburger-line {
+      display: block;
+      width: 25px;
+      height: 3px;
+      background-color: #333;
+      margin: 5px 0;
+      transition: 0.4s;
+    }
+    
+    .hamburger-button.active .hamburger-line:nth-child(1) {
+      transform: rotate(-45deg) translate(-5px, 6px);
+    }
+    
+    .hamburger-button.active .hamburger-line:nth-child(2) {
+      opacity: 0;
+    }
+    
+    .hamburger-button.active .hamburger-line:nth-child(3) {
+      transform: rotate(45deg) translate(-5px, -6px);
+    }
+    
+    /* ハンバーガーボタンのホバー効果を改善 */
+    .hamburger-button:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 4px;
+    }
+
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
+      .hamburger-button {
+        display: block;
+      }
+      
+      .nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        background-color: white;
+        box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        overflow-y: auto;
+        max-height: calc(100vh - 60px);
+      }
+      
+      .nav-links.active {
+        display: flex;
+      }
+      
+      .tab {
+        border-bottom: none;
+        border-left: 3px solid transparent;
+        width: 100%;
+      }
+      
+      .tab:hover, .tab.active {
+        border-bottom: none;
+        border-left-color: var(--primary);
+      }
+      
+      .logout-tab {
+        margin-left: 0;
+      }
+      
+      .user-info {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .user-points {
+        margin-left: 0;
+        margin-top: 5px;
+      }
+      
+      .container {
+        padding: 10px;
+      }
+      
+      header .container {
+        padding: 0 10px;
+      }
+    }
+    
+    /* 講師画面に戻るボタンのスタイル */
+    .special-tab {
+      background-color: #ff9800;
+      color: white;
+      font-weight: bold;
+      border-radius: 20px;
+      padding: 8px 15px;
+      margin: 10px;
+      display: inline-block;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .special-tab:hover {
+      background-color: #f57c00;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    
+    @media (max-width: 768px) {
+      .special-tab {
+        margin: 10px auto;
+        text-align: center;
+        display: block;
+        width: 80%;
+      }
+    }
+  </style>
+  
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <header>
+    <div class="container">      <div class="logo">塾生徒サイト</div>      {% if session and session.user_id %}        <div class="user-info">          {% if session.is_teacher_login %}
+            ようこそ、{{ session.viewing_student_name or '（不明）' }}さん （講師モード）
+          {% else %}
+            ようこそ、{{ session.user_name|default('') }}さん （{{ session.role == 'teacher' and '講師' or '生徒' }}）
+          {% endif %}
+          {% if session.role == 'student' %}
+            <span id="header-points-display" class="user-points">ポイント: <span id="header-points-value">読込中...</span></span>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </header>
+  <nav>
+    <div class="container">
+      <!-- ハンバーガーメニューボタン -->
+      <button id="nav-hamburger-toggle" class="hamburger-button" aria-label="メニューを開く" aria-expanded="false" aria-controls="nav-links">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+      <div class="nav-links" id="nav-links" role="navigation" aria-hidden="true">
+        {% if session and session.user_id %}
+          {% if (session.role=='student' and not teacher_view|default(false)) or (teacher_view|default(false) or is_teacher_login|default(false)) %}
+            <!-- 生徒用ナビゲーション -->
+            {% set student_id = request.args.get('id') %}
+            {% set tv_param = '' %}
+            {% if teacher_view|default(false) and student_id %}
+              {% set tv_param = '?teacher_view=true&id=' ~ student_id %}
+            {% endif %}
+            <a href="/myapp/index.cgi/student/dashboard{{ tv_param }}" class="tab{% if request.path == '/myapp/index.cgi/student/dashboard' %} active{% endif %}">
+              <i class="fas fa-home"></i> ホーム
+            </a>
+            <a href="/myapp/index.cgi/student/points{{ tv_param }}" class="tab{% if request.path == '/myapp/index.cgi/student/points' %} active{% endif %}">
+              <i class="fas fa-star"></i> ポイント
+            </a>
+            <a href="/myapp/index.cgi/student/crane-game{{ tv_param }}" class="tab{% if request.path == '/myapp/index.cgi/student/crane-game' %} active{% endif %}">
+              <i class="fas fa-gamepad"></i> クレーンゲーム
+            </a>
+            <a href="/myapp/index.cgi/student/performance{{ tv_param }}" class="tab{% if request.path.startswith('/myapp/index.cgi/student/performance') %} active{% endif %}">
+              <i class="fas fa-chart-line"></i> 成績
+            </a>
+            <a href="/myapp/index.cgi/student/profile{{ tv_param }}" class="tab{% if request.path == '/myapp/index.cgi/student/profile' %} active{% endif %}">
+              <i class="fas fa-user"></i> プロフィール
+            </a>
+            <a href="/myapp/index.cgi/student/homework{{ tv_param }}" class="tab{% if request.path == '/myapp/index.cgi/student/homework' %} active{% endif %}">
+              <i class="fas fa-book"></i> 宿題
+            </a>
+            <a href="/myapp/index.cgi/student/progress{{ tv_param }}" class="tab{% if request.path == '/myapp/index.cgi/student/progress' %} active{% endif %}">
+              <i class="fas fa-tasks"></i> 学習進捗
+            </a>
+            {% if session.role == 'student' and (session.school_type == 'middle' or session.school_type == 'high') %}
+              <a href="/myapp/index.cgi/english-learning{{ tv_param }}" class="tab{% if request.path == '/myapp/index.cgi/english-learning' %} active{% endif %}">
+                <i class="fas fa-language"></i> 英語学習
+              </a>
+            {% endif %}
+            {% if session.is_teacher_login %}
+              <!-- 講師が生徒としてログインしている場合の特別なリンク -->
+              <a href="/myapp/index.cgi/student/return-to-teacher" class="tab logout-tab">
+                <i class="fas fa-chalkboard-teacher"></i> 講師画面に戻る
+              </a>
+            {% else %}
+              <a href="/myapp/index.cgi/logout" class="tab logout-tab">
+                <i class="fas fa-sign-out-alt"></i> ログアウト
+              </a>
+            {% endif %}
+          {% elif session.role == 'teacher' %}
+            <!-- 講師用ナビゲーション -->
+            <a href="/myapp/index.cgi/teacher/dashboard" class="tab{% if request.path == '/myapp/index.cgi/teacher/dashboard' %} active{% endif %}">
+              <i class="fas fa-home"></i> ホーム
+            </a>
+            <a href="/myapp/index.cgi/teacher/students" class="tab{% if request.path == '/myapp/index.cgi/teacher/students' %} active{% endif %}">
+              <i class="fas fa-users"></i> 生徒一覧
+            </a>
+            <a href="/myapp/index.cgi/teacher/points" class="tab{% if request.path == '/myapp/index.cgi/teacher/points' %} active{% endif %}">
+              <i class="fas fa-star"></i> ポイント管理
+            </a>
+            <a href="/myapp/index.cgi/teacher/grades" class="tab{% if request.path == '/myapp/index.cgi/teacher/grades' %} active{% endif %}">
+              <i class="fas fa-chart-line"></i> 成績管理
+            </a>
+            <a href="/myapp/index.cgi/teacher/homework" class="tab{% if request.path == '/myapp/index.cgi/teacher/homework' %} active{% endif %}">
+              <i class="fas fa-book"></i> 宿題管理
+            </a>
+            <a href="/myapp/index.cgi/teacher/attendance" class="tab{% if request.path == '/myapp/index.cgi/teacher/attendance' %} active{% endif %}">
+              <i class="fas fa-clipboard-check"></i> 出席管理
+            </a>
+            <a href="/myapp/index.cgi/teacher/profile" class="tab{% if request.path == '/myapp/index.cgi/teacher/profile' %} active{% endif %}">
+              <i class="fas fa-user-tie"></i> プロフィール
+            </a>
+            <a href="/myapp/index.cgi/admin/eiken-words" class="tab{% if request.path == '/myapp/index.cgi/admin/eiken-words' %} active{% endif %}">
+              <i class="fas fa-language"></i> 英検単語
+            </a>
+            <a href="/myapp/index.cgi/logout" class="tab logout-tab">
+              <i class="fas fa-sign-out-alt"></i> ログアウト
+            </a>
+          {% endif %}
+        {% else %}
+          <a href="/myapp/index.cgi/login" class="tab{% if request.path == '/myapp/index.cgi/login' %} active{% endif %}">
+            <i class="fas fa-sign-in-alt"></i> ログイン
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <div class="main-content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+  {% block scripts %}{% endblock %}
+  <script src="/myapp/index.cgi/static/js/hamburger-fixed.js"></script>
+  <script>
+    // CSRF対策の設定
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    
+    // セキュアなfetch関数
+    async function secureFetch(url, options = {}) {
+      const mergedOptions = {
+        ...options,
+        headers: {
+          ...options.headers,
+          'X-CSRFToken': csrfToken
+        }
+      };
+      
+      return fetch(url, mergedOptions);
+    }
+    
+    // ポイント表示の更新
+    document.addEventListener('DOMContentLoaded', function() {
+      const pointsDisplay = document.getElementById('header-points-value');
+      const userId = document.querySelector('meta[name="user-id"]')?.content;
+      
+      if (pointsDisplay && userId) {
+        // APIからポイント情報を取得
+        secureFetch(`/myapp/index.cgi/api/student/points?id=${userId}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.total_points !== undefined) {
+              pointsDisplay.textContent = data.total_points.toLocaleString();
+            } else {
+              pointsDisplay.textContent = '読み込みエラー';
+            }
+          })
+          .catch(error => {
+            console.error('ポイント情報の取得に失敗しました:', error);
+            pointsDisplay.textContent = '読み込みエラー';
+          });
+      }
+    });
+    
+    // 学年表示のためのグローバル関数
+    function getGradeDisplay(gradeLevel, schoolType) {
+      if (!gradeLevel) return '不明';
+      
+      if (schoolType === 'elementary') {
+        return `小${gradeLevel}年`;
+      } else if (schoolType === 'middle') {
+        return `中${gradeLevel}年`;
+      } else if (schoolType === 'high') {
+        return `高${gradeLevel}年`;
+      } else {
+        return `${gradeLevel}年`;
+      }
+    }
+  </script>
+</body>
+</html>

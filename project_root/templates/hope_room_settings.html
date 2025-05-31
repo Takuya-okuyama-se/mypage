@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}HOPE ROOM設定 | 塾生徒サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* すべてのスタイルをインライン定義 */
+  .alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+  }
+  
+  .alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+  }
+  
+  .alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  
+  .form-control {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .button-group {
+    margin: 20px 0;
+  }
+  
+  .btn {
+    display: inline-block;
+    padding: 8px 16px;
+    margin-right: 10px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .btn-primary {
+    background-color: #4285f4;
+    color: white;
+  }
+  
+  .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+  
+  .btn-success {
+    background-color: #28a745;
+    color: white;
+  }
+  
+  .info-box {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #4285f4;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>HOPE ROOM ログイン設定</h3>
+  <p>模試結果確認サービス「HOPE ROOM」の自動ログインに使用するIDとパスワードを設定します。</p>
+  
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+  
+  {% if success %}
+    <div class="alert alert-success">{{ success }}</div>
+  {% endif %}
+    <form method="post" action="{{ url_for('hope_room_settings') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label class="form-label" for="login_id">ログインID</label>
+      <input class="form-control" type="text" id="login_id" name="login_id" value="{{ credentials.login_id if credentials else '' }}" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="password">パスワード</label>
+      <input class="form-control" type="password" id="password" name="password" value="{{ credentials.password if credentials else '' }}" required>
+    </div>
+    <div class="button-group">
+      <button type="submit" class="btn btn-primary">保存</button>
+      <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">キャンセル</a>
+    </div>
+  </form>
+  
+  {% if credentials %}
+  <div class="info-box">
+    <h4>HOPE ROOMへアクセス</h4>
+    <p>保存した認証情報は以下の通りです。HOPE ROOMにログインする際にご利用ください。</p>
+    <ul>
+      <li>ログインID: <strong>{{ credentials.login_id }}</strong></li>
+      <li>パスワード: <strong>{{ credentials.password }}</strong></li>
+    </ul>
+    <p>HOPE ROOMのログインページを開き、上記の情報でログインしてください。</p>
+    <a href="https://www.hoperoom.jp/Login" target="_blank" class="btn btn-success">HOPE ROOMを開く</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

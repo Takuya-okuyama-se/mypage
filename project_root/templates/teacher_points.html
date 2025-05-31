@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block title %}ポイント管理 | 塾講師サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .points-management {
+    margin-bottom: 30px;
+  }
+  
+  .management-tabs {
+    display: flex;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 15px;
+  }
+  
+  .management-tab {
+    padding: 8px 15px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px 4px 0 0;
+    margin-right: 5px;
+  }
+  
+  .management-tab.active {
+    background-color: #fff;
+    border-color: #dee2e6;
+    border-bottom-color: transparent;
+    font-weight: bold;
+  }
+  
+  .tab-content {
+    margin-bottom: 20px;
+  }
+  
+  .tab-pane {
+    display: none;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+  }
+  
+  .tab-pane.active {
+    display: block;
+  }
+  
+  .form-section {
+    margin-bottom: 20px;
+  }
+  
+  .award-form {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+    gap: 15px;
+  }
+  
+  .form-col {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  .history-table th,
+  .history-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .history-table th {
+    background-color: #f2f2f2;
+    position: sticky;
+    top: 0;
+  }
+  
+  .table-container {
+    max-height: 500px;
+    overflow-y: auto;
+    margin-top: 20px;
+  }
+  
+  .points-positive {
+    color: #34a853;
+    font-weight: bold;
+  }
+  
+  .points-negative {
+    color: #ea4335;
+    font-weight: bold;
+  }
+  
+  .inactive-record {
+    opacity: 0.6;
+    text-decoration: line-through;
+  }
+  
+  .cancel-button {
+    cursor: pointer;
+    color: #ea4335;
+    background: none;
+    border: none;
+    font-size: 0.9em;
+    padding: 0;
+  }
+  
+  .filter-section {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .student-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .student-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+  }
+  
+  .student-item:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .student-item.selected {
+    background-color: #e3f2fd;
+  }
+  
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+  }
+  
+  .close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .close-button:hover,
+  .close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  
+  .modal-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .modal-footer {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    text-align: right;
+  }
+  
+  .confirm-button {
+    background-color: #ea4335;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .cancel-modal-button {
+    background-color: #f1f1f1;
+    color: #333;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    margin-right: 10px;
+    cursor: pointer;
+  }
+  
+  .error-message, .success-message {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  
+  .error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .success-message {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  @media (max-width: 768px) {
+    .form-row {
+      flex-direction: column;
+    }
+    
+    .form-col {
+      width: 100%;
+    }
+    
+    .table-container {
+      max-height: 300px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>ポイント管理</h3>
+  
+  {% if error %}
+    <div class="error-message">{{ error }}</div>
+  {% endif %}
+  
+  {% if success %}
+    <div class="success-message">{{ success }}</div>
+  {% endif %}
+  
+  <div class="points-management">
+    <div class="management-tabs">
+      <div class="management-tab active" data-tab="award">ポイント付与</div>
+      <div class="management-tab" data-tab="history">履歴確認</div>
+    </div>
+    
+    <div class="tab-content">
+      <!-- ポイント付与タブ -->
+      <div class="tab-pane active" id="award-tab">
+        <div class="form-section">          <form method="post" class="award-form">
+            <input type="hidden" name="action" value="award_points">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label">生徒選択</label>
+                <select name="student_id" class="form-control" required>
+                  <option value="">生徒を選択してください</option>
+                  {% for student in students %}
+                    <option value="{{ student.id }}">
+                      {{ student.name }} ({{ student.grade_level }}年生)
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <!-- イベントタイプ選択部分のみの修正版 -->
+<div class="form-col">
+    <label class="form-label">イベントタイプ</label>
+    <select name="event_type" class="form-control" required id="event-type-select">
+      <option value="">イベントタイプを選択してください</option>
+      {% for event_type in event_types %}
+        <option value="{{ event_type.name }}" 
+                data-min="{{ event_type.min_points|default(10) }}" 
+                data-max="{{ event_type.max_points|default(100) }}">
+          {{ event_type.display_name }}
+        </option>
+      {% endfor %}
+      <!-- フォールバックオプション（データがない場合） -->
+      {% if not event_types or event_types|length == 0 %}
+        <option value="homework" data-min="10" data-max="10">宿題提出ボーナス</option>
+        <option value="exam_result" data-min="10" data-max="100">試験結果ボーナス</option>
+        <option value="mock_exam" data-min="10" data-max="100">模試ボーナス</option>
+        <option value="special_award" data-min="10" data-max="500">特別ボーナス</option>
+      {% endif %}
+    </select>
+  </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label">ポイント数</label>
+                <input type="number" name="points" class="form-control" required min="1" max="1000" id="points-input">
+                <small id="points-suggestion" style="color: #666;"></small>
+              </div>
+              
+              <div class="form-col">
+                <label class="form-label">コメント</label>
+                <input type="text" name="comment" class="form-control" placeholder="例: 中間テスト数学95点">
+              </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">ポイントを付与</button>
+          </form>
+        </div>
+        
+        <div class="text-right" style="text-align: right;">
+          <button id="refresh-button" class="btn btn-secondary">最新の履歴を表示</button>
+        </div>
+        
+        <div class="table-container">
+          <table class="history-table" id="recent-history-table">
+            <thead>
+              <tr>
+                <th>日時</th>
+                <th>生徒名</th>
+                <th>イベント</th>
+                <th>ポイント</th>
+                <th>コメント</th>
+                <th>付与者</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for record in point_history %}
+                {% if record.created_by == session.user_id and record.is_active == 1 %}
+                  <tr>
+                    <td>
+                      {% if record.created_at %}
+                        {{ record.created_at.strftime('%Y-%m-%d %H:%M') }}
+                      {% else %}
+                        ---
+                      {% endif %}
+                    </td>                    <td>{{ record.user_name }}</td>
+                    <td>
+                      {% if record.event_display_name and record.event_display_name != 'None' %}
+                        {{ record.event_display_name }}
+                      {% else %}
+                        {{ record.event_type }}
+                      {% endif %}
+                    </td>
+                    <td class="{% if record.points > 0 %}points-positive{% else %}points-negative{% endif %}">
+                      {% if record.points > 0 %}+{% endif %}{{ record.points }}
+                    </td>
+                    <td>{{ record.comment|default('') }}</td>
+                    <td>{{ record.created_by_name|default('システム') }}</td>
+                    <td>
+                      <button class="cancel-button" data-id="{{ record.id }}">取消</button>
+                    </td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- 履歴確認タブ -->
+      <div class="tab-pane" id="history-tab">
+        <div class="filter-section">
+          <div class="search-box">
+            <input type="text" id="history-search" class="search-input" placeholder="生徒名、イベント、コメントで検索...">
+          </div>
+        </div>
+        
+        <div class="table-container">
+          <table class="history-table" id="history-table">
+            <thead>
+              <tr>
+                <th>日時</th>
+                <th>生徒名</th>
+                <th>イベント</th>
+                <th>ポイント</th>
+                <th>コメント</th>
+                <th>付与者</th>
+                <th>状態</th>
+              </tr>
+            </thead>
+            <tbody>              {% for record in point_history %}
+                <tr class="{% if record.is_active == 0 %}inactive-record{% endif %}">
+                  <td>
+                    {% if record.created_at %}
+                      {{ record.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    {% else %}
+                      ---
+                    {% endif %}
+                  </td>                  <td>{{ record.user_name }}</td>
+                  <td>
+                    {% if record.event_display_name and record.event_display_name != 'None' %}
+                      {{ record.event_display_name }}
+                    {% else %}
+                      {{ record.event_type }}
+                    {% endif %}
+                  </td>
+                  <td class="{% if record.points > 0 %}points-positive{% else %}points-negative{% endif %}">
+                    {% if record.points > 0 %}+{% endif %}{{ record.points }}
+                  </td>
+                  <td>{{ record.comment|default('') }}</td>
+                  <td>{{ record.created_by_name|default('システム') }}</td>
+                  <td>
+                    {% if record.is_active == 1 %}
+                      <button class="cancel-button" data-id="{{ record.id }}">取消</button>
+                    {% else %}
+                      取消済
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 取消確認モーダル -->
+<div id="cancel-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <div class="modal-header">
+      <h4>ポイント履歴の取消確認</h4>
+    </div>
+    <div class="modal-body">
+      <p>このポイント履歴を取り消しますか？</p>
+      <p>取り消すと、付与したポイントが生徒から差し引かれます。</p>
+      <p><strong>注意:</strong> この操作は元に戻せません。</p>
+    </div>
+    <div class="modal-footer">      <button class="cancel-modal-button">キャンセル</button>      <form method="post" id="cancel-form" onsubmit="return confirmCancel();">
+        <input type="hidden" name="action" value="cancel_points">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="history_id" id="cancel-history-id">
+        <button type="submit" class="confirm-button">取り消す</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>  document.addEventListener('DOMContentLoaded', function() {
+    // タブ切り替え処理
+    const tabs = document.querySelectorAll('.management-tab');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+      tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        // アクティブタブの切り替え
+        tabs.forEach(function(t) {
+          t.classList.remove('active');
+        });
+        this.classList.add('active');
+        
+        // タブコンテンツの切り替え
+        const tabId = this.getAttribute('data-tab') + '-tab';
+        tabPanes.forEach(function(pane) {
+          pane.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+        
+        // タブ切り替え後に再びキャンセルボタンのイベントを設定
+        // タブ切替によりDOM要素が更新される場合に対応
+        setupCancelButtons();
+      });
+    });
+    
+    // イベントタイプ選択時のポイント自動設定
+    const eventTypeSelect = document.getElementById('event-type-select');
+    const pointsInput = document.getElementById('points-input');
+    const pointsSuggestion = document.getElementById('points-suggestion');
+    
+    if (eventTypeSelect && pointsInput) {
+      eventTypeSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (selectedOption && selectedOption.value) {
+          const minPoints = parseInt(selectedOption.getAttribute('data-min'));
+          const maxPoints = parseInt(selectedOption.getAttribute('data-max'));
+          
+          if (minPoints && maxPoints) {
+            if (minPoints === maxPoints) {
+              // 最小値と最大値が同じ場合は自動設定
+              pointsInput.value = minPoints;
+              pointsSuggestion.textContent = `このイベントタイプでは ${minPoints} ポイントが推奨されています`;
+            } else {
+              // 範囲がある場合は推奨値を表示
+              pointsInput.value = minPoints;
+              pointsSuggestion.textContent = `推奨ポイント範囲: ${minPoints} ~ ${maxPoints}`;
+            }
+          } else {
+            pointsInput.value = '10';
+            pointsSuggestion.textContent = '';
+          }
+        } else {
+          pointsInput.value = '';
+          pointsSuggestion.textContent = '';
+        }
+      });
+    }
+    
+    // 履歴検索機能
+    const historySearch = document.getElementById('history-search');
+    const historyTable = document.getElementById('history-table');
+    
+    if (historySearch && historyTable) {
+      historySearch.addEventListener('input', function() {
+        const searchValue = this.value.toLowerCase();
+        const rows = historyTable.querySelectorAll('tbody tr');
+        
+        rows.forEach(function(row) {
+          let found = false;
+          
+          // 生徒名、イベント、コメントを検索
+          const studentName = row.cells[1].textContent.toLowerCase();
+          const eventType = row.cells[2].textContent.toLowerCase();
+          const comment = row.cells[4].textContent.toLowerCase();
+          
+          if (studentName.includes(searchValue) || 
+              eventType.includes(searchValue) || 
+              comment.includes(searchValue)) {
+            found = true;
+          }
+          
+          row.style.display = found ? '' : 'none';
+        });
+      });
+    }    // 取消ボタンと取消モーダル
+    const cancelModal = document.getElementById('cancel-modal');
+    const closeButton = cancelModal.querySelector('.close-button');
+    const cancelModalButton = cancelModal.querySelector('.cancel-modal-button');
+    const cancelHistoryId = document.getElementById('cancel-history-id');
+    const cancelForm = document.getElementById('cancel-form');
+      // 取消フォーム送信処理
+    if (cancelForm) {
+      cancelForm.addEventListener('submit', function(event) {
+        // フォームを通常のPOSTとして送信し、ページが自動的にリロードされるようにする
+        // POSTが成功するとページがリロードされ、更新された情報が表示される
+        return true; // デフォルトのフォーム送信を許可
+      });
+    }
+    
+    // 取消ボタンクリック時のイベント設定
+    function setupCancelButtons() {
+      // 全てのタブ内にある取消ボタンを取得
+      const cancelButtons = document.querySelectorAll('.cancel-button');
+      
+      // 既存のイベントを削除（重複防止）
+      cancelButtons.forEach(button => {
+        // 古いイベントリスナーのコピーを保存
+        const oldClickHandler = button.onclick;
+        // イベントリスナーをクリア
+        button.onclick = null;
+        
+        // 新しいイベントリスナーを追加
+        button.addEventListener('click', function() {
+          const historyId = this.getAttribute('data-id');
+          cancelHistoryId.value = historyId;
+          cancelModal.style.display = 'block';
+        });
+      });
+      
+      console.log(`${cancelButtons.length}個の取消ボタンにイベントリスナーを設定しました`);
+    }
+    
+    // 初期設定
+    setupCancelButtons();
+    
+    // モーダルを閉じる処理
+    function closeModal() {
+      cancelModal.style.display = 'none';
+    }
+    
+    // 閉じるボタンのイベントリスナー
+    closeButton.addEventListener('click', closeModal);
+    cancelModalButton.addEventListener('click', closeModal);
+    
+    // モーダルの外側をクリックしたら閉じる
+    window.addEventListener('click', function(event) {
+      if (event.target === cancelModal) {
+        closeModal();
+      }
+    });
+      // 更新ボタン
+    const refreshButton = document.getElementById('refresh-button');
+    if (refreshButton) {
+      refreshButton.addEventListener('click', function() {
+        location.reload();
+      });
+    }
+    
+    // 取り消しボタン確認処理
+    function confirmCancel() {
+      // フォーム送信後にページをリロードさせる
+      setTimeout(function() {
+        location.reload();
+      }, 500);
+      return true; // フォームを送信
+    }
+  });
+</script>
+{% endblock %}

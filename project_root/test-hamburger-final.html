@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ハンバーガーメニューテスト - 最新版</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+        
+        nav {
+            background: white;
+            border-bottom: 1px solid #ddd;
+            position: relative;
+        }
+        
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* デスクトップ：ハンバーガーボタン非表示 */
+        #nav-hamburger-toggle {
+            display: none !important;
+            flex-direction: column;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 10001;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .hamburger-line {
+            width: 25px;
+            height: 3px;
+            background-color: var(--primary);
+            margin: 2px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+        
+        #nav-hamburger-toggle.active .hamburger-line:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+        }
+        
+        #nav-hamburger-toggle.active .hamburger-line:nth-child(2) {
+            opacity: 0;
+        }
+        
+        #nav-hamburger-toggle.active .hamburger-line:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .tab {
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .tab:hover {
+            background: #f5f5f5;
+        }
+        
+        /* モバイル（768px以下） */
+        @media (max-width: 768px) {
+            #nav-hamburger-toggle {
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
+            
+            .nav-links {
+                display: none !important;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                border: 1px solid #ddd;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                z-index: 9999;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            
+            .nav-links.show,
+            .nav-links.open {
+                display: flex !important;
+                max-height: 500px;
+            }
+            
+            .tab {
+                border: none;
+                border-bottom: 1px solid #eee;
+                border-radius: 0;
+                margin: 0;
+            }
+        }
+        
+        .test-info {
+            padding: 20px;
+            background: #f9f9f9;
+            margin: 20px;
+            border-radius: 8px;
+        }
+        
+        .screen-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+    <div class="screen-info" id="screen-info">
+        画面: <span id="screen-width"></span>px
+    </div>
+    
+    <nav>
+        <div class="container">
+            <div style="font-weight: bold;">ロゴ</div>
+            
+            <button id="nav-hamburger-toggle" class="hamburger-button" aria-label="メニューを開く" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            
+            <div class="nav-links" id="nav-links">
+                <a href="#" class="tab">ダッシュボード</a>
+                <a href="#" class="tab">プロフィール</a>
+                <a href="#" class="tab">成績</a>
+                <a href="#" class="tab">ポイント</a>
+                <a href="#" class="tab">設定</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="test-info">
+        <h2>ハンバーガーメニューテスト</h2>
+        <p><strong>テスト手順:</strong></p>
+        <ol>
+            <li>デスクトップ（769px以上）: ハンバーガーボタンは表示されず、ナビリンクが横並びで表示される</li>
+            <li>モバイル（768px以下）: ハンバーガーボタンが表示され、ナビリンクは非表示</li>
+            <li>ハンバーガーボタンをクリックしてメニューの開閉をテスト</li>
+        </ol>
+        <p id="debug-output"></p>
+    </div>
+    
+    <script>
+        // 画面情報の更新
+        function updateScreenInfo() {
+            const width = window.innerWidth;
+            document.getElementById('screen-width').textContent = width;
+            
+            const debugOutput = document.getElementById('debug-output');
+            const hamburger = document.getElementById('nav-hamburger-toggle');
+            const navLinks = document.getElementById('nav-links');
+            
+            const hamburgerDisplay = window.getComputedStyle(hamburger).display;
+            const hamburgerVisibility = window.getComputedStyle(hamburger).visibility;
+            
+            debugOutput.innerHTML = `
+                <strong>デバッグ情報:</strong><br>
+                画面幅: ${width}px<br>
+                ハンバーガーボタン表示: ${hamburgerDisplay}<br>
+                ハンバーガーボタン可視性: ${hamburgerVisibility}<br>
+                ナビリンク状態: ${navLinks.classList.contains('show') ? 'オープン' : 'クローズ'}<br>
+                時刻: ${new Date().toLocaleTimeString()}
+            `;
+        }
+        
+        // 初期化
+        updateScreenInfo();
+        window.addEventListener('resize', updateScreenInfo);
+        
+        // ハンバーガーメニュー機能
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburgerButton = document.getElementById('nav-hamburger-toggle');
+            const navLinks = document.getElementById('nav-links');
+            
+            if (hamburgerButton && navLinks) {
+                hamburgerButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const isOpen = navLinks.classList.contains('show');
+                    
+                    if (isOpen) {
+                        navLinks.classList.remove('show');
+                        hamburgerButton.classList.remove('active');
+                        hamburgerButton.setAttribute('aria-expanded', 'false');
+                        console.log('メニューを閉じました');
+                    } else {
+                        navLinks.classList.add('show');
+                        hamburgerButton.classList.add('active');
+                        hamburgerButton.setAttribute('aria-expanded', 'true');
+                        console.log('メニューを開きました');
+                    }
+                    
+                    updateScreenInfo(); // デバッグ情報を更新
+                });
+                
+                // 外部クリックでメニューを閉じる
+                document.addEventListener('click', function(e) {
+                    if (!hamburgerButton.contains(e.target) && !navLinks.contains(e.target)) {
+                        navLinks.classList.remove('show');
+                        hamburgerButton.classList.remove('active');
+                        hamburgerButton.setAttribute('aria-expanded', 'false');
+                        updateScreenInfo();
+                    }
+                });
+                
+                console.log('✅ ハンバーガーメニュー初期化完了');
+            } else {
+                console.error('❌ ハンバーガーメニュー要素が見つかりません');
+            }
+        });
+    </script>
+</body>
+</html>

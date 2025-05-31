@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ハンバーガーメニューテスト</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="static/production-hamburger.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f5f7fa;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            padding: 15px 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        nav {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        #nav-links {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #nav-links a {
+            display: block;
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #333;
+            transition: background-color 0.3s;
+        }
+        
+        #nav-links a:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .main-content {
+            padding: 30px 0;
+        }
+        
+        .test-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        @media (max-width: 768px) {
+            #nav-links {
+                display: none;
+                flex-direction: column;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100vh;
+                background-color: white;
+                z-index: 1000;
+                padding-top: 60px;
+            }
+            
+            #nav-links.active {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">テストサイト</div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <div id="nav-links">
+                <a href="#"><i class="fas fa-home"></i> ホーム</a>
+                <a href="#"><i class="fas fa-user"></i> プロフィール</a>
+                <a href="#"><i class="fas fa-chart-line"></i> 成績</a>
+                <a href="#"><i class="fas fa-coins"></i> ポイント</a>
+                <a href="#"><i class="fas fa-gamepad"></i> ゲーム</a>
+                <a href="#"><i class="fas fa-sign-out-alt"></i> ログアウト</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="test-info">
+                <h2>🍔 ハンバーガーメニューテスト</h2>
+                <p>このページは統一されたハンバーガーメニューの動作をテストするためのページです。</p>
+                
+                <h3>✅ テスト項目</h3>
+                <ul>
+                    <li>PC表示時: ハンバーガーボタンは表示されない</li>
+                    <li>モバイル表示時（768px以下）: ハンバーガーボタンが表示される</li>
+                    <li>ボタンクリックでメニューが開閉する</li>
+                    <li>オーバーレイクリックでメニューが閉じる</li>
+                    <li>Escキーでメニューが閉じる</li>
+                    <li>スクロールバーが適切に制御される</li>
+                </ul>
+                
+                <h3>🔧 動作確認手順</h3>
+                <ol>
+                    <li>ブラウザの開発者ツールを開く</li>
+                    <li>デバイスモードに切り替える</li>
+                    <li>画面幅を768px以下に設定</li>
+                    <li>右上にハンバーガーボタンが表示されることを確認</li>
+                    <li>ボタンをクリックしてメニューが開くことを確認</li>
+                    <li>各種閉じる操作をテストする</li>
+                </ol>
+                
+                <div id="debug-info">
+                    <h3>🐛 デバッグ情報</h3>
+                    <p>画面幅: <span id="screen-width">-</span>px</p>
+                    <p>ハンバーガーボタン状態: <span id="button-status">-</span></p>
+                    <p>メニュー状態: <span id="menu-status">-</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="static/js/unified-hamburger-menu.js"></script>
+    <script>
+        // デバッグ情報を更新する関数
+        function updateDebugInfo() {
+            const screenWidth = window.innerWidth;
+            const button = document.getElementById('nav-hamburger-toggle');
+            const menu = document.getElementById('nav-links');
+            
+            document.getElementById('screen-width').textContent = screenWidth;
+            document.getElementById('button-status').textContent = button ? 
+                (getComputedStyle(button).display !== 'none' ? '表示中' : '非表示') : '未作成';
+            document.getElementById('menu-status').textContent = menu && menu.classList.contains('active') ? 
+                '開いている' : '閉じている';
+        }
+        
+        // 初期化とリサイズ時の更新
+        updateDebugInfo();
+        window.addEventListener('resize', updateDebugInfo);
+        
+        // メニューの状態変化を監視
+        const observer = new MutationObserver(updateDebugInfo);
+        const menu = document.getElementById('nav-links');
+        if (menu) {
+            observer.observe(menu, { attributes: true, attributeFilter: ['class'] });
+        }
+        
+        // 1秒ごとにデバッグ情報を更新（ボタンの動的作成をキャッチするため）
+        setInterval(updateDebugInfo, 1000);
+    </script>
+</body>
+</html>

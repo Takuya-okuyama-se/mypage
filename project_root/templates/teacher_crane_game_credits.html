@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}クレーンゲームプレイ権管理 | 塾講師サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .search-form {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+  }
+  
+  .search-input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .students-list {
+    margin-top: 20px;
+  }
+  
+  .student-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 15px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .student-info {
+    flex: 1;
+  }
+  
+  .student-name {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 5px;
+  }
+  
+  .student-grade {
+    color: #666;
+    font-size: 0.9em;
+  }
+  
+  .credit-count {
+    font-weight: bold;
+    color: #4285f4;
+    margin-right: 20px;
+  }
+  
+  .student-action {
+    display: flex;
+    align-items: center;
+  }
+  
+  .use-credit-btn {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 15px;
+    cursor: pointer;
+  }
+  
+  .use-credit-btn:hover {
+    background-color: #3367d6;
+  }
+  
+  .use-credit-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .credit-badge {
+    display: inline-block;
+    background-color: #34a853;
+    color: white;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 0.9em;
+    margin-right: 10px;
+    font-weight: bold;
+  }
+  
+  .no-credits {
+    color: #999;
+  }
+  
+  .no-students {
+    text-align: center;
+    padding: 20px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    margin-top: 20px;
+  }
+  
+  /* モーダル */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+  }
+  
+  .close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .close-button:hover,
+  .close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  
+  .modal-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .modal-footer {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    text-align: right;
+  }
+  
+  .confirm-button {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .cancel-button {
+    background-color: #f1f1f1;
+    color: #333;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    margin-right: 10px;
+    cursor: pointer;
+  }
+  
+  .process-message {
+    display: none;
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .success-message {
+    background-color: #d4edda;
+    color: #155724;
+    border-radius: 4px;
+  }
+  
+  .error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-radius: 4px;
+  }
+  
+  .instructions {
+    background-color: #e3f2fd;
+    border-left: 4px solid #4285f4;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+  }
+  
+  .instructions h4 {
+    margin-top: 0;
+    color: #4285f4;
+  }
+  
+  .instructions ul {
+    padding-left: 20px;
+    margin-bottom: 0;
+  }
+  
+  .instructions li {
+    margin-bottom: 5px;
+  }
+  
+  @media (max-width: 768px) {
+    .student-card {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .student-action {
+      margin-top: 10px;
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>クレーンゲームプレイ権管理</h3>
+  
+  <div class="instructions">
+    <h4>操作方法</h4>
+    <ul>
+      <li>生徒がクレーンゲームをプレイする際は、まず生徒を検索します</li>
+      <li>「プレイ権を使用」ボタンをクリックして、プレイ権を消費処理します</li>
+      <li>プレイ権を消費したら、生徒にクレーンゲーム機をプレイしてもらいます</li>
+      <li>景品はその場で渡してください</li>
+    </ul>
+  </div>
+  
+  <form class="search-form" action="/myapp/index.cgi/teacher/crane-game-credits" method="get">
+    <input type="text" class="search-input" name="search" value="{{ search_query }}" placeholder="生徒名を入力...">
+    <button type="submit" class="btn btn-primary">検索</button>
+    {% if search_query %}
+      <a href="/myapp/index.cgi/teacher/crane-game-credits" class="btn btn-secondary">クリア</a>
+    {% endif %}
+  </form>
+  
+  <div class="students-list">
+    {% if students %}
+      {% for student in students %}
+        <div class="student-card" data-student-id="{{ student.id }}" data-student-name="{{ student.name }}">
+          <div class="student-info">
+            <div class="student-name">{{ student.name }}</div>
+            <div class="student-grade">
+              {{ student.grade_level }}年生
+              {% if student.school_type == 'elementary' %}(小)
+              {% elif student.school_type == 'middle' %}(中)
+              {% else %}(高)
+              {% endif %}
+            </div>
+          </div>
+          <div class="student-action">
+            {% if student.unused_credits > 0 %}
+              <span class="credit-badge">
+                未使用: {{ student.unused_credits }}回
+              </span>
+              <button class="use-credit-btn" data-student-id="{{ student.id }}">プレイ権を使用</button>
+            {% else %}
+              <span class="no-credits">利用可能なプレイ権はありません</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="no-students">
+        生徒が見つかりません。検索条件を変更してお試しください。
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 確認モーダル -->
+<div id="confirm-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <div class="modal-header">
+      <h4>プレイ権使用の確認</h4>
+    </div>
+    <div class="process-message" id="process-message"></div>
+    <div class="modal-body">
+      <p><span id="student-name"></span>さんのクレーンゲームプレイ権を使用しますか？</p>
+      <p>確認したら、クレーンゲーム機にコインを投入し、プレイしてもらってください。</p>
+    </div>
+    <div class="modal-footer">
+      <button id="cancel-button" class="cancel-button">キャンセル</button>
+      <button id="confirm-button" class="confirm-button">プレイ権を使用</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // モーダル関連の要素
+  const modal = document.getElementById('confirm-modal');
+  const closeButton = document.querySelector('.close-button');
+  const cancelButton = document.getElementById('cancel-button');
+  const confirmButton = document.getElementById('confirm-button');
+  const studentNameElement = document.getElementById('student-name');
+  const processMessage = document.getElementById('process-message');
+  
+  // プレイ権使用ボタン
+  const useCreditButtons = document.querySelectorAll('.use-credit-btn');
+  
+  // 現在選択中の生徒ID
+  let currentStudentId = null;
+  
+  // プレイ権使用ボタンのイベントリスナー
+  useCreditButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const studentId = this.getAttribute('data-student-id');
+      const studentCard = this.closest('.student-card');
+      const studentName = studentCard.getAttribute('data-student-name');
+      
+      // モーダルに情報を設定
+      currentStudentId = studentId;
+      studentNameElement.textContent = studentName;
+      processMessage.className = 'process-message';
+      processMessage.textContent = '';
+      processMessage.style.display = 'none';
+      
+      // モーダルを表示
+      modal.style.display = 'block';
+    });
+  });
+  
+  // モーダルを閉じる処理
+  function closeModal() {
+    modal.style.display = 'none';
+    currentStudentId = null;
+  }
+  
+  // 閉じるボタンのイベントリスナー
+  closeButton.addEventListener('click', closeModal);
+  cancelButton.addEventListener('click', closeModal);
+  
+  // モーダルの外側をクリックしたら閉じる
+  window.addEventListener('click', function(event) {
+    if (event.target === modal) {
+      closeModal();
+    }
+  });
+  
+  // 確認ボタンのイベントリスナー
+  confirmButton.addEventListener('click', function() {
+    if (!currentStudentId) return;
+    
+    // ボタンを無効化
+    this.disabled = true;
+    this.textContent = '処理中...';
+    
+    // API呼び出し
+    fetch('/myapp/index.cgi/api/teacher/use-crane-game-credit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        student_id: currentStudentId
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // 成功メッセージを表示
+        processMessage.className = 'process-message success-message';
+        processMessage.textContent = data.message;
+        processMessage.style.display = 'block';
+        
+        // 残りのクレジット数を更新
+        const studentCard = document.querySelector(`.student-card[data-student-id="${currentStudentId}"]`);
+        const creditBadge = studentCard.querySelector('.credit-badge');
+        const useCreditBtn = studentCard.querySelector('.use-credit-btn');
+        
+        if (data.remaining_credits > 0) {
+          // まだクレジットが残っている場合は表示を更新
+          creditBadge.textContent = `未使用: ${data.remaining_credits}回`;
+        } else {
+          // クレジットがなくなった場合は表示を切り替え
+          const actionDiv = studentCard.querySelector('.student-action');
+          actionDiv.innerHTML = '<span class="no-credits">利用可能なプレイ権はありません</span>';
+        }
+        
+        // 3秒後にモーダルを閉じる
+        setTimeout(function() {
+          closeModal();
+          // ボタンを元に戻す
+          confirmButton.disabled = false;
+          confirmButton.textContent = 'プレイ権を使用';
+        }, 3000);
+      } else {
+        // エラーメッセージを表示
+        processMessage.className = 'process-message error-message';
+        processMessage.textContent = data.message;
+        processMessage.style.display = 'block';
+        
+        // ボタンを元に戻す
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'プレイ権を使用';
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      
+      // エラーメッセージを表示
+      processMessage.className = 'process-message error-message';
+      processMessage.textContent = '通信エラーが発生しました。もう一度お試しください。';
+      processMessage.style.display = 'block';
+      
+      // ボタンを元に戻す
+      confirmButton.disabled = false;
+      confirmButton.textContent = 'プレイ権を使用';
+    });
+  });
+});
+</script>
+{% endblock %}

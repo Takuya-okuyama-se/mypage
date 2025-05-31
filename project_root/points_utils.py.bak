@@ -1,0 +1,1138 @@
+#!/usr/local/bin/python
+# -*- coding: utf-8 -*-
+
+# points_utils.py - ポイント管理ユーティリティ関数
+
+from datetime import datetime, timedelta
+import random
+import logging
+
+# ユーザーの総ポイントを取得
+def get_user_total_points(conn, user_id):
+    """ユーザーの総ポイント数を取得する関数"""
+    try:
+        with conn.cursor() as cur:
+            # 有効なポイント履歴のみを集計
+            cur.execute("""
+                SELECT COALESCE(SUM(points), 0) as total_points
+                FROM point_history
+                WHERE user_id = %s AND is_active = 1
+            """, (user_id,))
+            result = cur.fetchone()
+            return int(result['total_points']) if result else 0
+    except Exception as e:
+        logging.error(f"Error getting user total points: {e}")
+        return 0
+
+# ポイント付与関数
+def award_points(conn, user_id, points, event_type, comment=None, event_id=None, created_by=None):
+    """ユーザーにポイントを付与する関数"""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO point_history
+                (user_id, points, event_type, comment, event_id, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (user_id, points, event_type, comment, event_id, created_by))
+            conn.commit()
+            return cur.lastrowid
+    except Exception as e:
+        logging.error(f"Error awarding points: {e}")
+        conn.rollback()
+        return None
+
+# ポイント消費関数
+def consume_points(conn, user_id, points, event_type, comment=None, event_id=None, created_by=None):
+    """ユーザーのポイントを消費する関数"""
+    # 消費ポイントは負の値で記録
+    points_to_consume = abs(points) * -1  
+    
+    try:
+        total_points = get_user_total_points(conn, user_id)
+        
+        # ポイント不足チェック
+        if total_points + points_to_consume < 0:
+            return False, "ポイントが不足しています"
+        
+        # ポイント消費記録
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO point_history
+                (user_id, points, event_type, comment, event_id, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (user_id, points_to_consume, event_type, comment, event_id, created_by))
+            conn.commit()
+            return True, cur.lastrowid
+    except Exception as e:
+        logging.error(f"Error consuming points: {e}")
+        conn.rollback()
+        return False, str(e)
+
+# ポイント履歴取得
+def get_point_history(conn, user_id, limit=50, offset=0, filter_type=None):
+    """ユーザーのポイント履歴を取得する関数"""
+    try:
+        with conn.cursor() as cur:
+            query = """
+                SELECT ph.*, pe.display_name as event_display_name, u.name as created_by_name
+                FROM point_history ph
+                LEFT JOIN point_event_types pe ON ph.event_type = pe.name
+                LEFT JOIN users u ON ph.created_by = u.id
+                WHERE ph.user_id = %s AND ph.is_active = 1
+            """
+            params = [user_id]
+            
+            # フィルタ処理
+            if filter_type:
+                if filter_type == 'earned':
+                    query += " AND ph.points > 0"
+                elif filter_type == 'used':
+                    query += " AND ph.points < 0"
+            
+            query += " ORDER BY ph.created_at DESC LIMIT %s OFFSET %s"
+            params.extend([limit, offset])
+            
+            cur.execute(query, params)
+            return cur.fetchall()
+    except Exception as e:
+        logging.error(f"Error getting point history: {e}")
+        return []
+
+# ポイント履歴の取り消し
+def cancel_point_history(conn, history_id, cancelled_by):
+    """ポイント履歴を取り消す関数"""
+    try:
+        with conn.cursor() as cur:
+            # 履歴の存在確認
+            cur.execute("SELECT * FROM point_history WHERE id = %s", (history_id,))
+            history = cur.fetchone()
+            
+            if not history:
+                logging.error(f"履歴ID {history_id} が見つかりません")
+                return False, "指定された履歴が見つかりません"
+            
+            if history['is_active'] == 0:
+                logging.warning(f"履歴ID {history_id} は既に取り消されています")
+                return False, "この履歴はすでに取り消されています"
+                
+            # 取り消し処理
+            logging.info(f"履歴取り消し実行: ID={history_id}, ポイント={history['points']}, ユーザーID={history['user_id']}")
+            cur.execute("""
+                UPDATE point_history
+                SET is_active = 0, 
+                    comment = CONCAT(IFNULL(comment, ''), ' [取り消し済み: ', NOW(), ' by ID:', %s, ']')
+                WHERE id = %s
+            """, (cancelled_by, history_id))
+            
+            # 結果確認
+            cur.execute("SELECT is_active FROM point_history WHERE id = %s", (history_id,))
+            check = cur.fetchone()
+            if check and check['is_active'] == 0:
+                logging.info(f"履歴ID {history_id} の取り消し成功: is_active={check['is_active']}")
+            else:
+                logging.warning(f"履歴ID {history_id} の取り消しが正しく反映されていない可能性: {check}")
+            
+            return True, "ポイント履歴を取り消しました"
+    except Exception as e:
+        logging.error(f"Error cancelling point history: {e}")
+        conn.rollback()
+        return False, str(e)
+
+# ランダムログインポイント生成
+def generate_login_points():
+    """ログインボーナスのランダムポイントを生成する関数"""
+    # 3種類の重みづけあり選択
+    weights = [60, 30, 10]  # 60% 3ポイント, 30% 5ポイント, 10% 10ポイント
+    points = [3, 5, 10]
+    
+    # 重み付きランダム選択
+    random_value = random.random() * 100
+    
+    if random_value < weights[0]:
+        return points[0]
+    elif random_value < weights[0] + weights[1]:
+        return points[1]
+    else:
+        return points[2]
+
+# ログイン処理とポイント付与
+def process_login_and_award_points(conn, user_id):
+    """ログイン処理とポイント付与を行う関数（ストリークボーナスなし）"""
+    today = datetime.now().date()
+    
+    try:
+        with conn.cursor() as cur:
+            # 本日のログイン記録があるか確認
+            cur.execute("""
+                SELECT id FROM login_history
+                WHERE user_id = %s AND login_date = %s
+            """, (user_id, today))
+            
+            login_record = cur.fetchone()
+            
+            if not login_record:
+                # ログイン記録がなければ新規作成
+                cur.execute("""
+                    INSERT INTO login_history 
+                    (user_id, login_date, login_time)
+                    VALUES (%s, %s, %s)
+                """, (user_id, today, datetime.now()))
+                
+                # ログインボーナスポイント付与
+                points = generate_login_points()
+                award_points(conn, user_id, points, 'login', 
+                             f"ログインボーナス：{points}ポイント獲得")
+                
+                return True, points
+            else:
+                # すでにログイン済み
+                return False, 0
+    except Exception as e:
+        logging.error(f"Error processing login: {e}")
+        conn.rollback()
+        return False, 0
+
+# ログインストリーク更新（直接呼び出さないように）
+def update_login_streak(conn, user_id):
+    """ユーザーのログインストリークを更新する関数（廃止予定）"""
+    # 連続ログインのストリーク機能は廃止されました
+    pass
+
+# ログインストリークボーナスの確認と付与（直接呼び出さないように）
+def check_and_award_streak_bonus(conn, user_id):
+    """ログインストリークに応じたボーナスポイントを確認・付与する関数（廃止予定）"""
+    # 連続ログインボーナス機能は廃止されました
+    return False
+
+# 月間出席率計算
+def calculate_monthly_attendance_rate(conn, user_id, year=None, month=None):
+    """特定月の出席率を計算する関数"""
+    if year is None or month is None:
+        today = datetime.now()
+        year = today.year
+        month = today.month
+    
+    try:
+        with conn.cursor() as cur:
+            # ユーザーの学年を取得
+            cur.execute("SELECT grade_level FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+            if not user:
+                return 0
+            
+            grade_level = user['grade_level']
+            
+            # 対象月の開始日と終了日
+            start_date = datetime(year, month, 1).date()
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
+            else:
+                end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
+            
+            # 1. 授業予定日の取得
+            # 曜日ベースの授業日マスタから対象月の授業予定日を生成
+            cur.execute("""
+                SELECT day_of_week FROM class_schedule_master
+                WHERE grade_level = %s AND is_active = 1
+            """, (grade_level,))
+            
+            scheduled_days = [row['day_of_week'] for row in cur.fetchall()]
+            
+            class_dates = []
+            current_date = start_date
+            while current_date <= end_date:
+                # 曜日が授業予定日と一致するか（0:月曜～6:日曜）
+                if current_date.weekday() in scheduled_days:
+                    class_dates.append(current_date)
+                current_date += timedelta(days=1)
+            
+            # 2. 休講日の除外
+            cur.execute("""
+                SELECT holiday_date FROM class_holidays
+                WHERE holiday_date BETWEEN %s AND %s
+                AND (affects_all_grades = 1 OR grade_level = %s)
+            """, (start_date, end_date, grade_level))
+            
+            holidays = [row['holiday_date'] for row in cur.fetchall()]
+            class_dates = [date for date in class_dates if date not in holidays]
+            
+            # 3. 振替授業日の追加
+            cur.execute("""
+                SELECT makeup_date FROM class_makeup_days
+                WHERE makeup_date BETWEEN %s AND %s
+                AND grade_level = %s
+            """, (start_date, end_date, grade_level))
+            
+            makeup_days = [row['makeup_date'] for row in cur.fetchall()]
+            for makeup_date in makeup_days:
+                if makeup_date not in class_dates:
+                    class_dates.append(makeup_date)
+            
+            # 授業予定日数
+            total_class_days = len(class_dates)
+            if total_class_days == 0:
+                return 100  # 授業予定がない場合は100%とする
+            
+            # 4. 出席記録の取得
+            cur.execute("""
+                SELECT attendance_date, status
+                FROM attendance_records
+                WHERE user_id = %s
+                AND attendance_date BETWEEN %s AND %s
+                AND status IN ('present', 'late')
+            """, (user_id, start_date, end_date))
+            
+            attended_dates = [row['attendance_date'] for row in cur.fetchall()]
+            
+            # 出席した授業日数
+            attended_class_days = sum(1 for date in class_dates if date in attended_dates)
+            
+            # 出席率計算（小数点以下2桁まで）
+            attendance_rate = round(attended_class_days / total_class_days * 100, 2)
+            
+            return attendance_rate
+    except Exception as e:
+        logging.error(f"Error calculating attendance rate: {e}")
+        return 0
+
+# 月間出席ボーナスチェック
+def check_and_award_attendance_bonus(conn, user_id, year=None, month=None):
+    """月間出席率に応じたボーナスポイントを確認・付与する関数"""
+    # 前月の出席率を計算
+    if year is None or month is None:
+        today = datetime.now()
+        if today.month == 1:
+            year = today.year - 1
+            month = 12
+        else:
+            year = today.year
+            month = today.month - 1
+    
+    try:
+        # 月間出席率計算
+        attendance_rate = calculate_monthly_attendance_rate(conn, user_id, year, month)
+        
+        # 付与済みチェック（同月の出席ボーナスが既に付与されているか）
+        month_str = f"{year}-{month:02d}"
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id FROM point_history
+                WHERE user_id = %s 
+                AND event_type IN ('attendance_90', 'attendance_100')
+                AND comment LIKE %s
+                AND is_active = 1
+            """, (user_id, f"%{month_str}%"))
+            
+            if cur.fetchone():
+                # 既に付与済み
+                return False, "既にボーナスが付与されています"
+        
+        # ポイント付与条件チェック
+        if attendance_rate == 100:
+            # 皆勤ボーナス（100%）
+            award_points(
+                conn, 
+                user_id, 
+                100, 
+                'attendance_100', 
+                f"{month_str}月の皆勤賞: 100%出席達成"
+            )
+            return True, "皆勤賞ボーナスを付与しました"
+        elif attendance_rate >= 90:
+            # 90%以上ボーナス
+            award_points(
+                conn, 
+                user_id, 
+                50, 
+                'attendance_90', 
+                f"{month_str}月の出席率ボーナス: {attendance_rate}%達成"
+            )
+            return True, "出席率ボーナスを付与しました"
+        
+        return False, "条件を満たしていません"
+    except Exception as e:
+        logging.error(f"Error checking attendance bonus: {e}")
+        return False, str(e)
+
+# 誕生日ボーナスチェック
+def check_and_award_birthday_bonus(conn, user_id):
+    """誕生日ボーナスを確認・付与する関数"""
+    today = datetime.now().date()
+    
+    try:
+        with conn.cursor() as cur:
+            # ユーザーの誕生日を取得
+            cur.execute("SELECT birthday FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+            
+            if not user or not user['birthday']:
+                return False, "誕生日が設定されていません"
+            
+            birthday = user['birthday']
+              # 月と日のみで比較
+            if birthday.month == today.month and birthday.day == today.day:
+                # 今年の誕生日ボーナスが既に付与されているかチェック
+                cur.execute("""
+                    SELECT id FROM point_history
+                    WHERE user_id = %s 
+                    AND event_type = 'birthday'
+                    AND DATE_FORMAT(created_at, '%%Y') = %s
+                    AND is_active = 1
+                """, (user_id, str(today.year)))
+                
+                if cur.fetchone():
+                    # 既に付与済み
+                    return False, "今年の誕生日ボーナスは既に付与されています"
+                
+                # ボーナス付与
+                award_points(
+                    conn, 
+                    user_id, 
+                    100, 
+                    'birthday', 
+                    f"{today.year}年のお誕生日おめでとう！"
+                )
+                return True, "誕生日ボーナスを付与しました"
+            
+            return False, "今日はあなたの誕生日ではありません"
+    except Exception as e:
+        logging.error(f"Error checking birthday bonus: {e}")
+        return False, str(e)
+
+# 成績向上ボーナスチェック
+def check_grade_improvement_bonus(conn, user_id, subject_id, term, new_score):
+    """成績向上ボーナスを確認・付与する関数"""
+    try:
+        with conn.cursor() as cur:
+            # 生徒の学年と学校タイプを取得
+            cur.execute("""
+                SELECT grade_level, school_type FROM users WHERE id = %s
+            """, (user_id,))
+            user = cur.fetchone()
+            if not user:
+                return False, "ユーザーが見つかりません"
+            
+            grade_year = user['grade_level']
+            school_type = user['school_type']
+            
+            # 前回の成績を取得（同学年の前の学期、または前学年の最終学期）
+            previous_term = term - 1
+            previous_grade_year = grade_year
+            
+            if previous_term < 1:
+                previous_term = 3  # 前学年の3学期
+                previous_grade_year = grade_year - 1
+            
+            # 前回の成績を取得
+            cur.execute("""
+                SELECT score FROM grades
+                WHERE student_id = %s
+                AND grade_year = %s
+                AND subject = %s
+                AND term = %s
+            """, (user_id, previous_grade_year, subject_id, previous_term))
+            
+            prev_grade = cur.fetchone()
+            if not prev_grade:
+                return False, "前回の成績がありません"
+            
+            prev_score = prev_grade['score']
+            
+            # 点数差を計算
+            score_difference = new_score - prev_score
+            
+            # 学校タイプに応じてボーナス設定を変更
+            if school_type == 'elementary':
+                # 小学生の場合
+                if score_difference >= 15:
+                    # 15点以上アップ（大）
+                    award_points(
+                        conn,
+                        user_id,
+                        50,
+                        'grade_improvement_large',
+                        f"成績向上ボーナス（大）: 前回より{score_difference}点アップ"
+                    )
+                    return True, "成績向上ボーナス（大）を付与しました"
+                elif score_difference >= 10:
+                    # 10点以上アップ（中）
+                    award_points(
+                        conn,
+                        user_id,
+                        30,
+                        'grade_improvement_medium',
+                        f"成績向上ボーナス（中）: 前回より{score_difference}点アップ"
+                    )
+                    return True, "成績向上ボーナス（中）を付与しました"
+                elif score_difference >= 5:
+                    # 5点以上アップ（小）
+                    award_points(
+                        conn,
+                        user_id,
+                        20,
+                        'grade_improvement_small',
+                        f"成績向上ボーナス（小）: 前回より{score_difference}点アップ"
+                    )
+                    return True, "成績向上ボーナス（小）を付与しました"
+            elif school_type == 'middle':
+                # 中学生の場合
+                if score_difference >= 15:
+                    award_points(
+                        conn,
+                        user_id,
+                        50,
+                        'grade_improvement_large',
+                        f"中学生成績向上ボーナス（大）: 前回より{score_difference}点アップ"
+                    )
+                    return True, "成績向上ボーナス（大）を付与しました"
+                elif score_difference >= 10:
+                    award_points(
+                        conn,
+                        user_id,
+                        30,
+                        'grade_improvement_medium',
+                        f"中学生成績向上ボーナス（中）: 前回より{score_difference}点アップ"
+                    )
+                    return True, "成績向上ボーナス（中）を付与しました"
+                elif score_difference >= 5:
+                    award_points(
+                        conn,
+                        user_id,
+                        20,
+                        'grade_improvement_small',
+                        f"中学生成績向上ボーナス（小）: 前回より{score_difference}点アップ"
+                    )
+                    return True, "成績向上ボーナス（小）を付与しました"
+            elif school_type == 'high':
+                # 高校生の場合
+                if score_difference >= 15:
+                    award_points(
+                        conn,
+                        user_id,
+                        50,
+                        'high_school_grade_improvement_large',
+                        f"高校生成績向上ボーナス（大）: 前回より{score_difference}点アップ"
+                    )
+                    return True, "高校成績向上ボーナス（大）を付与しました"
+                elif score_difference >= 10:
+                    award_points(
+                        conn,
+                        user_id,
+                        30,
+                        'high_school_grade_improvement_medium',
+                        f"高校生成績向上ボーナス（中）: 前回より{score_difference}点アップ"
+                    )
+                    return True, "高校成績向上ボーナス（中）を付与しました"
+                elif score_difference >= 5:
+                    award_points(
+                        conn,
+                        user_id,
+                        20,
+                        'high_school_grade_improvement_small',
+                        f"高校生成績向上ボーナス（小）: 前回より{score_difference}点アップ"
+                    )
+                    return True, "高校成績向上ボーナス（小）を付与しました"
+            
+            return False, "ボーナス条件を満たしていません"
+    except Exception as e:
+        logging.error(f"Error checking grade improvement bonus: {e}")
+        return False, str(e)
+    """成績向上ボーナスを確認・付与する関数"""
+    try:
+        with conn.cursor() as cur:
+            # 生徒の学年と現在の成績を取得
+            cur.execute("""
+                SELECT grade_level FROM users WHERE id = %s
+            """, (user_id,))
+            user = cur.fetchone()
+            if not user:
+                return False, "ユーザーが見つかりません"
+            
+            grade_year = user['grade_level']
+            
+            # 前回の成績を取得（同学年の前の学期、または前学年の最終学期）
+            previous_term = term - 1
+            previous_grade_year = grade_year
+            
+            if previous_term < 1:
+                previous_term = 3  # 前学年の3学期
+                previous_grade_year = grade_year - 1
+            
+            # 前回の成績を取得
+            cur.execute("""
+                SELECT score FROM grades
+                WHERE student_id = %s
+                AND grade_year = %s
+                AND subject = %s
+                AND term = %s
+            """, (user_id, previous_grade_year, subject_id, previous_term))
+            
+            prev_grade = cur.fetchone()
+            if not prev_grade:
+                return False, "前回の成績がありません"
+            
+            prev_score = prev_grade['score']
+            
+            # 点数差を計算
+            score_difference = new_score - prev_score
+            
+            # ボーナス条件に応じてポイント付与
+            if score_difference >= 15:
+                # 15点以上アップ（大）
+                award_points(
+                    conn,
+                    user_id,
+                    50,
+                    'grade_improvement_large',
+                    f"成績向上ボーナス（大）: 前回より{score_difference}点アップ"
+                )
+                return True, "成績向上ボーナス（大）を付与しました"
+            elif score_difference >= 10:
+                # 10点以上アップ（中）
+                award_points(
+                    conn,
+                    user_id,
+                    30,
+                    'grade_improvement_medium',
+                    f"成績向上ボーナス（中）: 前回より{score_difference}点アップ"
+                )
+                return True, "成績向上ボーナス（中）を付与しました"
+            elif score_difference >= 5:
+                # 5点以上アップ（小）
+                award_points(
+                    conn,
+                    user_id,
+                    20,
+                    'grade_improvement_small',
+                    f"成績向上ボーナス（小）: 前回より{score_difference}点アップ"
+                )
+                return True, "成績向上ボーナス（小）を付与しました"
+            
+            return False, "ボーナス条件を満たしていません"
+    except Exception as e:
+        logging.error(f"Error checking grade improvement bonus: {e}")
+        return False, str(e)
+
+# クレーンゲーム景品一覧取得
+def get_crane_game_prizes(conn):
+    """クレーンゲーム景品一覧を取得する関数（エラー対策強化版）"""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT * FROM crane_game_prizes
+                WHERE is_active = 1
+                ORDER BY rarity, name
+            """)
+            return cur.fetchall() or []  # 結果が空の場合は空リストを返す
+    except Exception as e:
+        logging.error(f"景品一覧取得エラー: {e}")
+        # エラーでも空リストを返して処理を継続させる
+        return []
+
+# クレーンゲームでポイント消費・景品獲得
+def redeem_crane_game_prize(conn, user_id, prize_id, comments=None):
+    """クレーンゲームで景品を獲得する関数"""
+    try:
+        with conn.cursor() as cur:
+            # 景品情報を取得
+            cur.execute("SELECT * FROM crane_game_prizes WHERE id = %s", (prize_id,))
+            prize = cur.fetchone()
+            
+            if not prize:
+                return False, "指定された景品が見つかりません"
+            
+            # ポイント消費
+            success, result = consume_points(
+                conn, 
+                user_id, 
+                100,  # 固定で100ポイント消費 
+                'crane_game', 
+                f"クレーンゲーム: {prize['name']}を獲得"
+            )
+            
+            if not success:
+                return False, result
+            
+            point_history_id = result
+            
+            # 景品履歴に記録
+            cur.execute("""
+                INSERT INTO crane_game_history
+                (user_id, prize_id, point_history_id, comments)
+                VALUES (%s, %s, %s, %s)
+            """, (user_id, prize_id, point_history_id, comments))
+            
+            conn.commit()
+            return True, "景品を獲得しました"
+    except Exception as e:
+        logging.error(f"Error redeeming crane game prize: {e}")
+        conn.rollback()
+        return False, str(e)
+
+# ユーザーの誕生日を更新
+def update_user_birthday(conn, user_id, birthday):
+    """ユーザーの誕生日を更新する関数"""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE users
+                SET birthday = %s
+                WHERE id = %s
+            """, (birthday, user_id))
+            conn.commit()
+            return True, "誕生日を更新しました"
+    except Exception as e:
+        logging.error(f"Error updating user birthday: {e}")
+        conn.rollback()
+        return False, str(e)
+
+# 教師がポイントを手動付与する関数
+def teacher_award_points(conn, teacher_id, student_id, event_type, points, comment=None):
+    """教師が生徒にポイントを手動付与する関数（修正版）"""
+    try:
+        # 教師権限チェック
+        with conn.cursor() as cur:
+            cur.execute("SELECT role FROM users WHERE id = %s", (teacher_id,))
+            teacher = cur.fetchone()
+            
+            if not teacher or teacher['role'] != 'teacher':
+                return False, "教師権限がありません"
+            
+            # 生徒の存在確認
+            cur.execute("SELECT id, name FROM users WHERE id = %s AND role = 'student'", (student_id,))
+            student = cur.fetchone()
+            
+            if not student:
+                return False, "指定された生徒が存在しません"
+            
+            # イベントタイプの確認（オプション）
+            cur.execute("SELECT name FROM point_event_types WHERE name = %s", (event_type,))
+            event = cur.fetchone()
+            
+            if not event:
+                logging.warning(f"未登録のイベントタイプ: {event_type}")
+                # 未登録のイベントタイプでも許可（柔軟性を持たせる）
+        
+        # ポイント付与 - 直接SQLを実行
+        with conn.cursor() as cur:
+            # 生徒名を取得（ログ用）
+            cur.execute("SELECT name FROM users WHERE id = %s", (student_id,))
+            student_data = cur.fetchone()
+            student_name = student_data['name'] if student_data else f"ID:{student_id}"
+            
+            # 現在時刻
+            now = datetime.now()
+            
+            # カスタムコメント生成
+            if not comment:
+                comment = f"{student_name}に{points}ポイントを付与（{event_type}）"
+            
+            # 直接SQLで挿入
+            insert_sql = """
+                INSERT INTO point_history 
+                (user_id, points, event_type, comment, created_by, created_at, is_active)
+                VALUES (%s, %s, %s, %s, %s, %s, 1)
+            """
+            cur.execute(insert_sql, (student_id, points, event_type, comment, teacher_id, now))
+            history_id = cur.lastrowid
+            
+            # total_pointsテーブルは使用せず、point_historyテーブルからポイントを計算する
+            
+            logging.info(f"ポイント付与: {student_name}に{points}ポイント（ID:{history_id}）")
+            
+            # コミットを強制
+            conn.commit()
+            
+            return True, f"{points}ポイントを付与しました（ID: {history_id}）"
+    
+    except Exception as e:
+        logging.error(f"ポイント付与エラー: {e}")
+        return False, f"ポイント付与に失敗しました: {str(e)}"
+    except Exception as e:
+        logging.error(f"Error in teacher awarding points: {e}")
+        return False, str(e)
+
+# ランダムで景品を取得する関数
+def get_random_prize():
+    """ランダムで景品を決定する関数"""
+    try:
+        conn = get_db_connection()
+        prizes = []
+        
+        with conn.cursor() as cur:
+            # 全ての景品を取得
+            cur.execute("""
+                SELECT id, name, rarity, description FROM crane_game_prizes
+                WHERE is_active = 1
+            """)
+            all_prizes = cur.fetchall()
+            
+            if not all_prizes:
+                # プライズがない場合はダミーデータを使用
+                dummy_prizes = [
+                    {'id': 1, 'name': '鉛筆セット', 'rarity': 'common', 'rarity_display': '一般', 'description': '基本的な鉛筆セット'},
+                    {'id': 2, 'name': '消しゴム', 'rarity': 'common', 'rarity_display': '一般', 'description': '高品質消しゴム'},
+                    {'id': 3, 'name': 'ノート', 'rarity': 'common', 'rarity_display': '一般', 'description': '勉強用ノート'},
+                    {'id': 4, 'name': '定規セット', 'rarity': 'uncommon', 'rarity_display': '珍しい', 'description': '複数の定規セット'},
+                    {'id': 5, 'name': 'カラーペンセット', 'rarity': 'uncommon', 'rarity_display': '珍しい', 'description': '12色のカラーペン'},
+                    {'id': 6, 'name': '計算機', 'rarity': 'rare', 'rarity_display': 'レア', 'description': '高機能計算機'},
+                    {'id': 7, 'name': '図書カード', 'rarity': 'epic', 'rarity_display': 'エピック', 'description': '図書カード 500円分'},
+                    {'id': 8, 'name': 'QUOカード', 'rarity': 'legendary', 'rarity_display': '伝説級', 'description': 'QUOカード 1000円分'}
+                ]
+                
+                # ダミーデータを使用してランダムで景品を返す
+                rarity_weights = [70, 20, 7, 2, 1]  # common, uncommon, rare, epic, legendary
+                prizes = []
+                
+                # レアリティでグループ化
+                for i, rarity in enumerate(['common', 'uncommon', 'rare', 'epic', 'legendary']):
+                    rarity_prizes = [p for p in dummy_prizes if p['rarity'] == rarity]
+                    if rarity_prizes:
+                        for _ in range(rarity_weights[i]):
+                            prizes.extend(rarity_prizes)
+                
+                selected_prize = random.choice(prizes)
+                return selected_prize
+            
+            # DBから取得した景品をレアリティに応じた重みで追加
+            for prize in all_prizes:
+                # レアリティに応じた出現率（重み）を設定
+                rarity = prize['rarity'] or 'common'
+                weight = {
+                    'common': 70,      # 一般: 70%
+                    'uncommon': 20,    # 珍しい: 20%
+                    'rare': 7,         # レア: 7%
+                    'epic': 2,         # エピック: 2% 
+                    'legendary': 1     # 伝説級: 1%
+                }
+                
+                # レアリティ表示を設定
+                rarity_display = {
+                    'common': '一般',
+                    'uncommon': '珍しい',
+                    'rare': 'レア',
+                    'epic': 'エピック',
+                    'legendary': '伝説級'
+                }
+                
+                # レアリティに応じた重みの分だけリストに追加
+                for _ in range(weight.get(rarity, 70)):
+                    prize_copy = dict(prize)
+                    prize_copy['rarity_display'] = rarity_display.get(rarity, '一般')
+                    prizes.append(prize_copy)
+        
+        conn.close()
+        
+        # ランダムに景品を選択
+        if prizes:
+            return random.choice(prizes)
+        else:
+            # 万が一景品がない場合のデフォルト
+            return {
+                'id': 0,
+                'name': '鉛筆',
+                'rarity': 'common',
+                'rarity_display': '一般',
+                'description': 'デフォルトの景品'
+            }
+    
+    except Exception as e:
+        logging.error(f"Error in get_random_prize: {e}")
+        # エラー時のデフォルト景品
+        return {
+            'id': 0,
+            'name': '鉛筆',
+            'rarity': 'common',
+            'rarity_display': '一般',
+            'description': 'デフォルトの景品'
+        }
+        # points_utils.py に追加するクレーンゲーム関連の関数
+
+# クレーンゲームの未使用プレイ権数を取得
+def get_unused_crane_game_credits(conn, user_id):
+    """ユーザーの未使用クレーンゲームプレイ権数を取得する関数"""
+    try:
+        with conn.cursor() as cur:
+            # クレジットテーブルの存在確認
+            cur.execute("SHOW TABLES LIKE 'crane_game_credits'")
+            if not cur.fetchone():
+                # テーブルがなければ0を返す
+                return 0
+                
+            # 未使用クレジット数を取得
+            cur.execute("""
+                SELECT COUNT(*) as count
+                FROM crane_game_credits
+                WHERE user_id = %s AND is_used = 0
+            """, (user_id,))
+            
+            result = cur.fetchone()
+            return result['count'] if result else 0
+    except Exception as e:
+        logging.error(f"Error getting unused crane game credits: {e}")
+        return 0
+
+# クレーンゲームプレイ権獲得
+def get_crane_game_credit(conn, user_id):
+    """クレーンゲームのプレイ権を獲得する関数"""
+    try:
+        # 現在のポイントを確認
+        total_points = get_user_total_points(conn, user_id)
+        
+        # ポイント不足チェック
+        if total_points < 100:
+            return False, "ポイントが不足しています"
+        
+        # ポイント消費記録を追加
+        success, result = consume_points(
+            conn, 
+            user_id, 
+            100, 
+            'crane_game', 
+            f"クレーンゲーム: プレイ権を獲得"
+        )
+        
+        if not success:
+            return False, result
+        
+        point_history_id = result
+        
+        # クレーンゲームクレジット履歴に記録
+        with conn.cursor() as cur:
+            # テーブルの存在確認
+            cur.execute("SHOW TABLES LIKE 'crane_game_credits'")
+            if not cur.fetchone():
+                # テーブルが存在しない場合は作成
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS crane_game_credits (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT NOT NULL,
+                        point_history_id INT,
+                        is_used TINYINT(1) NOT NULL DEFAULT 0,
+                        used_at TIMESTAMP NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        INDEX(user_id),
+                        INDEX(is_used)
+                    )
+                """)
+            
+            # クレジットを追加
+            cur.execute("""
+                INSERT INTO crane_game_credits
+                (user_id, point_history_id, is_used)
+                VALUES (%s, %s, %s)
+            """, (user_id, point_history_id, 0))  # 0 = 未使用
+            
+            # 未使用クレジット数を取得
+            cur.execute("""
+                SELECT COUNT(*) as count
+                FROM crane_game_credits
+                WHERE user_id = %s AND is_used = 0
+            """, (user_id,))
+            unused_credits = cur.fetchone()['count']
+        
+        conn.commit()
+        return True, {
+            'message': "クレーンゲームのプレイ権を獲得しました",
+            'unused_credits': unused_credits
+        }
+    
+    except Exception as e:
+        logging.error(f"Error getting crane game credit: {e}")
+        conn.rollback()
+        return False, str(e)
+
+# クレーンゲームプレイ権を使用
+def use_crane_game_credit(conn, user_id, teacher_id=None):
+    """クレーンゲームプレイ権を使用する関数"""
+    try:
+        with conn.cursor() as cur:
+            # 未使用のクレジットを検索
+            cur.execute("""
+                SELECT id FROM crane_game_credits
+                WHERE user_id = %s AND is_used = 0
+                ORDER BY created_at ASC
+                LIMIT 1
+            """, (user_id,))
+            
+            credit = cur.fetchone()
+            
+            if not credit:
+                return False, "未使用のプレイ権がありません"
+            
+            # クレジットを使用済みに更新
+            cur.execute("""
+                UPDATE crane_game_credits
+                SET is_used = 1, used_at = NOW()
+                WHERE id = %s
+            """, (credit['id'],))
+            
+            # 残りの未使用クレジット数を取得
+            cur.execute("""
+                SELECT COUNT(*) as count
+                FROM crane_game_credits
+                WHERE user_id = %s AND is_used = 0
+            """, (user_id,))
+            
+            remaining = cur.fetchone()['count']
+            
+            # 使用記録をログに残す
+            teacher_info = ""
+            if teacher_id:
+                cur.execute("SELECT name FROM users WHERE id = %s", (teacher_id,))
+                teacher = cur.fetchone()
+                if teacher:
+                    teacher_info = f" (確認者: {teacher['name']})"
+            
+            cur.execute("""
+                UPDATE point_history ph
+                JOIN crane_game_credits cgc ON ph.id = cgc.point_history_id
+                SET ph.comment = CONCAT(ph.comment, ' - 使用済み', %s)
+                WHERE cgc.id = %s
+            """, (teacher_info, credit['id']))
+            
+            conn.commit()
+            return True, {
+                'message': "プレイ権を使用しました",
+                'remaining_credits': remaining
+            }
+    
+    except Exception as e:
+        logging.error(f"Error using crane game credit: {e}")
+        conn.rollback()
+        return False, str(e)
+# points_utils.pyに追加
+def award_attendance_points(conn, user_id, date=None, teacher_id=None):
+    """出席ポイントを付与する関数"""
+    try:
+        if date is None:
+            date = datetime.now().date()
+        
+        # ユーザー情報取得
+        with conn.cursor() as cur:
+            cur.execute("SELECT grade_level, school_type, attendance_days FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+            if not user:
+                return False, "ユーザーが見つかりません"
+            
+            # 授業日かチェック - Python(0=月曜)をJavaScript(0=日曜)形式に変換
+            python_day_of_week = date.weekday()  # 0:月曜～6:日曜
+            js_day_of_week = (python_day_of_week + 1) % 7  # 変換: 1=月曜, 0=日曜
+            
+            # 生徒の通塾曜日設定を確認
+            is_class_day = False
+            if user['attendance_days']:
+                attendance_days = [int(d) for d in user['attendance_days'].split(',') if d]
+                is_class_day = str(js_day_of_week) in user['attendance_days'] or js_day_of_week in attendance_days
+            
+            # 授業日なら付与
+            if is_class_day:
+                # 既に付与済みかチェック
+                cur.execute("""
+                    SELECT id FROM point_history
+                    WHERE user_id = %s 
+                    AND event_type = 'attendance_daily'
+                    AND DATE(created_at) = %s
+                    AND is_active = 1
+                """, (user_id, date))
+                
+                if cur.fetchone():
+                    return False, "既に出席ポイントが付与されています"
+                
+                # ポイント付与（10ポイント固定）
+                ATTENDANCE_POINTS = 10
+                history_id = award_points(
+                    conn, 
+                    user_id, 
+                    ATTENDANCE_POINTS, 
+                    'attendance_daily', 
+                    f"{date}の出席ポイント",
+                    None,  # event_id
+                    teacher_id  # 教師ID(記録者)を追加
+                )
+                if history_id:
+                    return True, f"出席ポイント{ATTENDANCE_POINTS}を付与しました"
+                else:
+                    return False, "ポイント付与に失敗しました"
+            else:
+                return False, "対象日は授業日ではありません"
+    except Exception as e:
+        logging.error(f"Error awarding attendance points: {e}")
+        return False, str(e)
+                    conn, 
+                    user_id, 
+                    ATTENDANCE_POINTS, 
+                    'attendance_daily', 
+                    f"{date}の出席ポイント"
+                )
+                if history_id:
+                    return True, f"出席ポイント{ATTENDANCE_POINTS}を付与しました"
+                else:
+                    return False, "ポイント付与に失敗しました"
+            else:
+                return False, "対象日は授業日ではありません"
+    except Exception as e:
+        logging.error(f"Error awarding attendance points: {e}")
+        return False, str(e)
+    """出席ポイントを付与する関数"""
+    try:
+        if date is None:
+            date = datetime.now().date()
+        
+        # ユーザー情報取得
+        with conn.cursor() as cur:
+            cur.execute("SELECT grade_level, school_type FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+            if not user:
+                return False, "ユーザーが見つかりません"
+            
+            grade_level = user['grade_level']
+            school_type = user['school_type']
+            
+            # 授業日かチェック
+            day_of_week = date.weekday()  # 0:月曜～6:日曜
+            
+            # 授業曜日マスタをチェック
+            cur.execute("""
+                SELECT id FROM class_schedule_master
+                WHERE grade_level = %s 
+                AND school_type = %s
+                AND day_of_week = %s
+                AND is_active = 1
+            """, (grade_level, school_type, day_of_week))
+            
+            is_class_day = cur.fetchone() is not None
+            
+            # 授業日なら付与（追加の休講・振替チェックも可能）
+            if is_class_day:
+                # 既に付与済みかチェック
+                cur.execute("""
+                    SELECT id FROM point_history
+                    WHERE user_id = %s 
+                    AND event_type = 'attendance_daily'
+                    AND DATE(created_at) = %s
+                    AND is_active = 1
+                """, (user_id, date))
+                
+                if cur.fetchone():
+                    return False, "既に出席ポイントが付与されています"
+                
+                # ポイント付与（10ポイント固定）
+                ATTENDANCE_POINTS = 10
+                history_id = award_points(
+                    conn, 
+                    user_id, 
+                    ATTENDANCE_POINTS, 
+                    'attendance_daily', 
+                    f"{date}の出席ポイント"
+                )
+                if history_id:
+                    return True, f"出席ポイント{ATTENDANCE_POINTS}を付与しました"
+                else:
+                    return False, "ポイント付与に失敗しました"
+            else:
+                return False, "今日は授業日ではありません"
+    except Exception as e:
+        logging.error(f"Error awarding attendance points: {e}")
+        return False, str(e)

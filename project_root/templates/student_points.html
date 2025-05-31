@@ -1,0 +1,837 @@
+{% extends "base.html" %}
+
+{% block title %}ポイント履歴とボーナス | 塾生徒サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .points-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, var(--primary-light-soft), var(--primary-light));
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 16px rgba(76, 201, 240, 0.1);
+    color: white;
+  }
+  
+  .total-container {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .total-label {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .total-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .nav-tabs {
+    display: flex;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 15px;
+  }
+  
+  .nav-tab {
+    padding: 8px 15px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px 4px 0 0;
+    margin-right: 5px;
+  }
+  
+  .nav-tab.active {
+    background-color: #fff;
+    border-color: #dee2e6;
+    border-bottom-color: transparent;
+    font-weight: bold;
+  }
+  
+  .tab-content {
+    margin-bottom: 20px;
+  }
+  
+  .tab-pane {
+    display: none;
+  }
+  
+  .tab-pane.active {
+    display: block;
+  }
+  
+  .history-filters {
+    margin-bottom: 15px;
+  }
+  
+  .points-positive {
+    color: #34a853;
+    font-weight: bold;
+  }
+  
+  .points-negative {
+    color: #ea4335;
+    font-weight: bold;
+  }
+  
+  .bonus-categories h4 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    color: #4285f4;
+  }
+  
+  .bonus-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .bonus-card {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .bonus-achieved {
+    border-color: #34a853;
+  }
+  
+  .bonus-achieved::before {
+    content: "達成";
+    position: absolute;
+    top: 10px;
+    right: -30px;
+    background-color: #34a853;
+    color: white;
+    padding: 2px 30px;
+    transform: rotate(45deg);
+    font-size: 12px;
+  }
+  
+  .bonus-upcoming {
+    border-color: #fbbc05;
+  }
+  
+  .bonus-upcoming::before {
+    content: "もうすぐ";
+    position: absolute;
+    top: 10px;
+    right: -30px;
+    background-color: #fbbc05;
+    color: white;
+    padding: 2px 30px;
+    transform: rotate(45deg);
+    font-size: 12px;
+  }
+  
+  .bonus-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .bonus-points {
+    color: #4285f4;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .bonus-desc {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 10px;
+    min-height: 40px;
+  }
+  
+  .bonus-status, .bonus-progress {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  
+  .bonus-status {
+    font-weight: bold;
+  }
+  
+  .bonus-progress .progress-bar {
+    height: 6px;
+    margin-bottom: 5px;
+    background-color: #e0e0e0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  
+  .bonus-progress .progress {
+    height: 100%;
+    background-color: #4285f4;
+  }
+  
+  .bonus-progress .progress-text {
+    text-align: right;
+    font-size: 12px;
+  }
+  
+  /* ポイント履歴のカード形式表示 - レスポンシブ対応強化 */
+  .point-history-list {
+    margin-bottom: 20px;
+    max-width: 100%;
+  }
+  
+  .point-history-event {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 12px;
+    margin-bottom: 10px;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  .point-history-date {
+    color: #666;
+    font-size: 12px;
+    margin-bottom: 5px;
+    width: 100%;
+  }
+  
+  .point-history-content {
+    flex: 1;
+    min-width: 0; /* 内容が長い場合に折り返しを許可 */
+    padding-right: 15px; /* ポイント表示との間隔を確保 */
+  }
+  
+  .point-history-title {
+    font-weight: bold;
+    margin-bottom: 3px;
+    font-size: 1.05em;
+    word-wrap: break-word; /* 長い単語でも折り返されるように */
+  }
+  
+  .point-history-details {
+    font-size: 13px;
+    color: #666;
+    word-wrap: break-word;
+  }
+  
+  .point-history-points {
+    font-size: 1.2em;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    min-width: 80px;
+    justify-content: flex-end;
+    text-align: right;
+    margin-left: auto; /* 右寄せを確実に */
+  }
+  
+  .empty-message {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+  }
+  
+  .rewards-section {
+    margin-top: 20px;
+  }
+  
+  .rewards-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+    .crane-game-link {
+    text-decoration: none;
+    background-color: #4285f4;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    white-space: nowrap;
+    display: inline-block;
+    box-sizing: border-box;
+  }
+  
+  .crane-game-link:hover {
+    background-color: #3367d6;
+  }
+  
+  /* デスクトップ向け最適化 */
+  @media (min-width: 769px) {
+    .bonus-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .point-history-event {
+      flex-wrap: nowrap;
+    }
+    
+    .point-history-date {
+      width: 140px;
+      margin-bottom: 0;
+    }
+    
+    .point-history-content {
+      padding: 0 15px;
+    }
+    
+    .point-history-points {
+      flex-shrink: 0;
+      border-top: none;
+      padding-top: 0;
+    }
+  }
+  
+  /* モバイル対応を強化 */
+  @media (max-width: 768px) {
+    .points-total {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .bonus-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .nav-tabs {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .nav-tab {
+      margin-bottom: 5px;
+      text-align: center;
+      flex: 1 0 auto;
+      min-width: 120px;
+    }
+    
+    .rewards-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    
+    .crane-game-link {
+      width: 100%;
+      text-align: center;
+    }
+    
+    .point-history-event {
+      padding: 10px;
+    }
+    
+    .point-history-date {
+      margin-bottom: 8px;
+    }
+    
+    .point-history-points {
+      margin-top: 8px;
+      margin-left: 0;
+      width: 100%;
+      justify-content: flex-end;
+      padding-top: 8px;
+      border-top: 1px solid #eee;
+    }
+  }
+    /* 小さいスマホ画面でのさらなる最適化 */
+  @media (max-width: 480px) {
+    .nav-tab {
+      padding: 8px 12px;
+      font-size: 0.9em;
+      flex: 1 1 auto;
+      text-align: center;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .nav-tabs {
+      gap: 6px;
+    }
+    
+    .point-history-event {
+      display: block;
+      padding: 12px;
+    }
+    
+    .point-history-content {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    
+    .points-total {
+      padding: 15px;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .total-value {
+      font-size: 2rem;
+    }
+    
+    .bonus-card {
+      padding: 12px;
+    }
+    
+    .bonus-title {
+      font-size: 1rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>ポイント履歴とボーナス</h3>
+  
+  <div class="points-total">
+    <div class="total-container">
+      <span class="total-label">合計ポイント</span>
+      <span class="total-value">{{ total_points }}</span>
+    </div>
+  </div>
+  
+  <div class="rewards-section">
+    <div class="rewards-header">
+      <h4>景品交換</h4>
+      <a href="/myapp/index.cgi/student/crane-game" class="crane-game-link">クレーンゲームで交換する</a>
+    </div>
+    <p>100ポイントで塾のクレーンゲーム機を1回プレイできます。クレーンゲームページでプレイ権を獲得してください。</p>
+  </div>
+  
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="history">ポイント履歴</div>
+    <div class="nav-tab" data-tab="bonuses">ボーナス一覧</div>
+  </div>
+  
+  <div class="tab-content">
+    <!-- ポイント履歴タブ -->
+    <div class="tab-pane active" id="history-tab">
+      <div class="history-filters">
+        <select class="form-control" id="history-filter">
+          <option value="all">すべて表示</option>
+          <option value="earned">獲得ポイント</option>
+          <option value="used">使用ポイント</option>
+        </select>
+      </div>
+      
+      {% if point_history %}
+        <div class="point-history-list">
+          {% for record in point_history %}
+            <div class="point-history-event {% if record.points > 0 %}earned{% else %}used{% endif %}">
+              <div class="point-history-date">
+                {% if record.created_at %}
+                  {{ record.created_at.strftime('%Y-%m-%d %H:%M') }}
+                {% else %}
+                  ---
+                {% endif %}
+              </div>              <div class="point-history-content">
+                <div class="point-history-title">
+                  {% if record.event_display_name and record.event_display_name != 'None' %}
+                    {{ record.event_display_name }}
+                  {% else %}
+                    {{ record.event_type }}
+                  {% endif %}
+                </div>
+                {% if record.comment %}
+                  <div class="point-history-details">
+                    {{ record.comment }}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="point-history-points {% if record.points > 0 %}points-positive{% else %}points-negative{% endif %}">
+                {% if record.points > 0 %}+{% endif %}{{ record.points }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-message">
+          ポイント履歴はまだありません。ログインや宿題提出などでポイントを獲得しましょう！
+        </div>
+      {% endif %}
+    </div>    <!-- ボーナス一覧タブ -->
+    <div class="tab-pane" id="bonuses-tab">
+      <div class="bonus-categories">
+        <!-- デバッグ情報 -->
+        {% if session.school_type %}
+        <div style="background: #f0f0f0; padding: 10px; margin-bottom: 15px; border-radius: 5px; font-size: 12px; color: #666;">
+          現在の学校タイプ: {{ session.school_type }}
+        </div>
+        {% endif %}
+        
+        <h4>ログイン関連ボーナス</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card {% if has_login_today %}bonus-achieved{% endif %}">
+            <div class="bonus-title">ログインボーナス</div>
+            <div class="bonus-points">+2〜5ポイント</div>
+            <div class="bonus-desc">毎日のログインでポイント獲得</div>
+            <div class="bonus-status">
+              {% if has_login_today %}
+                本日獲得済み
+              {% else %}
+                未獲得
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">出席ポイント</div>
+            <div class="bonus-points">+5ポイント</div>
+            <div class="bonus-desc">授業日の出席で獲得するポイント</div>
+            <div class="bonus-status">出席確認で自動付与</div>
+          </div>
+        </div>
+        
+        <h4>出席関連ボーナス</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card {% if monthly_attendance_rate >= 90 %}bonus-achieved{% elif monthly_attendance_rate >= 80 %}bonus-upcoming{% endif %}">
+            <div class="bonus-title">月間出席率ボーナス</div>
+            <div class="bonus-points">+50ポイント</div>
+            <div class="bonus-desc">月間出席率が90%以上で獲得</div>
+            <div class="bonus-progress">
+              <div class="progress-bar">
+                <div class="progress progress-{{ monthly_attendance_rate }}"></div>
+              </div>
+              <div class="progress-text">現在 {{ monthly_attendance_rate }}%</div>
+            </div>
+          </div>
+          
+          <div class="bonus-card {% if monthly_attendance_rate == 100 %}bonus-achieved{% elif monthly_attendance_rate >= 90 %}bonus-upcoming{% endif %}">
+            <div class="bonus-title">皆勤賞</div>
+            <div class="bonus-points">+100ポイント</div>
+            <div class="bonus-desc">月間出席率100%で獲得</div>
+            <div class="bonus-status">
+              {% if monthly_attendance_rate == 100 %}
+                達成中
+              {% else %}
+                未達成
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        {% if session.school_type == 'elementary' %}        <h4>模試結果ボーナス（小学生）</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card">
+            <div class="bonus-title">模試スコアボーナス(銅)</div>
+            <div class="bonus-points">+20ポイント</div>
+            <div class="bonus-desc">模試で60点以上70点未満獲得</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">模試スコアボーナス(銀)</div>
+            <div class="bonus-points">+50ポイント</div>
+            <div class="bonus-desc">模試で70点以上85点未満獲得</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">模試スコアボーナス(金)</div>
+            <div class="bonus-points">+100ポイント</div>
+            <div class="bonus-desc">模試で85点以上獲得</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+        </div>
+        
+        <h4>テスト結果ボーナス（小学生）</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card">
+            <div class="bonus-title">テスト成績ボーナス</div>
+            <div class="bonus-points">+10〜100ポイント</div>
+            <div class="bonus-desc">テスト結果に応じたボーナス</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+        </div>
+        {% elif session.school_type == 'middle' %}        <h4>内申点ボーナス（中学生）</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card">
+            <div class="bonus-title">内申点ボーナス(銅)</div>
+            <div class="bonus-points">+30ポイント</div>
+            <div class="bonus-desc">内申点で1～2アップ</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">内申点ボーナス(銀)</div>
+            <div class="bonus-points">+60ポイント</div>
+            <div class="bonus-desc">内申点が3～4アップ</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">内申点ボーナス(金)</div>
+            <div class="bonus-points">+100ポイント</div>
+            <div class="bonus-desc">内申点で5以上UP</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+        </div>
+        
+        <h4>成績向上ボーナス（中学生）</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card">
+            <div class="bonus-title">成績向上ボーナス(小)</div>
+            <div class="bonus-points">+20ポイント</div>
+            <div class="bonus-desc">前回より5点以上成績アップ</div>
+            <div class="bonus-status">自動で付与されます</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">成績向上ボーナス(中)</div>
+            <div class="bonus-points">+30ポイント</div>
+            <div class="bonus-desc">前回より10点以上成績アップ</div>
+            <div class="bonus-status">自動で付与されます</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">成績向上ボーナス(大)</div>
+            <div class="bonus-points">+50ポイント</div>
+            <div class="bonus-desc">前回より15点以上成績アップ</div>
+            <div class="bonus-status">自動で付与されます</div>
+          </div>
+        </div>
+        
+        <h4>模試結果ボーナス（中学生）</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card">
+            <div class="bonus-title">模試スコアボーナス(銅)</div>
+            <div class="bonus-points">+20ポイント</div>
+            <div class="bonus-desc">模試で60点以上70点未満獲得</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">模試スコアボーナス(銀)</div>
+            <div class="bonus-points">+50ポイント</div>
+            <div class="bonus-desc">模試で70点以上85点未満獲得</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">模試スコアボーナス(金)</div>
+            <div class="bonus-points">+100ポイント</div>
+            <div class="bonus-desc">模試で85点以上獲得</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+        </div>
+        {% else %}        <h4>成績ボーナス（高校生）</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card">
+            <div class="bonus-title">高校成績向上ボーナス(小)</div>
+            <div class="bonus-points">+20ポイント</div>
+            <div class="bonus-desc">前回より5点以上成績アップ</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">高校成績向上ボーナス(中)</div>
+            <div class="bonus-points">+30ポイント</div>
+            <div class="bonus-desc">前回より10点以上成績アップ</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">高校成績向上ボーナス(大)</div>
+            <div class="bonus-points">+50ポイント</div>
+            <div class="bonus-desc">前回より15点以上成績アップ</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+        </div>
+        
+        <h4>試験・模試ボーナス（高校生）</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card">
+            <div class="bonus-title">試験結果ボーナス</div>
+            <div class="bonus-points">+10〜100ポイント</div>
+            <div class="bonus-desc">試験結果に応じたボーナス</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">模試ボーナス</div>
+            <div class="bonus-points">+10〜100ポイント</div>
+            <div class="bonus-desc">模試結果に応じたボーナス</div>
+            <div class="bonus-status">講師が確認して付与します</div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <h4>特別ボーナス</h4>
+        <div class="bonus-grid">
+          <div class="bonus-card {% if is_birthday_month %}bonus-upcoming{% endif %}">
+            <div class="bonus-title">誕生日ボーナス</div>
+            <div class="bonus-points">+100ポイント</div>
+            <div class="bonus-desc">お誕生日に自動付与されます</div>
+            <div class="bonus-status">
+              {% if is_birthday_month %}
+                もうすぐ
+              {% elif birthday_passed %}
+                獲得済み
+              {% else %}
+                誕生日待ち
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="bonus-card">
+            <div class="bonus-title">宿題提出ボーナス</div>
+            <div class="bonus-points">+10ポイント</div>
+            <div class="bonus-desc">宿題提出ごとに獲得</div>
+            <div class="bonus-status">講師が手動で付与します</div>
+          </div>
+            <div class="bonus-card">
+            <div class="bonus-title">特別ボーナス</div>
+            <div class="bonus-points">+10〜500ポイント</div>
+            <div class="bonus-desc">特別な活動や成果に対するボーナス</div>
+            <div class="bonus-status">講師が手動で付与します</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>  document.addEventListener('DOMContentLoaded', function() {
+    // モダンなアニメーション効果
+    // 合計ポイント表示のアニメーション
+    const pointsTotal = document.querySelector('.points-total');
+    if (pointsTotal) {
+      pointsTotal.style.opacity = '0';
+      pointsTotal.style.transform = 'translateY(-10px)';
+      pointsTotal.style.transition = 'all 0.5s ease';
+      
+      setTimeout(() => {
+        pointsTotal.style.opacity = '1';
+        pointsTotal.style.transform = 'translateY(0)';
+      }, 300);
+    }
+      // ポイント履歴のアニメーション
+    let historyEvents = document.querySelectorAll('.point-history-event');
+    historyEvents.forEach((event, index) => {
+      event.style.opacity = '0';
+      event.style.transform = 'translateX(-10px)';
+      event.style.transition = 'all 0.3s ease';
+      
+      setTimeout(() => {
+        event.style.opacity = '1';
+        event.style.transform = 'translateX(0)';
+      }, 500 + (index * 50));
+    });
+    
+    // ボーナスカードのアニメーション
+    const bonusCards = document.querySelectorAll('.bonus-card');
+    bonusCards.forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.95)';
+      card.style.transition = 'all 0.4s ease';
+      
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'scale(1)';
+      }, 300 + (index * 100));
+    });
+    
+    // タブ切り替え処理
+    const tabs = document.querySelectorAll('.nav-tab');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        // アクティブタブの切り替え
+        tabs.forEach(function(t) {
+          t.classList.remove('active');
+        });
+        this.classList.add('active');
+        
+        // タブコンテンツの切り替え
+        const tabId = this.getAttribute('data-tab') + '-tab';
+        tabPanes.forEach(function(pane) {
+          pane.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+      });
+    });
+    
+    // ポイント履歴フィルタリング
+    const historyFilter = document.getElementById('history-filter');
+    // historyEventsを再取得（既に定義されているため、新しい参照で上書き）
+    historyEvents = document.querySelectorAll('.point-history-event');
+    
+    if (historyFilter) {
+      historyFilter.addEventListener('change', function() {
+        const filterValue = this.value;
+        
+        historyEvents.forEach(function(event) {
+          if (filterValue === 'all') {
+            event.style.display = '';
+          } else if (filterValue === 'earned' && event.classList.contains('earned')) {
+            event.style.display = '';
+          } else if (filterValue === 'used' && event.classList.contains('used')) {
+            event.style.display = '';
+          } else {
+            event.style.display = 'none';
+          }
+        });
+      });
+    }
+    
+    // モバイル画面でクレーンゲームリンクのサイズを調整
+    function adjustCraneGameLink() {
+      const craneLinks = document.querySelectorAll('.crane-game-link');
+      const isMobile = window.innerWidth <= 768;
+      
+      craneLinks.forEach(link => {
+        if (isMobile) {
+          // モバイル表示の場合
+          link.style.boxSizing = 'border-box';
+          link.style.display = 'inline-block';
+          link.style.maxWidth = '100%';
+          link.style.overflow = 'hidden';
+          link.style.textOverflow = 'ellipsis';
+          link.style.whiteSpace = 'normal';
+          link.style.wordWrap = 'break-word';
+          link.style.padding = '10px 15px';
+          link.style.margin = '5px 0';
+          link.style.textAlign = 'center';
+        } else {
+          // デスクトップ表示に戻す場合
+          link.style.boxSizing = '';
+          link.style.display = '';
+          link.style.maxWidth = '';
+          link.style.overflow = '';
+          link.style.textOverflow = '';
+          link.style.whiteSpace = '';
+          link.style.wordWrap = '';
+          link.style.padding = '';
+          link.style.margin = '';
+          link.style.textAlign = '';
+        }
+      });
+    }
+    
+    // 初期実行とリサイズ時のイベントリスナー
+    adjustCraneGameLink();
+    window.addEventListener('resize', adjustCraneGameLink);
+  });
+</script>
+{% endblock %}

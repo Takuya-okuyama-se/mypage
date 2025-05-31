@@ -1,0 +1,2330 @@
+{% extends "base.html" %}
+{% block title %}宿題管理（小5・小6） | 塾講師サイト{% endblock %}
+
+{% block content %}
+<div class="homework-dashboard-wrapper">
+  <div class="dashboard-header">
+    <h2 class="gradient-title">
+      <i class="fas fa-tasks gradient-icon"></i>
+      小学5・6年生 宿題管理
+    </h2>
+    <div class="header-subtitle">生徒の学習進捗を効率的に管理</div>
+  </div>
+    <!-- タブナビゲーション -->
+  <div class="modern-homework-tabs">
+    <button class="modern-tab-btn active" data-tab="calendar">
+      <i class="fas fa-calendar-alt"></i>
+      <span>カレンダー</span>
+    </button>
+    <button class="modern-tab-btn" data-tab="assign">
+      <i class="fas fa-plus-circle"></i>
+      <span>宿題登録</span>
+    </button>
+    <button class="modern-tab-btn" data-tab="check">
+      <i class="fas fa-list-check"></i>
+      <span>リスト表示</span>
+    </button>
+    <button class="modern-tab-btn" data-tab="history">
+      <i class="fas fa-chart-line"></i>
+      <span>履歴確認</span>
+    </button>
+  </div>
+    <!-- カレンダータブ -->
+  <div id="calendar-tab" class="modern-tab-content active">
+    <div class="content-card">
+      <h4 class="section-title">
+        <i class="fas fa-calendar-week"></i>
+        宿題カレンダー
+      </h4>      <!-- 生徒選択 -->
+      <div class="modern-calendar-controls">
+        <div class="control-group">
+          <div class="modern-student-selector">
+            <label class="control-label">
+              <i class="fas fa-user-graduate"></i>
+              生徒選択
+            </label>
+            <select id="calendar-student-select" class="modern-form-control">
+              <option value="">生徒を選択してください</option>
+              <!-- 動的に読み込み -->
+            </select>
+          </div>
+          
+          <!-- 月切り替えナビゲーション -->
+          <div class="modern-month-navigation">
+            <button id="prev-month-btn" class="nav-btn prev-btn">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <span id="current-month-display" class="current-month-display"></span>
+            <button id="next-month-btn" class="nav-btn next-btn">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- カレンダー表示エリア -->
+    <div id="teacher-homework-calendar" class="modern-homework-calendar"></div>
+    
+    <!-- 宿題詳細・チェックモーダル -->
+    <div id="homework-check-modal" class="modern-homework-modal" style="display: none;">
+      <div class="modern-modal-content">
+        <div class="modal-header">
+          <h4 id="modal-student-date"></h4>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div id="homework-check-list" class="modal-body"></div>
+      </div>
+    </div>
+    </div>
+  </div>
+    <!-- 宿題登録タブ -->
+  <div id="assign-tab" class="modern-tab-content">
+    <div class="content-card">
+      <h4 class="section-title">
+        <i class="fas fa-plus-circle"></i>
+        新規宿題登録
+      </h4>
+    
+      <!-- テンプレート選択 -->
+      <div class="modern-template-section">
+        <h5 class="subsection-title">
+          <i class="fas fa-history"></i>
+          履歴から選択（よく使う宿題）
+        </h5>
+        <div id="homework-templates" class="modern-template-grid">
+          <!-- 動的に生成 -->
+        </div>
+      </div>
+      <form id="homework-assign-form" class="modern-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="modern-form-row">        <div class="modern-form-group">
+          <label class="modern-form-label">
+            <i class="fas fa-user-graduate"></i>
+            生徒選択 (複数選択可)
+          </label>          <div class="modern-checkbox-container">
+            <div class="select-all-container">
+              <label class="modern-checkbox-label">
+                <input type="checkbox" id="select-all-students" class="modern-checkbox">
+                <span class="checkmark"></span>
+                すべて選択
+              </label>
+            </div>
+            <div id="student-checkbox-container" class="students-checkbox-list">
+              <!-- 動的に生成される生徒チェックボックス -->
+            </div>
+          </div>
+        </div>
+        
+        <div class="modern-form-group">
+          <label class="modern-form-label">
+            <i class="fas fa-calendar"></i>
+            日付
+          </label>
+          <input type="date" id="assignment-date" class="modern-form-control" required>
+        </div>
+      </div>      
+      <div class="modern-form-row">
+        <div class="modern-form-group">
+          <label class="modern-form-label">
+            <i class="fas fa-book"></i>
+            科目
+          </label>
+          <select id="subject-select" class="modern-form-control" required>
+            <option value="">科目を選択</option>
+            <option value="国語">国語</option>
+            <option value="算数">算数</option>
+            <option value="英語">英語</option>
+            <option value="理科">理科</option>
+            <option value="社会">社会</option>
+          </select>
+        </div>
+        
+        <div class="modern-form-group">
+          <label class="modern-form-label">
+            <i class="fas fa-book-open"></i>
+            テキスト名
+          </label>
+          <input type="text" id="textbook-input" class="modern-form-control" placeholder="例: 算数ドリル5年" required list="textbook-list">
+          <datalist id="textbook-list">
+            <!-- 動的に生成 -->
+          </datalist>
+        </div>
+      </div>
+      
+      <div class="modern-form-row">
+        <div class="modern-form-group">
+          <label class="modern-form-label">
+            <i class="fas fa-list-ul"></i>
+            項目・単元
+          </label>
+          <input type="text" id="topic-input" class="modern-form-control" placeholder="例: 分数の計算" required list="topic-list">
+          <datalist id="topic-list">
+            <!-- 動的に生成 -->
+          </datalist>
+        </div>
+        
+        <div class="modern-form-group">
+          <label class="modern-form-label">
+            <i class="fas fa-file-alt"></i>
+            ページ数
+          </label>
+          <input type="text" id="pages-input" class="modern-form-control" placeholder="例: 10-15" required>
+        </div>
+      </div>
+      
+      <div class="modern-form-actions">
+        <button type="submit" class="modern-btn primary">
+          <i class="fas fa-plus-circle"></i> 宿題を登録
+        </button>
+        <button type="button" id="save-template-btn" class="modern-btn secondary">
+          <i class="fas fa-star"></i> テンプレートとして保存
+        </button>
+      </div>
+    </form>
+    </div>
+  </div>
+    <!-- リスト表示タブ -->
+  <div id="check-tab" class="modern-tab-content">
+    <div class="content-card">
+      <h4 class="section-title">
+        <i class="fas fa-list-check"></i>
+        宿題リスト
+      </h4>
+      
+      <!-- フィルター -->
+      <div class="modern-filter-section">
+        <div class="modern-form-row">
+          <div class="modern-form-group">
+            <label class="modern-form-label">
+              <i class="fas fa-user-graduate"></i>
+              生徒フィルター
+            </label>
+            <select id="check-student-filter" class="modern-form-control">
+              <option value="">全生徒</option>
+              <!-- 動的に読み込み -->
+            </select>
+          </div>
+          
+          <div class="modern-form-group">
+            <label class="modern-form-label">
+              <i class="fas fa-calendar-alt"></i>
+              日付範囲
+            </label>
+            <input type="date" id="check-date-from" class="modern-form-control">
+          </div>
+          
+          <div class="modern-form-group">
+            <label class="modern-form-label">～</label>
+            <input type="date" id="check-date-to" class="modern-form-control">
+          </div>
+          
+          <div class="modern-form-group">
+            <button id="filter-btn" class="modern-btn secondary">
+              <i class="fas fa-filter"></i> フィルター
+            </button>
+          </div>
+        </div>
+      </div>
+        <!-- 宿題リスト -->
+      <div id="homework-list-container" class="modern-list-container">
+        <div id="homework-check-list" class="homework-check-list">
+          <!-- 動的に生成 -->
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- 履歴確認タブ -->
+  <div id="history-tab" class="modern-tab-content">
+    <div class="content-card">
+      <h2 class="section-title">
+        <i class="fas fa-history"></i>
+        宿題履歴
+      </h2>
+      
+      <!-- 統計情報 -->
+      <div class="modern-stats-grid">
+        <div class="modern-stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">今月の宿題登録数</div>
+            <div class="stat-value" id="monthly-assignments">0</div>
+          </div>
+        </div>
+        <div class="modern-stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">今月の完了率</div>
+            <div class="stat-value" id="completion-rate">0%</div>
+          </div>
+        </div>
+        <div class="modern-stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-trophy"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">付与ポイント合計</div>
+            <div class="stat-value" id="total-points">0</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 履歴テーブル -->
+      <div class="modern-history-section">
+        <h3 class="subsection-title">
+          <i class="fas fa-table"></i>
+          詳細履歴
+        </h3>
+        <div class="modern-table-container">
+          <table class="modern-data-table">            <thead>
+              <tr>
+                <th><i class="fas fa-calendar-alt"></i> 日付</th>
+                <th><i class="fas fa-user-graduate"></i> 生徒名</th>
+                <th><i class="fas fa-book"></i> 科目</th>
+                <th><i class="fas fa-book-open"></i> テキスト</th>
+                <th><i class="fas fa-list"></i> 項目</th>
+                <th><i class="fas fa-file-alt"></i> ページ</th>
+                <th><i class="fas fa-check-circle"></i> 状態</th>
+                <th><i class="fas fa-star"></i> ポイント</th>
+                <th><i class="fas fa-cogs"></i> 操作</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <!-- 動的に生成 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<style>
+  /* CSS Variables for Modern Design */
+  :root {
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-warning: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --gradient-info: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 15px 40px rgba(0, 0, 0, 0.15);
+    --shadow-strong: 0 20px 50px rgba(0, 0, 0, 0.2);
+    --border-radius: 20px;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --backdrop-blur: blur(10px);
+  }
+
+  /* Modern Homework Dashboard Wrapper */
+  .homework-dashboard-wrapper {
+    background: var(--gradient-primary);
+    min-height: calc(100vh - 120px);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    margin: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .homework-dashboard-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
+    pointer-events: none;
+  }
+
+  /* Dashboard Header */
+  .dashboard-header {
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .gradient-title {
+    background: linear-gradient(45deg, #fff, #f0f8ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .gradient-icon {
+    margin-right: 15px;
+    font-size: 2.2rem;
+  }
+
+  .header-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    font-weight: 300;
+    margin-top: 10px;
+  }
+
+  /* Modern Tab Navigation */
+  .modern-homework-tabs {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 40px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 25px;
+    backdrop-filter: var(--backdrop-blur);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    z-index: 2;
+  }
+
+  .modern-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 15px 25px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+    font-size: 0.95rem;
+  }
+
+  .modern-tab-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    transition: var(--transition-smooth);
+  }
+
+  .modern-tab-btn:hover::before {
+    opacity: 1;
+  }
+
+  .modern-tab-btn:hover {
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  .modern-tab-btn.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .modern-tab-btn.active::before {
+    opacity: 1;
+  }
+
+  .modern-tab-btn i {
+    font-size: 1.1rem;
+  }
+
+  /* Modern Tab Content */
+  .modern-tab-content {
+    display: none;
+    position: relative;
+    z-index: 2;
+  }
+
+  .modern-tab-content.active {
+    display: block;
+    animation: fadeInUp 0.5s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Content Cards */
+  .content-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--border-radius);
+    padding: 30px;
+    box-shadow: var(--shadow-medium);
+    backdrop-filter: var(--backdrop-blur);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    margin-bottom: 30px;
+  }
+
+  .section-title {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .subsection-title {
+    color: #555;
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Modern Calendar Controls */
+  .modern-calendar-controls {
+    margin-bottom: 30px;
+  }
+
+  .control-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .modern-student-selector {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .control-label {
+    color: #555;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+  }
+
+  .modern-form-control {
+    padding: 12px 16px;
+    border: 2px solid #e0e6ed;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    transition: var(--transition-smooth);
+    background: #fff;
+    min-width: 200px;
+  }
+
+  .modern-form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  /* Modern Month Navigation */
+  .modern-month-navigation {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .nav-btn {
+    width: 45px;
+    height: 45px;
+    border: none;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    color: #fff;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .nav-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: var(--shadow-medium);
+  }
+  .current-month-display {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    min-width: 150px;
+    text-align: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    padding: 5px 10px;
+    border-radius: 8px;
+  }
+  /* Modern Calendar */
+  .modern-homework-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+  }
+
+  .calendar-header {
+    font-weight: 600;
+    text-align: center;
+    padding: 12px 8px;
+    background: var(--gradient-primary);
+    color: #fff;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .calendar-day {
+    border: 1px solid #e8eaed;
+    min-height: 100px;
+    padding: 8px 6px;
+    background: #fff;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .calendar-day:hover {
+    border-color: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    z-index: 1;
+  }
+
+  .calendar-day.today {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-color: #2196f3;
+    font-weight: 600;
+  }
+
+  .calendar-day.empty {
+    background: transparent;
+    cursor: default;
+    border: none;
+  }
+
+  .calendar-day.empty:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .date-number {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #374151;
+  }
+
+  .homework-indicators {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .homework-indicator {
+    background: #f3f4f6;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 0.7rem;
+    border-left: 3px solid #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .homework-indicator.completed {
+    background: #d1fae5;
+    border-left-color: #10b981;
+    color: #065f46;
+  }
+
+  .homework-indicator.pending {
+    background: #fef3c7;
+    border-left-color: #f59e0b;
+    color: #92400e;
+  }
+
+  .homework-indicator i {
+    font-size: 0.6rem;
+  }
+
+  .homework-indicator span {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Modern Template Section */
+  .modern-template-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    border: 1px solid #e0e6ed;
+  }
+
+  .modern-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
+  .template-item {
+    background: #fff;
+    border: 2px solid #e0e6ed;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .template-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+    transform: scaleX(0);
+    transition: var(--transition-smooth);
+  }
+
+  .template-item:hover {
+    border-color: #667eea;
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .template-item:hover::before {
+    transform: scaleX(1);
+  }
+
+  /* Modern Form */
+  .modern-form {
+    background: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .modern-form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+  }
+
+  .modern-form-group {
+    flex: 1;
+    min-width: 250px;
+  }
+  .modern-form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  /* チェックボックスコンテナのスタイル */
+  .modern-checkbox-container {
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    background: #fff;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 15px;
+  }
+
+  .select-all-container {
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 10px;
+  }
+
+  .students-checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modern-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    font-size: 0.9rem;
+  }
+
+  .modern-checkbox-label:hover {
+    background: rgba(64, 123, 255, 0.05);
+  }
+
+  .modern-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    position: relative;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: all 0.2s ease;
+  }
+
+  .modern-checkbox:checked {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+
+  .modern-checkbox:checked::after {
+    content: '✓';
+    position: absolute;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .checkmark {
+    display: none;
+  }
+
+  /* Modern Modal */
+  .modern-homework-modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: var(--backdrop-blur);
+  }
+
+  .modern-modal-content {
+    background: #fff;
+    border-radius: var(--border-radius);
+    max-width: 700px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: var(--shadow-strong);
+    animation: modalSlideIn 0.3s ease-out;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-50px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .modal-header {
+    background: var(--gradient-primary);
+    color: #fff;
+    padding: 25px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h4 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .close-modal {
+    font-size: 24px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.8);
+    transition: var(--transition-smooth);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .close-modal:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+  .modal-body {
+    padding: 30px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  /* Legacy styles for compatibility */
+  .homework-tabs {
+    display: none; /* Hide old tabs */
+  }
+  
+  .tab-btn {
+    display: none; /* Hide old tab buttons */
+  }
+  
+  .tab-content {
+    display: none;
+    padding: 20px 0;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+
+  /* Modern Button Styles */
+  .modern-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .modern-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+  }
+
+  .modern-btn:hover::before {
+    left: 100%;
+  }
+
+  .modern-btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .modern-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .modern-btn-success {
+    background: var(--gradient-success);
+    color: white;
+  }
+
+  .modern-btn-warning {
+    background: var(--gradient-warning);
+    color: #333;
+  }
+
+  .modern-btn-danger {
+    background: var(--gradient-secondary);
+    color: white;
+  }
+
+  .modern-btn-outline {
+    background: transparent;
+    border: 2px solid #667eea;
+    color: #667eea;
+  }
+
+  .modern-btn-outline:hover {
+    background: #667eea;
+    color: white;
+  }
+
+  /* Modern Stats Grid */
+  .modern-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+  }
+
+  .modern-stat-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--border-radius);
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: var(--backdrop-blur);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: var(--transition-smooth);
+  }
+
+  .modern-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    background: var(--gradient-primary);
+    flex-shrink: 0;
+  }
+
+  .stat-content {
+    flex: 1;
+  }
+
+  .stat-content .stat-label {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .stat-content .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Modern History Section */
+  .modern-history-section {
+    margin-top: 40px;
+  }
+
+  /* Modern Table Container */
+  .modern-table-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: var(--backdrop-blur);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .modern-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .modern-data-table th {
+    background: var(--gradient-primary);
+    color: white;
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  .modern-data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+  }
+
+  .modern-data-table tr:hover {
+    background: rgba(102, 126, 234, 0.05);
+  }
+
+  .modern-data-table tr.completed-row {
+    background: rgba(76, 175, 80, 0.05);
+  }
+
+  .modern-data-table tr.pending-row {
+    background: rgba(255, 152, 0, 0.05);
+  }
+
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .status-badge.completed {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .status-badge.pending {
+    background: #fff3e0;
+    color: #ef6c00;
+  }
+
+  /* 履歴表示のスタイル */
+  .modern-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .modern-data-table th {
+    background: var(--gradient-primary);
+    color: white;
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  .modern-data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+  }
+
+  .modern-data-table tr:hover {
+    background: rgba(102, 126, 234, 0.05);
+  }
+
+  .modern-data-table tr.completed-row {
+    background: rgba(76, 175, 80, 0.05);
+  }
+
+  .modern-data-table tr.pending-row {
+    background: rgba(255, 152, 0, 0.05);
+  }
+
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .status-badge.completed {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .status-badge.pending {
+    background: #fff3e0;
+    color: #ef6c00;
+  }
+
+  .modern-table-container {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+</style>
+
+<script>
+// セキュアなfetch関数
+async function secureFetch(url, options = {}) {
+  const defaultOptions = {
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  };
+  
+  return fetch(url, { ...defaultOptions, ...options });
+}
+
+// グローバル変数
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth();
+let selectedStudentId = null;
+
+// API URL を環境に応じて判定する関数
+function getApiUrl(endpoint) {
+  // CGI環境かどうかを判定
+  const isCGI = window.location.pathname.includes('index.cgi') || 
+                window.location.href.includes('/myapp/');
+  
+  return isCGI ? `/myapp/index.cgi${endpoint}` : endpoint;
+}
+
+// 小学5年生と6年生の生徒データを読み込む関数
+async function loadElementaryStudents() {
+  try {
+    console.log('小学5・6年生の生徒データを読み込み中...');
+    
+    const response = await fetch(getApiUrl('/api/teacher/students'), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('取得した生徒データ:', data);
+    
+    if (data.success && data.students) {
+      // 小学5年生と6年生のみをフィルタリング
+      const elementaryStudents = data.students.filter(student => 
+        student.grade && (student.grade === '小学5年' || student.grade === '小学6年')
+      );
+      
+      console.log(`小学5・6年生: ${elementaryStudents.length}人`);
+      
+      // カレンダー用の生徒選択ドロップダウンを更新
+      const calendarStudentSelect = document.getElementById('calendar-student-select');
+      if (calendarStudentSelect) {
+        calendarStudentSelect.innerHTML = '<option value="">生徒を選択</option>';
+        elementaryStudents.forEach(student => {
+          const option = document.createElement('option');
+          option.value = student.id;
+          option.textContent = `${student.grade} ${student.last_name} ${student.first_name}`;
+          calendarStudentSelect.appendChild(option);
+        });
+      }      // 宿題出題用の生徒チェックボックスを更新
+      const studentCheckboxContainer = document.getElementById('student-checkbox-container');
+      if (studentCheckboxContainer) {
+        studentCheckboxContainer.innerHTML = '';
+        
+        elementaryStudents.forEach(student => {
+          const checkboxDiv = document.createElement('div');
+          checkboxDiv.className = 'modern-checkbox-label';
+          
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = `student-${student.id}`;
+          checkbox.value = student.id;
+          checkbox.className = 'student-checkbox';
+          
+          const label = document.createElement('label');
+          label.htmlFor = `student-${student.id}`;
+          label.textContent = `${student.grade} ${student.last_name} ${student.first_name}`;
+          
+          checkboxDiv.appendChild(checkbox);
+          checkboxDiv.appendChild(label);
+          studentCheckboxContainer.appendChild(checkboxDiv);
+        });
+        
+        // 全選択チェックボックスのイベントリスナーを設定
+        const selectAllCheckbox = document.getElementById('select-all-students');
+        if (selectAllCheckbox) {
+          selectAllCheckbox.removeEventListener('change', handleSelectAll);
+          selectAllCheckbox.addEventListener('change', handleSelectAll);
+        }
+      }
+      
+      // フィルター用の生徒選択ドロップダウンも更新
+      const filterStudentSelect = document.getElementById('filter-student-select');
+      if (filterStudentSelect) {
+        filterStudentSelect.innerHTML = '<option value="">全ての生徒</option>';
+        elementaryStudents.forEach(student => {
+          const option = document.createElement('option');
+          option.value = student.id;
+          option.textContent = `${student.grade} ${student.last_name} ${student.first_name}`;
+          filterStudentSelect.appendChild(option);
+        });
+      }
+      
+      console.log('✅ 小学5・6年生データの読み込みが完了しました');
+      return elementaryStudents;
+      
+    } else {
+      throw new Error(data.message || '生徒データの取得に失敗しました');
+    }
+    
+  } catch (error) {
+    console.error('生徒データ読み込みエラー:', error);
+    
+    // エラー表示
+    const errorElements = [
+      document.getElementById('calendar-student-select'),
+      document.getElementById('student-checkbox-container'),
+      document.getElementById('filter-student-select')
+    ];
+    
+    errorElements.forEach(element => {
+      if (element) {
+        if (element.tagName === 'SELECT') {
+          element.innerHTML = '<option value="">読み込み失敗</option>';
+        } else {
+          element.innerHTML = '<div style="color: #dc3545; padding: 10px;">生徒データの読み込みに失敗しました</div>';
+        }
+      }
+    });
+    
+    throw error; // 呼び出し元にエラーを再スロー
+  }
+}
+
+// 宿題テンプレートを読み込む関数
+async function loadHomeworkTemplates() {
+  try {
+    console.log('宿題テンプレートを読み込み中...');
+    
+    const response = await fetch(getApiUrl('/api/teacher/homework/templates'), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('取得したテンプレートデータ:', data);
+    
+    const templatesContainer = document.getElementById('homework-templates');
+    if (templatesContainer) {
+      templatesContainer.innerHTML = '';
+      
+      if (data.success && data.templates && data.templates.length > 0) {
+        data.templates.forEach(template => {
+          const templateDiv = document.createElement('div');
+          templateDiv.className = 'template-item';
+          templateDiv.innerHTML = `
+            <h6>${template.subject} - ${template.textbook}</h6>
+            <p>${template.topic} (${template.pages})</p>
+            <small>最近使用: ${template.last_used || '不明'}</small>
+          `;
+          
+          templateDiv.addEventListener('click', () => {
+            // フォームにテンプレートデータを設定
+            document.getElementById('subject-select').value = template.subject;
+            document.getElementById('textbook-input').value = template.textbook;
+            document.getElementById('topic-input').value = template.topic;
+            document.getElementById('pages-input').value = template.pages;
+          });
+          
+          templatesContainer.appendChild(templateDiv);
+        });
+      } else {
+        templatesContainer.innerHTML = '<p style="text-align: center; color: #999;">テンプレートがありません</p>';
+      }
+    }
+    
+  } catch (error) {
+    console.error('テンプレート読み込みエラー:', error);
+    const templatesContainer = document.getElementById('homework-templates');
+    if (templatesContainer) {
+      templatesContainer.innerHTML = '<p style="text-align: center; color: #dc3545;">テンプレートの読み込みに失敗しました</p>';
+    }
+  }
+}
+
+// オートコンプリート用の候補を読み込む関数
+async function loadAutocompleteSuggestions() {
+  try {
+    const response = await fetch(getApiUrl('/api/teacher/homework/suggestions'), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data.success) {
+        // テキスト名の候補
+        const textbookList = document.getElementById('textbook-list');
+        if (textbookList && data.textbooks) {
+          textbookList.innerHTML = '';
+          data.textbooks.forEach(textbook => {
+            const option = document.createElement('option');
+            option.value = textbook;
+            textbookList.appendChild(option);
+          });
+        }
+        
+        // 項目・単元の候補
+        const topicList = document.getElementById('topic-list');
+        if (topicList && data.topics) {
+          topicList.innerHTML = '';
+          data.topics.forEach(topic => {
+            const option = document.createElement('option');
+            option.value = topic;
+            topicList.appendChild(option);
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('オートコンプリート候補の読み込みエラー:', error);
+  }
+}
+
+// 宿題チェック用データを読み込む関数
+async function loadHomeworkForCheck() {
+  try {
+    const studentFilter = document.getElementById('check-student-filter').value;
+    const dateFrom = document.getElementById('check-date-from').value;
+    const dateTo = document.getElementById('check-date-to').value;
+    
+    const params = new URLSearchParams();
+    if (studentFilter) params.append('student_id', studentFilter);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    
+    const response = await fetch(getApiUrl(`/api/teacher/homework/list?${params}`), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      displayHomeworkList(data.homework);
+    } else {
+      throw new Error(data.message || '宿題データの取得に失敗しました');
+    }
+    
+  } catch (error) {
+    console.error('宿題データ読み込みエラー:', error);
+    const container = document.getElementById('homework-check-list');
+    if (container) {
+      container.innerHTML = '<div style="text-align: center; color: #dc3545; padding: 20px;">データの読み込みに失敗しました</div>';
+    }
+  }
+}
+
+// 宿題リストを表示する関数
+function displayHomeworkList(homeworkList) {
+  const container = document.getElementById('homework-check-list');
+  if (!container) return;
+  
+  if (!homeworkList || homeworkList.length === 0) {
+    container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">該当する宿題がありません</div>';
+    return;
+  }
+  
+  let html = '<div class="homework-list">';
+  
+  homeworkList.forEach(homework => {
+    const isCompleted = homework.completed;
+    const statusClass = isCompleted ? 'completed' : 'pending';
+    const actionButton = isCompleted 
+      ? '<button class="homework-action-btn undo modern-btn-outline" data-assignment-id="' + homework.id + '" data-student-id="' + homework.student_id + '" onclick="handleHomeworkCheck(event)">' +
+           '<i class="fas fa-undo"></i> 完了取消' +
+         '</button>'
+      : '<button class="homework-action-btn complete modern-btn-primary" data-assignment-id="' + homework.id + '" data-student-id="' + homework.student_id + '" onclick="handleHomeworkCheck(event)">' +
+           '<i class="fas fa-check"></i> 完了' +
+         '</button>';
+    
+    html += 
+      '<div class="homework-item ' + statusClass + '">' +
+        '<div class="homework-info">' +
+          '<h6>' + (homework.student_name || '不明') + '</h6>' +
+          '<p><strong>' + homework.subject + '</strong> - ' + homework.textbook + '</p>' +
+          '<p>' + homework.topic + ' (' + homework.pages + ')</p>' +
+          '<small>日付: ' + homework.assigned_date + '</small>' +
+        '</div>' +
+        '<div class="homework-actions">' +
+          actionButton +
+        '</div>' +
+      '</div>';
+  });
+  
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// フィルター用の生徒リストを読み込む関数
+async function loadStudentsForFilter() {
+  try {
+    const response = await fetch(getApiUrl('/api/teacher/students?grade_level=5,6&school_type=elementary'), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.students) {
+      const filterSelect = document.getElementById('check-student-filter');
+      if (filterSelect) {
+        // 既存のオプションをクリア（最初の「全生徒」オプションは保持)
+        filterSelect.innerHTML = '<option value="">全生徒</option>';
+        
+        data.students.forEach(student => {
+          const option = document.createElement('option');
+          option.value = student.id;
+          option.textContent = `${student.grade} ${student.last_name} ${student.first_name}`;
+          filterSelect.appendChild(option);
+        });
+      }
+    }
+    
+  } catch (error) {
+    console.error('フィルター用生徒データ読み込みエラー:', error);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // 現在の日付を設定
+  const today = new Date();
+  currentYear = today.getFullYear();
+  currentMonth = today.getMonth();
+  
+  document.getElementById('assignment-date').value = today.toISOString().split('T')[0];
+  document.getElementById('check-date-from').value = today.toISOString().split('T')[0];
+  document.getElementById('check-date-to').value = today.toISOString().split('T')[0];
+    // フィルターボタンのイベントリスナーを設定
+  const filterBtn = document.getElementById('filter-btn');
+  if (filterBtn) {
+    filterBtn.addEventListener('click', loadHomeworkForCheck);
+  }
+  
+  // 小学5年生と6年生の生徒を読み込む（完了後に初期カレンダー表示）
+  loadElementaryStudents().then(() => {
+    console.log('✅ 生徒データ読み込み完了、カレンダー初期化');
+    
+    // フィルター用の生徒データも読み込み
+    loadStudentsForFilter();
+    
+    // カレンダータブがアクティブな場合は即座に更新を試行
+    const activeTab = document.querySelector('.modern-tab-btn.active');
+    if (activeTab && activeTab.dataset.tab === 'calendar') {
+      setTimeout(() => {
+        const studentSelect = document.getElementById('calendar-student-select');
+        if (studentSelect.value && studentSelect.value !== '') {
+          console.log('🔄 自動カレンダー更新開始');
+          selectedStudentId = studentSelect.value;
+          renderTeacherCalendar(currentYear, currentMonth);
+        }
+      }, 100); // 短い遅延で確実にDOM更新後に実行
+    }
+  });
+    // 初期カレンダー表示メッセージ
+  const calendar = document.getElementById('teacher-homework-calendar');
+  calendar.innerHTML = '<p style="text-align: center; color: #999; padding: 50px; grid-column: 1 / -1;">生徒を選択してください</p>';
+
+  // ページの可視性変更時の自動更新（講師がページに戻ってきた時など）
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      console.log('📄 ページが表示状態になりました - カレンダー更新チェック');
+      
+      // カレンダータブがアクティブで生徒が選択されている場合は更新
+      const activeTab = document.querySelector('.modern-tab-btn.active');
+      if (activeTab && activeTab.dataset.tab === 'calendar' && selectedStudentId) {
+        console.log('🔄 可視性変更による自動カレンダー更新');
+        
+        // キャッシュをクリアして強制更新
+        homeworkData = {};
+        
+        const calendar = document.getElementById('teacher-homework-calendar');
+        calendar.innerHTML = '<div style="text-align: center; padding: 50px; grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> 更新中...</div>';
+        
+        renderTeacherCalendar(currentYear, currentMonth)
+          .catch(error => {
+            console.error('可視性変更時の更新エラー:', error);
+          });
+      }
+    }
+  });
+
+  // タブ切り替え
+  document.querySelectorAll('.modern-tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tabName = this.dataset.tab;
+      
+      // タブボタンのアクティブ状態切り替え
+      document.querySelectorAll('.modern-tab-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      
+      // タブコンテンツの表示切り替え
+      document.querySelectorAll('.modern-tab-content, .tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`${tabName}-tab`).classList.add('active');      // タブに応じてデータを読み込む
+      if (tabName === 'calendar') {
+        console.log('📅 カレンダータブアクティブ化:', selectedStudentId);
+        
+        // カレンダータブの場合は即座に状態確認
+        const studentSelect = document.getElementById('calendar-student-select');
+        const currentStudentId = studentSelect.value;
+        
+        if (!currentStudentId || currentStudentId === '') {
+          const calendar = document.getElementById('teacher-homework-calendar');
+          calendar.innerHTML = '<p style="text-align: center; color: #999; padding: 50px; grid-column: 1 / -1;">生徒を選択してください</p>';
+          console.log('📅 生徒未選択のためメッセージ表示');
+        } else {
+          // 生徒が選択済みの場合は即座にカレンダー更新
+          selectedStudentId = currentStudentId;
+          console.log('🔄 既選択生徒でカレンダー即時更新:', selectedStudentId);
+          
+          const calendar = document.getElementById('teacher-homework-calendar');
+          calendar.innerHTML = '<div style="text-align: center; padding: 50px; grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> 読み込み中...</div>';
+            renderTeacherCalendar(currentYear, currentMonth)
+            .catch(error => {
+              console.error('カレンダー描画エラー:', error);
+              calendar.innerHTML = '<div style="text-align: center; color: #dc3545; padding: 50px; grid-column: 1 / -1;"><i class="fas fa-exclamation-triangle"></i> データの読み込みに失敗しました</div>';
+            });
+        }
+      } else if (tabName === 'assign') {
+        loadHomeworkTemplates();
+        loadAutocompleteSuggestions();      } else if (tabName === 'check') {
+        loadHomeworkForCheck();
+        loadStudentsForFilter(); // フィルター用の生徒リストも読み込み
+      } else if (tabName === 'history') {
+        loadHomeworkHistory();
+      }
+    });
+  });
+    // カレンダーの生徒選択
+  document.getElementById('calendar-student-select').addEventListener('change', function() {
+    const newStudentId = this.value;
+    const selectedStudentName = this.options[this.selectedIndex]?.text || '未選択';
+    console.log('🎯 生徒選択変更:', newStudentId, selectedStudentName);
+    
+    selectedStudentId = newStudentId;
+    
+    if (selectedStudentId) {
+      console.log('📅 カレンダー描画開始:', currentYear, currentMonth);
+      
+      // ローディング表示（即座に）
+      const calendar = document.getElementById('teacher-homework-calendar');
+      calendar.innerHTML = '<div style="text-align: center; padding: 50px; grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> 読み込み中...</div>';
+      
+      // 宿題データのキャッシュをクリア
+      homeworkData = {};
+      
+      // カレンダー描画（強制実行）
+      renderTeacherCalendar(currentYear, currentMonth)
+        .catch(error => {
+          console.error('カレンダー描画エラー:', error);
+          calendar.innerHTML = '<div style="text-align: center; color: #dc3545; padding: 50px; grid-column: 1 / -1;"><i class="fas fa-exclamation-triangle"></i> データの読み込みに失敗しました</div>';
+        });
+    } else {
+      console.log('📅 生徒未選択でカレンダークリア');
+      // カレンダーをクリアし、メッセージを表示
+      const calendar = document.getElementById('teacher-homework-calendar');
+      calendar.innerHTML = '<p style="text-align: center; color: #999; padding: 50px; grid-column: 1 / -1;">生徒を選択してください</p>';
+      // 宿題データもクリア
+      homeworkData = {};
+    }
+  });
+    // 月切り替えボタン
+  document.getElementById('prev-month-btn').addEventListener('click', function() {
+    if (!selectedStudentId) {
+      alert('先に生徒を選択してください');
+      return;
+    }
+    
+    currentMonth--;
+    if (currentMonth < 0) {
+      currentMonth = 11;
+      currentYear--;
+    }
+    
+    // ローディング表示
+    const calendar = document.getElementById('teacher-homework-calendar');
+    calendar.innerHTML = '<div style="text-align: center; padding: 50px; grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> 読み込み中...</div>';
+    
+    renderTeacherCalendar(currentYear, currentMonth)
+      .catch(error => {
+        console.error('月切り替えエラー:', error);
+        calendar.innerHTML = '<div style="text-align: center; color: #dc3545; padding: 50px; grid-column: 1 / -1;"><i class="fas fa-exclamation-triangle"></i> データの読み込みに失敗しました</div>';
+      });
+  });
+  
+  document.getElementById('next-month-btn').addEventListener('click', function() {
+    if (!selectedStudentId) {
+      alert('先に生徒を選択してください');
+      return;
+    }
+    
+    currentMonth++;
+    if (currentMonth > 11) {
+      currentMonth = 0;
+      currentYear++;
+    }
+    if (selectedStudentId) {
+      renderTeacherCalendar(currentYear, currentMonth);
+    }
+  });
+  
+  // モーダルを閉じる
+  document.querySelector('.close-modal').addEventListener('click', function() {
+    document.getElementById('homework-check-modal').style.display = 'none';
+  });
+  
+  // モーダル外クリックで閉じる
+  window.addEventListener('click', function(event) {
+    const modal = document.getElementById('homework-check-modal');
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }  });
+    // 宿題登録フォーム
+  document.getElementById('homework-assign-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // 選択された生徒IDsを取得
+    const selectedStudents = [];
+    document.querySelectorAll('.student-checkbox:checked').forEach(checkbox => {
+      selectedStudents.push(checkbox.value);
+    });
+
+    // フォームデータの取得
+    const formData = {
+      student_ids: selectedStudents, // 配列で送信
+      assigned_date: document.getElementById('assignment-date').value,
+      subject: document.getElementById('subject-select').value,
+      textbook: document.getElementById('textbook-input').value,
+      topic: document.getElementById('topic-input').value,
+      pages: document.getElementById('pages-input').value
+    };
+    
+    // バリデーション
+    if (!formData.student_ids || formData.student_ids.length === 0) {
+      alert('生徒を選択してください');
+      return;
+    }
+    
+    if (!formData.assigned_date) {
+      alert('日付を選択してください');
+      document.getElementById('assignment-date').focus();
+      return;
+    }
+    
+    if (!formData.subject) {
+      alert('教科を選択してください');
+      document.getElementById('subject-select').focus();
+      return;
+    }
+    
+    if (!formData.textbook || formData.textbook.trim() === '') {
+      alert('テキスト名を入力してください');
+      document.getElementById('textbook-input').focus();
+      return;
+    }
+    
+    if (!formData.topic || formData.topic.trim() === '') {
+      alert('項目・単元を入力してください');
+      document.getElementById('topic-input').focus();
+      return;
+    }
+      // 日付の妥当性チェック
+    const assignedDate = new Date(formData.assigned_date);
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    if (assignedDate < currentDate) {
+      const confirm_past = confirm('過去の日付が選択されています。このまま登録しますか？');
+      if (!confirm_past) {
+        document.getElementById('assignment-date').focus();
+        return;
+      }
+    }
+    
+    // フォームデータをトリム
+    formData.textbook = formData.textbook.trim();
+    formData.topic = formData.topic.trim();
+    formData.pages = formData.pages.trim();
+    
+    // 送信ボタンを無効化してローディング表示
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登録中...';
+    
+    // API呼び出し
+    secureFetch(getApiUrl('/api/teacher/homework/assign'), {
+      method: 'POST',
+      body: JSON.stringify(formData)
+    })    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const studentCount = formData.student_ids.length;
+        alert(`${studentCount}人の生徒に宿題を一括登録しました！`);
+        
+        // フォームリセット
+        this.reset();
+        
+        // チェックボックスをすべてクリア
+        document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+          checkbox.checked = false;
+        });
+        document.getElementById('select-all-students').checked = false;
+        
+        // 日付を今日に設定
+        const nowDate = new Date();
+        document.getElementById('assignment-date').value = nowDate.toISOString().split('T')[0];
+        
+        // テンプレートを更新
+        loadHomeworkTemplates();
+        
+        // カレンダーが表示されている場合は強制更新
+        if (selectedStudentId && formData.student_ids.includes(selectedStudentId)) {
+          console.log('🔄 宿題登録後のカレンダー強制更新開始');
+          homeworkData = {}; // キャッシュクリア
+          fetchTeacherHomeworkData(currentYear, currentMonth);
+        }
+      } else {
+        alert('エラー: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('宿題の登録に失敗しました。ネットワーク接続を確認してください。');
+    })
+    .finally(() => {
+      // ボタンを復元
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    });
+  });
+    // テンプレート保存ボタン
+  document.getElementById('save-template-btn').addEventListener('click', function() {
+    // 実際のアプリケーションではサーバーに保存
+    alert('テンプレートとして保存しました');
+  });
+});
+
+// 全選択チェックボックスのイベントハンドラー
+function handleSelectAll(event) {
+  const isChecked = event.target.checked;
+  const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+  
+  studentCheckboxes.forEach(checkbox => {
+    checkbox.checked = isChecked;
+  });
+  
+  console.log(`${isChecked ? '全選択' : '全解除'}しました`);
+}
+
+// 宿題完了/取り消し処理
+async function handleHomeworkCheck(event) {
+  const button = event.target.closest('.homework-action-btn');
+  const assignmentId = button.dataset.assignmentId;
+  const studentId = button.dataset.studentId;
+  const isCompleting = button.classList.contains('complete');
+  
+  const action = isCompleting ? '完了' : '完了取消';
+  if (!confirm(`この宿題を${action}しますか？`)) {
+    return;
+  }
+  
+  try {
+    // ボタンを無効化
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
+    
+    let response;
+    
+    if (isCompleting) {
+      // 完了処理
+      response = await fetch(getApiUrl(`/api/teacher/homework/complete`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          assignment_id: assignmentId,
+          student_id: studentId,
+          points: 10
+        })
+      });
+    } else {
+      // 完了取り消し処理
+      response = await fetch(getApiUrl(`/api/teacher/homework/undo-complete/${assignmentId}`), {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(`宿題を${action}しました！`);
+      // リストを更新
+      loadHomeworkForCheck();
+      
+      // カレンダーも更新（該当生徒が選択されている場合）
+      if (selectedStudentId && selectedStudentId == studentId) {
+        homeworkData = {}; // キャッシュクリア
+        renderTeacherCalendar(currentYear, currentMonth);
+      }
+    } else {
+      throw new Error(data.message || `${action}に失敗しました`);
+    }  } catch (error) {
+    console.error(`宿題${action}エラー:`, error);
+    alert(`エラー: ${error.message}`);
+  } finally {
+    // ボタンを復元
+    button.disabled = false;    if (isCompleting) {
+      button.innerHTML = '<i class="fas fa-check"></i> 完了';
+    } else {
+      button.innerHTML = '<i class="fas fa-undo"></i> 完了取消';
+    }
+  }
+}
+
+// 宿題の完了を取り消す関数
+async function undoHomeworkCompletion(assignmentId, studentId) {
+  if (!confirm('この宿題の完了状態を取り消しますか？\n付与されたポイントも取り消されます。')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(getApiUrl(`/api/teacher/homework/undo-complete/${assignmentId}`), {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('宿題の完了状態を取り消し、ポイントを調整しました');
+      // 履歴を再読み込み
+      loadHomeworkHistory();
+      // リストも更新
+      loadHomeworkForCheck();
+    } else {
+      throw new Error(data.message || '完了取り消しに失敗しました');
+    }
+    
+  } catch (error) {
+    console.error('完了取り消しエラー:', error);
+    alert('完了取り消しに失敗しました: ' + error.message);
+  }
+}
+
+// 宿題を削除する関数
+async function deleteHomeworkAssignment(assignmentId, studentName) {
+  if (!confirm(`${studentName}の宿題を削除しますか？\nこの操作は取り消せません。`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(getApiUrl(`/api/teacher/homework/delete/${assignmentId}`), {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('宿題を削除しました');
+      // 履歴を再読み込み
+      loadHomeworkHistory();
+      // リストも更新
+      loadHomeworkForCheck();
+    } else {
+      throw new Error(data.message || '宿題削除に失敗しました');
+    }
+    
+  } catch (error) {
+    console.error('宿題削除エラー:', error);
+    alert('宿題削除に失敗しました: ' + error.message);
+  }
+}
+
+// 宿題履歴を読み込む関数
+async function loadHomeworkHistory() {
+  try {
+    const response = await fetch(getApiUrl('/api/teacher/homework/history'), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      displayHomeworkHistory(data);
+    } else {
+      throw new Error(data.message || '履歴データの取得に失敗しました');
+    }
+    
+  } catch (error) {
+    console.error('履歴データ読み込みエラー:', error);
+    const tbody = document.getElementById('history-tbody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc3545;">データの読み込みに失敗しました</td></tr>';
+    }
+  }
+}
+
+// 宿題履歴を表示する関数
+function displayHomeworkHistory(data) {
+  // 統計情報を更新
+  const stats = data.statistics || {};
+  document.getElementById('monthly-assignments').textContent = stats.total_assigned || 0;
+  document.getElementById('completion-rate').textContent = `${stats.completion_rate || 0}%`;
+  document.getElementById('total-points').textContent = stats.total_completed || 0;
+  
+  // 履歴テーブルを更新
+  const tbody = document.getElementById('history-tbody');
+  if (!tbody) return;
+  
+  if (!data.history || data.history.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #999;">履歴がありません</td></tr>';
+    return;
+  }
+    let html = '';
+  data.history.forEach(item => {
+    const statusBadge = item.completed 
+      ? '<span class="status-badge completed"><i class="fas fa-check"></i> 完了</span>'
+      : '<span class="status-badge pending"><i class="fas fa-clock"></i> 未完了</span>';
+    
+    const rowClass = item.completed ? 'completed-row' : 'pending-row';
+    
+    // 操作ボタンを追加
+    const actionButtons = `
+      <div class="history-actions">
+        ${item.completed 
+          ? `<button class="btn btn-sm btn-warning" onclick="undoHomeworkCompletion(${item.id}, ${item.student_id})" title="完了取消">
+               <i class="fas fa-undo"></i>
+             </button>` 
+          : ''}
+
+        <button class="btn btn-sm btn-danger" onclick="deleteHomeworkAssignment(${item.id}, '${item.student_name}')" title="宿題削除">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+    
+    html += `
+
+      <tr class="${rowClass}">
+        <td>${item.assigned_date}</td>
+        <td>${item.student_name || '不明'}</td>
+        <td>${item.subject}</td>
+        <td>${item.textbook}</td>
+        <td>${item.topic}</td>
+        <td>${item.pages}</td>
+        <td>${statusBadge}</td>
+        <td>${item.points_awarded || 0}</td>
+        <td>${actionButtons}</td>
+      </tr>
+    `;
+  });
+    tbody.innerHTML = html;
+}
+
+// 宿題の完了を取り消す関数
+async function undoHomeworkCompletion(assignmentId, studentId) {
+  if (!confirm('この宿題の完了状態を取り消しますか？\n付与されたポイントも取り消されます。')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(getApiUrl(`/api/teacher/homework/undo-complete/${assignmentId}`), {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+      if (data.success) {
+      alert('宿題の完了状態を取り消し、ポイントを調整しました');
+      // 履歴を再読み込み
+      loadHomeworkHistory();
+      // リストも更新
+      loadHomeworkForCheck();
+    } else {
+      throw new Error(data.message || '完了取り消しに失敗しました');
+    }
+    
+  } catch (error) {
+    console.error('完了取り消しエラー:', error);
+    alert('完了取り消しに失敗しました: ' + error.message);
+  }
+}
+
+/* カレンダー関連の変数とデータ */
+let homeworkData = {};
+
+/* カレンダーを描画する関数 */
+async function renderTeacherCalendar(year, month) {
+  try {
+    console.log(`📅 カレンダー描画開始: ${year}年${month + 1}月, 生徒ID: ${selectedStudentId}`);
+    
+    if (!selectedStudentId) {
+      console.log('❌ 生徒が選択されていません');
+      return;
+    }
+    
+    // 月表示を更新
+    const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    document.getElementById('current-month-display').textContent = `${year}年 ${monthNames[month]}`;
+    
+    // 宿題データを取得
+    await fetchTeacherHomeworkData(year, month);
+    
+    // カレンダーグリッドを生成
+    const calendar = document.getElementById('teacher-homework-calendar');
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    let html = '';
+    
+        // ヘッダー
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    dayNames.forEach(day => {
+      html += '<div class="calendar-header">' + day + '</div>';
+    });
+    
+    // カレンダーの日付
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < 42; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const isCurrentMonth = currentDate.getMonth() === month;
+      const isToday = currentDate.getTime() === today.getTime();
+      
+      let dayClass = 'calendar-day';
+      if (!isCurrentMonth) dayClass += ' empty';
+      if (isToday) dayClass += ' today';
+      
+      let homeworkHtml = '';
+      const homeworkForDate = homeworkData[dateStr];
+      
+      if (isCurrentMonth && homeworkForDate && homeworkForDate.length > 0) {
+        homeworkForDate.forEach(homework => {
+          const statusClass = homework.completed ? 'completed' : 'pending';
+          const icon = homework.completed ? 'fa-check-circle' : 'fa-clock';
+          
+          homeworkHtml += 
+            '<div class="homework-indicator ' + statusClass + '">' +
+              '<i class="fas ' + icon + '"></i>' +
+              '<span>' + homework.subject + '</span>' +
+            '</div>';
+        });
+      }
+      
+      html += 
+        '<div class="' + dayClass + '" data-date="' + dateStr + '" onclick="openHomeworkModal(\'' + dateStr + '\')">' +
+          '<div class="date-number">' + currentDate.getDate() + '</div>' +
+          '<div class="homework-indicators">' + homeworkHtml + '</div>' +        '</div>';
+    }
+    
+    calendar.innerHTML = html;
+    console.log('✅ カレンダー描画完了');
+    
+  } catch (error) {
+    console.error('カレンダー描画エラー:', error);
+    const calendar = document.getElementById('teacher-homework-calendar');
+    calendar.innerHTML = '<div style="text-align: center; color: #dc3545; padding: 50px; grid-column: 1 / -1;"><i class="fas fa-exclamation-triangle"></i> データの読み込みに失敗しました</div>';
+  }
+}
+
+// 宿題データを取得する関数
+async function fetchTeacherHomeworkData(year, month) {
+  try {
+    if (!selectedStudentId) {
+      console.log('❌ 生徒IDが未選択');
+      return;
+    }
+    
+    const params = new URLSearchParams({
+      year: year,
+      month: month + 1,
+      student_id: selectedStudentId
+    });
+    
+    const response = await fetch(getApiUrl(`/api/teacher/homework/calendar?${params}`), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    if (data.success) {
+      homeworkData = data.homework || {};
+      console.log('📊 宿題データ取得完了:', Object.keys(homeworkData).length, '日分');
+    } else {
+      throw new Error(data.message || '宿題データの取得に失敗しました');
+    }
+    
+  } catch (error) {
+    console.error('宿題データ取得エラー:', error);
+    homeworkData = {};
+  }
+}
+
+// モーダルを開く関数
+function openHomeworkModal(dateStr) {
+  const homeworkForDate = homeworkData[dateStr];
+  if (!homeworkForDate || homeworkForDate.length === 0) {
+    return;
+  }
+  
+  const modal = document.getElementById('homework-check-modal');
+  const date = new Date(dateStr);
+  const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+  
+  document.getElementById('modal-student-date').textContent = 
+    `${date.getFullYear()}年${monthNames[date.getMonth()]}${date.getDate()}日の宿題`;
+  
+  let html = '';
+  homeworkForDate.forEach(homework => {
+    const isCompleted = homework.completed;
+    const statusClass = isCompleted ? 'completed' : 'pending';
+    const actionButton = isCompleted 
+      ? '<button class="homework-action-btn undo modern-btn-outline" data-assignment-id="' + homework.id + '" data-student-id="' + homework.student_id + '" onclick="handleHomeworkCheck(event)">' +
+           '<i class="fas fa-undo"></i> 完了取消' +
+         '</button>'
+      : '<button class="homework-action-btn complete modern-btn-primary" data-assignment-id="' + homework.id + '" data-student-id="' + homework.student_id + '" onclick="handleHomeworkCheck(event)">' +
+           '<i class="fas fa-check"></i> 完了' +
+         '</button>';
+    
+    html += 
+      '<div class="homework-detail-item ' + statusClass + '">' +
+        '<div class="homework-info">' +
+          '<h6>' + homework.subject + ' - ' + homework.textbook + '</h6>' +
+          '<p>' + homework.topic + ' (' + homework.pages + ')</p>' +
+        '</div>' +
+        '<div class="homework-actions">' +
+          actionButton +
+        '</div>' +
+      '</div>';
+  });
+  
+  document.getElementById('homework-check-list').innerHTML = html;
+  modal.style.display = 'flex';
+}
+</script>
+
+{% endblock %}

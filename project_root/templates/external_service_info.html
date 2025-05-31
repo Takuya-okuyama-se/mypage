@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ config.display_name }}情報 | 塾生徒サイト{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>{{ config.display_name }} ログイン情報</h3>
+  <p>{{ config.description }}「{{ config.display_name }}」へアクセスするためのログイン情報です。</p>
+  
+  {% if credentials %}
+    <div class="service-info">
+      <h4>アカウント情報</h4>
+      <div class="login-info">
+        <p><strong>ログインID:</strong> {{ credentials.login_id }}</p>
+        <p><strong>パスワード:</strong> {{ credentials.password }}</p>
+      </div>
+      <p>ログインページへアクセスし、上記の情報を入力してログインしてください。</p>
+      <a href="{{ config.url }}" target="_blank" class="service-link-btn">{{ config.display_name }}を開く</a>
+    </div>
+  {% else %}
+    <div class="alert alert-warning">
+      <p>{{ config.display_name }}のログイン情報が登録されていません。</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

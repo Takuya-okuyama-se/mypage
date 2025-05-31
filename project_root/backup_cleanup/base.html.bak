@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="user-id" content="{{ session.user_id|default('') }}">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <meta name="theme-color" content="#4361ee">
+  <meta name="description" content="塾生徒専用サイト - ポイント管理とクレーンゲーム">
+  <title>{% block title %}塾生徒サイト{% endblock %}</title>  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/myapp/index.cgi/static/style.css">
+  <link rel="stylesheet" href="/myapp/index.cgi/static/modern-style.css">  
+  <link rel="stylesheet" href="/myapp/index.cgi/static/progress-styles.css">  
+  <link rel="stylesheet" href="/myapp/index.cgi/static/responsive-improvements.css">  
+  <link rel="stylesheet" href="/myapp/index.cgi/static/windows-viewport-fix.css">  
+  <link rel="stylesheet" href="/myapp/index.cgi/static/windows-f12-override.css">  
+  <link rel="stylesheet" href="/myapp/index.cgi/static/f12-fix.css">
+  <!-- メニュー関連のCSSを整理 -->
+  <link rel="stylesheet" href="/myapp/index.cgi/static/simple-mobile-nav.css">
+  <link rel="stylesheet" href="/myapp/index.cgi/static/override-nav.css">
+    <!-- JavaScript -->
+  <script src="/myapp/index.cgi/static/js/csrf_utils.js"></script>
+  <script src="/myapp/index.cgi/static/js/touch-utils.js" defer></script>
+  <!-- 修正版メニュースクリプトのみを使用 -->
+  <script src="/myapp/index.cgi/static/js/fixed-menu-toggle.js" defer></script>
+  <style>
+    /* 高度なスタイル拡張 */
+    :root {
+      --primary: #4361ee;
+      --primary-light: #4cc9f0;
+      --primary-dark: #3a0ca3;
+      --secondary: #f72585;
+      --accent: #7209b7;
+      --bg-gradient-start: #4361ee;
+      --bg-gradient-end: #3a0ca3;
+      --header-height: 60px;
+    }
+    
+    body {
+      font-family: 'Noto Sans JP', 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }      /* ヘッダー - 高度なグラデーションとエフェクト */
+    header {
+      background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+      color: white;
+      padding: 18px 0;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+      opacity: 0.6;
+      z-index: 0;
+    }
+      header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .logo {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      font-family: 'Poppins', 'Noto Sans JP', sans-serif;
+      position: relative;
+      background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.8) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .logo::before {
+      content: '\f19d';
+      font-family: 'Font Awesome 6 Free';
+      margin-right: 15px;
+      font-weight: 900;
+      font-size: 1.8rem;
+      color: white;
+      -webkit-text-fill-color: white;
+      filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3));
+    }
+    
+    .user-info {
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+      background: rgba(255,255,255,0.15);
+      padding: 10px 20px;
+      border-radius: 50px;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .user-info::before {
+      content: '\f007';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      margin-right: 10px;
+      color: rgba(255,255,255,0.9);
+    }      /* モダンナビゲーション */
+    nav {
+      background-color: white;
+      padding: 0;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+    
+    nav.scrolled {
+      background-color: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+    }
+    
+    nav .container {
+      display: flex;
+      padding: 0;
+    }
+    
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      width: 100%;
+      gap: 5px;
+    }
+    
+    .tab {
+      padding: 18px 24px;
+      margin: 0;
+      text-decoration: none;
+      color: #555;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      z-index: 1;
+    }
+    
+    .tab::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      border-radius: 3px 3px 0 0;
+    }
+    
+    .tab::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(67, 97, 238, 0);
+      z-index: -1;
+      transition: background-color 0.3s ease;
+    }
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #4285f4, #34a853);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }
+      .tab:hover::before, .tab.active::before {
+      transform: translateX(0);
+      box-shadow: 0 2px 8px rgba(67, 97, 238, 0.3);
+    }
+    
+    .tab:hover::after {
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+    
+    .tab:hover, .tab.active {
+      color: var(--primary);
+    }
+    
+    .tab.active {
+      font-weight: 700;
+    }
+    
+    .tab.active::after {
+      background-color: rgba(67, 97, 238, 0.08);
+    }
+    
+    .tab i {
+      margin-right: 8px;
+      font-size: 1.1rem;
+      transition: transform 0.3s ease;
+    }
+    
+    .tab:hover i {
+      transform: translateY(-2px);
+    }
+      /* メインコンテンツ */
+    .main-content {
+      padding: 25px 0;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      padding: 25px;
+      margin-bottom: 25px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+    
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(66, 133, 244, 0.1);
+    }
+    
+    .card h3 {
+      color: #333;
+      font-weight: 700;
+      font-size: 1.4rem;
+      margin-top: 0;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f4f9;
+      position: relative;
+    }
+    
+    .card h3::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(90deg, #4285f4, #34a853);
+    }
+    
+    /* フォーム要素 */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #444;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 1rem;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      background-color: #fcfcfc;
+    }
+    
+    .form-control:focus {
+      border-color: #4285f4;
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2);
+      outline: none;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-100%);
+      transition: transform 0.3s ease;
+    }
+    
+    .btn:hover::after {
+      transform: translateY(0);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #4285f4, #1a73e8);
+      color: white;
+      box-shadow: 0 2px 5px rgba(66, 133, 244, 0.3);
+    }
+    
+    .btn-primary:hover {
+      box-shadow: 0 4px 8px rgba(66, 133, 244, 0.4);
+      transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #757575, #5f6368);
+      color: white;
+      box-shadow: 0 2px 5px rgba(117, 117, 117, 0.3);
+    }
+    
+    .btn-secondary:hover {
+      box-shadow: 0 4px 8px rgba(117, 117, 117, 0.4);
+      transform: translateY(-2px);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #ea4335, #d32f2f);
+      color: white;
+      box-shadow: 0 2px 5px rgba(234, 67, 53, 0.3);
+    }
+    
+    .btn-danger:hover {
+      box-shadow: 0 4px 8px rgba(234, 67, 53, 0.4);
+      transform: translateY(-2px);
+    }
+    
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.875rem;
+      border-radius: 6px;
+    }
+      /* アラート */
+    .alert {
+      padding: 16px 20px;
+      margin-bottom: 25px;
+      border-radius: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+    }
+    
+    .alert::before {
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      margin-right: 12px;
+      font-size: 1.2rem;
+    }
+    
+    .alert-danger {
+      background-color: #fff5f5;
+      border-left: 4px solid #ea4335;
+      color: #d32f2f;
+    }
+    
+    .alert-danger::before {
+      content: '\f071';
+      color: #ea4335;
+    }
+    
+    .alert-success {
+      background-color: #f5fbf8;
+      border-left: 4px solid #34a853;
+      color: #2e7d32;
+    }
+    
+    .alert-success::before {
+      content: '\f00c';
+      color: #34a853;
+    }
+    
+    .alert-info {
+      background-color: #f3f8ff;
+      border-left: 4px solid #4285f4;
+      color: #1a73e8;
+    }
+    
+    .alert-info::before {
+      content: '\f05a';
+      color: #4285f4;
+    }
+    
+    /* データテーブル */
+    .data-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .data-table th,
+    .data-table td {
+      padding: 14px 16px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    
+    .data-table th {
+      background: linear-gradient(135deg, #fafbfc, #f0f4f9);
+      font-weight: 600;
+      color: #444;
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border-bottom: 2px solid rgba(66, 133, 244, 0.1);
+    }
+    
+    .data-table td {
+      border-bottom: 1px solid #eee;
+    }
+    
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .data-table tr:hover {
+      background-color: rgba(66, 133, 244, 0.03);
+    }
+    
+    .data-table tr:nth-child(even) {
+      background-color: #fafbfc;
+    }
+    
+    .data-table tr:nth-child(even):hover {
+      background-color: #f7f9fc;
+    }
+    
+    /* 成績表・内申表のスタイル */
+    .grades-container, .internal-points-container {
+      margin-bottom: 30px;
+    }
+    
+    .editable {
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    .editable:hover {
+      background-color: #f0f0f0;
+    }
+    
+    .edit-input {
+      width: 60px;
+      padding: 4px;
+      border: 1px solid #4285f4;
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: 5px;
+    }
+    
+    .status-updating {
+      background-color: #fbbc05;
+    }
+    
+    .status-success {
+      background-color: #34a853;
+    }
+    
+    .status-error {
+      background-color: #ea4335;
+    }
+    
+    .no-data {
+      color: #999;
+    }
+    
+    header {
+      background-color: #4285f4;
+      color: white;
+      padding: 15px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+    }
+    
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    
+    .user-info {
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+    }
+    
+    .user-points {
+      margin-left: 15px;
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }    /* ユーザーポイント表示 */
+    .user-points {
+      margin-left: 15px;
+      background-color: rgba(255, 255, 255, 0.15);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+      .user-points::before {
+      content: '\f3d1';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      margin-right: 8px;
+      font-size: 0.9rem;
+    }
+      
+    /* ナビアイコン */
+    .nav-links .tab::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #4285f4, #34a853);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }
+    
+    /* ナビアイコン設定 */
+    .tab.essential-nav:nth-child(1)::after {
+      content: '\f015';
+      margin-left: 8px;
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+    }
+    
+    .tab.essential-nav:nth-child(2)::after {
+      content: '\f007';
+      margin-left: 8px;
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+    }
+    
+    .tab.essential-nav:nth-child(3)::after {
+      content: '\f091';
+      margin-left: 8px;
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+    }
+    
+    .tab:hover::after, .tab.active::after {
+      opacity: 1;
+    }
+    
+    /* レスポンシブ対応 */    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+      
+      header .container {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .user-info {
+        margin-top: 12px;
+        width: 100%;
+        justify-content: space-between;
+      }
+      
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background-color: white;
+      }
+      
+      nav .container {
+        flex-direction: column;
+        position: relative;
+        padding: 0;
+      }
+  
+      
+      .tab {
+        padding: 15px;
+        margin-bottom: 0;
+        width: 100%;
+        justify-content: space-between;
+      }
+      
+      .tab::after {
+        order: 2;
+      }
+      
+      .tab::before {
+        display: none;
+      }
+      
+      .card {
+        padding: 15px;
+        border-radius: 10px;
+      }
+      
+      .data-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        font-size: 0.9rem;
+      }
+      
+      .data-table th, .data-table td {
+        padding: 10px;
+      }
+    }
+    
+    /* 小型デバイス向けの追加調整 */
+    @media (max-width: 480px) {
+      .btn {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+      }
+      
+      .card h3 {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+      }
+      
+      .user-points {
+        font-size: 0.85rem;
+        padding: 4px 10px;
+      }
+    }
+      /* ログアウトタブのスタイル */
+    .logout-tab {
+      margin-left: auto;
+      color: #ea4335;
+    }
+    
+    .logout-tab:hover {
+      color: #c62828;
+      background-color: rgba(234, 67, 53, 0.05);
+    }
+    
+    .logout-tab::before {
+      background: linear-gradient(90deg, #ea4335, #d32f2f);
+    }
+    
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f5f7fa;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #c1d1e8;
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4285f4;
+    }
+    
+    /* 追加のカスタマイズ */
+    ::selection {
+      background: rgba(66, 133, 244, 0.3);
+      color: #333;
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* ローディングインジケータ */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(66, 133, 244, 0.3);
+      border-radius: 50%;
+      border-top-color: #4285f4;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    {% block head_extra %}{% endblock %}
+  </style>
+</head>
+<body>  <header>
+    <div class="container">
+      <div class="logo">塾生徒サイト</div>
+      {% if session and session.user_id %}
+        <div class="user-info">
+          ようこそ、{{ session.user_name|default('') }}さん （{{ session.role == 'teacher' and '講師' or '生徒' }}）
+          {% if session.is_teacher_login %}
+<div class="teacher-mode-banner">
+    <div class="container">
+        <strong>生徒モード:</strong> {{ session.user_name }} としてログイン中
+        <a href="/myapp/index.cgi/student/return-to-teacher" class="btn btn-sm btn-warning">講師モードに戻る</a>
+    </div>
+</div>
+{% endif %}
+          {% if session.role == 'student' %}
+            <span id="header-points-display" class="user-points">ポイント: <span id="header-points-value">読込中...</span></span>
+          {% endif %}
+        </div>      {% endif %}    </div>  </header>    <!-- ナビゲーション -->  <nav>
+    <div class="container">
+      <button id="nav-hamburger-toggle" class="hamburger-button" aria-label="メニュー" aria-expanded="false" aria-controls="nav-links">
+          <span class="hamburger-box">
+              <span class="hamburger-inner"></span>
+          </span>
+      </button>
+    
+    <div class="nav-links" id="nav-links" role="navigation" aria-hidden="true">
+        {% if session and session.user_id and session.role=='student' %}
+          <!-- 必須3つはesential-navクラスを追加 -->
+          <a class="tab essential-nav {% if request.path.endswith('/student/dashboard') %}active{% endif %}" href="/myapp/index.cgi/student/dashboard">ダッシュボード</a>
+          <a class="tab essential-nav {% if request.path.endswith('/student/profile') %}active{% endif %}" href="/myapp/index.cgi/student/profile">プロフィール</a>
+          <a class="tab essential-nav {% if request.path.endswith('/student/performance') %}active{% endif %}" href="/myapp/index.cgi/student/performance">成績・内申</a>
+          
+          <!-- その他のタブにはadditional-navクラスを追加 -->
+          <a class="tab additional-nav {% if '/student/high-schools' in request.path %}active{% endif %}" href="/myapp/index.cgi/student/high-schools">
+            <i class="fas fa-school"></i> 高校情報
+          </a>
+          <a class="tab additional-nav {% if request.path.endswith('/student/points') %}active{% endif %}" href="/myapp/index.cgi/student/points">
+            <i class="fas fa-coins"></i> ポイント
+          </a>
+          <a class="tab additional-nav {% if request.path.endswith('/student/crane-game') %}active{% endif %}" href="/myapp/index.cgi/student/crane-game">
+            <i class="fas fa-gamepad"></i> クレーンゲーム
+          </a>
+          <a class="tab additional-nav {% if request.path.endswith('/student/eiken-words') %}active{% endif %}" href="/myapp/index.cgi/student/eiken-words">
+            <i class="fas fa-language"></i> 英検単語
+          </a>
+          <a class="tab additional-nav {% if request.path.endswith('/hope-room') %}active{% endif %}" href="/myapp/index.cgi/hope-room">
+            <i class="fas fa-chalkboard-teacher"></i> HOPE ROOM
+          </a>
+          <a class="tab additional-nav {% if request.path.endswith('/myetr') %}active{% endif %}" href="/myapp/index.cgi/myetr">
+            <i class="fas fa-laptop"></i> eトレ
+          </a>        {% elif session and session.user_id and session.role=='teacher' %}
+          <a class="tab essential-nav {% if request.path.endswith('/teacher/dashboard') %}active{% endif %}" href="/myapp/index.cgi/teacher/dashboard">ダッシュボード</a>
+          <a class="tab essential-nav {% if request.path.endswith('/teacher/points') %}active{% endif %}" href="/myapp/index.cgi/teacher/points">ポイント管理</a>
+          <a class="tab essential-nav {% if request.path.endswith('/admin/fetch-high-schools') %}active{% endif %}" href="/myapp/index.cgi/admin/fetch-high-schools">高校情報取得</a>
+          
+          <a class="tab additional-nav {% if request.path.endswith('/student/eiken-words') %}active{% endif %}" href="/myapp/index.cgi/student/eiken-words">
+            <i class="fas fa-language"></i> 英検単語
+          </a>
+          <a class="tab additional-nav {% if request.path.endswith('/admin/import-eiken-words') %}active{% endif %}" href="/myapp/index.cgi/admin/import-eiken-words">
+            <i class="fas fa-file-import"></i> 英検単語インポート
+          </a>
+          <a class="tab additional-nav {% if request.path.endswith('/hope-room') %}active{% endif %}" href="/myapp/index.cgi/hope-room">
+            <i class="fas fa-chalkboard-teacher"></i> HOPE ROOM
+          </a>
+          <a class="tab additional-nav {% if request.path.endswith('/myetr') %}active{% endif %}" href="/myapp/index.cgi/myetr">
+            <i class="fas fa-laptop"></i> eトレ
+          </a>{% endif %}        {% if session and session.user_id %}          <a class="tab additional-nav logout-tab {% if request.path.endswith('/logout') %}active{% endif %}" href="/myapp/index.cgi/logout">
+            <i class="fas fa-sign-out-alt"></i> ログアウト
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <div class="main-content">
+      {% block content %}{% endblock %}
+    </div>  </div>    {% block scripts %}{% endblock %}    <!-- ポイント表示用スクリプト -->  <script>
+    // ハンバーガーメニュー初期化のための追加スクリプト
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('ベーススクリプト：DOMContentLoaded イベントが発生しました');
+      
+      // ハンバーガーメニューの初期化は force-mobile-nav.js に任せる
+      // このスクリプトはイベントリスナーを追加しないようにする
+      
+      // デバッグ情報のみ表示
+      const hamburgerButton = document.getElementById('nav-hamburger-toggle');
+      const navLinks = document.getElementById('nav-links');
+      
+      if (hamburgerButton && navLinks) {
+        console.log('ハンバーガーメニュー要素が検出されました');
+      }
+    });
+    
+    // グローバルなCSRF対策の設定
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    
+    // Fetchリクエストをラップしてデフォルトでトークンを設定する関数
+    async function secureFetch(url, options = {}) {
+      // デフォルトのオプションを設定
+      const defaultOptions = {
+        headers: {
+          'X-CSRF-Token': csrfToken,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+      };
+      
+      // オプションをマージ
+      const mergedOptions = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+          ...defaultOptions.headers,
+          ...(options.headers || {})
+        }
+      };
+      
+      return fetch(url, mergedOptions);
+    }      document.addEventListener('DOMContentLoaded', function() {
+      const pointsDisplay = document.getElementById('header-points-value');
+      const userId = document.querySelector('meta[name="user-id"]')?.content;
+        // カードにフェードインアニメーションを適用
+      const cards = document.querySelectorAll('.card');
+      cards.forEach((card, index) => {
+        setTimeout(() => {
+          card.classList.add('fade-in');
+        }, 100 * index);
+      });
+  
+      
+      // 生徒ユーザーの場合のみポイントを取得
+      if (pointsDisplay && userId) {
+        // ポイント情報を取得する関数
+        const fetchPoints = async () => {
+          try {            // API経由でポイント情報を取得（セキュアなFetch関数を使用）
+            const response = await secureFetch('/myapp/index.cgi/api/student/points');
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.total_points !== undefined) {
+                pointsDisplay.textContent = data.total_points;
+              } else {
+                console.error('ポイントデータが不正な形式です', data);
+                pointsDisplay.textContent = '読込エラー';
+              }
+            } else {
+              console.error('ポイントの取得に失敗しました', response.status);
+              pointsDisplay.textContent = '読込エラー';
+            }
+          } catch (error) {
+            console.error('ポイント取得エラー:', error);
+            pointsDisplay.textContent = '読込エラー';
+          }
+        };
+        
+        // 初回読み込み
+        fetchPoints();
+        
+        // 30秒ごとに更新
+        setInterval(fetchPoints, 30000);
+      }
+    });
+
+  // 学年表示のためのグローバル関数
+function getGradeDisplay(gradeLevel, schoolType) {
+  let schoolPrefix = '';
+  if (schoolType === 'elementary') {
+    schoolPrefix = '小';
+  } else if (schoolType === 'middle') {
+    schoolPrefix = '中';
+  } else {
+    schoolPrefix = '高';
+  }
+  
+  // 学年を実際の表示学年に変換
+  let actualGrade = gradeLevel;
+  if (schoolType === 'middle') {
+    actualGrade = gradeLevel - 6;  // 7→1年, 8→2年, 9→3年
+  } else if (schoolType === 'high') {
+    actualGrade = gradeLevel - 9;  // 10→1年, 11→2年, 12→3年
+  }
+  
+  return schoolPrefix + actualGrade + '年';
+}
+
+// ログアウト時のセッションクリア対策（特にページのキャッシュ対策）
+if (window.location.href.includes('/login') && document.referrer.includes('/logout')) {
+  // ブラウザキャッシュを強制リフレッシュ
+  window.location.reload(true);
+  
+  // セッションストレージとローカルストレージをクリア
+  sessionStorage.clear();
+  localStorage.removeItem('userInfo');
+}
+  </script>
+</body>
+</html>< s c r i p t   s r c = " / m y a p p / i n d e x . c g i / s t a t i c / j s / f i n a l - m e n u - f i x . j s " > < / s c r i p t > 
+ 
+ < l i n k   r e l = " s t y l e s h e e t "   h r e f = " / m y a p p / i n d e x . c g i / s t a t i c / f i n a l - m e n u - o v e r r i d e . c s s " > 
+ 
+ < l i n k   r e l = " s t y l e s h e e t "   h r e f = " / m y a p p / i n d e x . c g i / s t a t i c / a l t e r n a t i v e - m e n u - d i s p l a y . c s s " > 
+ 
+ < s c r i p t   s r c = " / m y a p p / i n d e x . c g i / s t a t i c / j s / f o r c e - n o - s c r o l l . j s "   d e f e r > < / s c r i p t > 
+ 
+ < l i n k   r e l = " s t y l e s h e e t "   h r e f = " / m y a p p / i n d e x . c g i / s t a t i c / a b s o l u t e - f i n a l - n a v - f i x . c s s " > 
+ 
+ < s c r i p t   s r c = " / m y a p p / i n d e x . c g i / s t a t i c / j s / a b s o l u t e - m e n u - f i x . j s "   d e f e r > < / s c r i p t > 
+ 
+ 

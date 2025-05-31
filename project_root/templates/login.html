@@ -1,0 +1,109 @@
+{% extends "base_login.html" %}
+{% block title %}ログイン{% endblock %}
+{% block head_extra %}
+<style>
+  .login-card {
+    max-width: 450px;
+    margin: 0 auto;
+    padding: 25px;
+  }
+  
+  .login-title {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #4285f4;
+  }
+  
+  .login-form-group {
+    margin-bottom: 20px;
+  }
+  
+  .login-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  
+  .login-form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+  
+  .login-button {
+    width: 100%;
+    padding: 14px;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+  }
+  
+  .login-button:hover {
+    background-color: #3367d6;
+  }
+  
+  /* モバイル向けの調整 */
+  @media (max-width: 768px) {
+    .login-card {
+      padding: 20px 15px;
+      margin: 0 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .login-form-group input {
+      padding: 14px 10px;
+      font-size: 16px; /* モバイルでの自動ズームを防止 */
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .login-button {
+      padding: 16px;
+      margin-top: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card login-card">
+  <h2 class="login-title">ログイン</h2>
+  <form method="post">
+    <div class="login-form-group">
+      <label for="username">氏名（スペースなし）</label>
+      <input type="text" id="username" name="username" placeholder="例：山田太郎" required autocomplete="username">
+    </div>
+    <div class="login-form-group">
+      <label for="password">パスワード（数字6桁）</label>
+      <input type="password" id="password" name="password" placeholder="例：123456" pattern="[0-9]{6}" inputmode="numeric" maxlength="6" required autocomplete="current-password">
+    </div>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="login-button">ログイン</button>
+  </form>
+  {% if error %}
+  <div class="alert alert-danger" style="margin-top: 20px;">
+    {{ error }}
+  </div>
+  {% endif %}
+  {% if debug_info %}
+  <div style="background-color: #f8f9fa; border: 1px solid #ccc; padding: 10px; margin-top: 20px;">
+    <h4>デバッグ情報:</h4>
+    <p>{{ debug_info|safe }}</p>
+    <p>CSRF Token: {{ csrf_token[:8] }}{% if csrf_token %}...{% else %}(未設定){% endif %}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

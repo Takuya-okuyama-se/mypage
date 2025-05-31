@@ -1,0 +1,760 @@
+{% extends "base.html" %}
+
+{% block title %}プロフィール・志望校設定 | 塾生徒サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* ベーススタイル - すべての要素にbox-sizingを適用 */
+  * {
+    box-sizing: border-box;
+  }
+  
+  /* 入力フィールドなどのスタイル調整 */
+  input, select, textarea {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .preference-list {
+    margin-bottom: 20px;
+  }
+  
+  .preference-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border-left: 4px solid #4285f4;
+  }
+  
+  .preference-order {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #4285f4;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-weight: bold;
+  }
+  
+  .preference-info {
+    flex-grow: 1;
+  }
+  
+  .school-name {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 3px;
+  }
+  
+  .school-details {
+    font-size: 0.9em;
+    color: #555;
+  }
+  
+  .preference-actions {
+    margin-left: 10px;
+  }
+  
+  .add-form {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  
+  .add-form h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+  }
+  
+  .internal-points-box {
+    background-color: #e3f2fd;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  
+  .internal-points-box h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #1976d2;
+  }
+  
+  .internal-points-total {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .internal-points-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  
+  .subject-point {
+    background-color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  
+  .subject-name {
+    font-weight: bold;
+    margin-right: 5px;
+  }
+  
+  .calculation-method {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #555;
+    font-style: italic;
+  }
+  
+  .points-table {
+    width: 100%;
+    margin-top: 15px;
+    border-collapse: collapse;
+  }
+  
+  .points-table th, .points-table td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #ddd;
+  }
+  
+  .points-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+  }
+  
+  .points-table .subject-name-cell {
+    text-align: left;
+    font-weight: bold;
+  }
+    /* SELECT要素のスタイル */
+  select {
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  select option {
+    padding: 5px;
+    font-size: 0.95em;
+  }
+  
+  select[name="high_school_id"] {
+    padding: 8px;
+    height: auto;
+    width: 100%;
+  }
+  
+  select[name="high_school_id"] option {
+    padding: 4px;
+    line-height: 1.2;
+  }
+  
+  @media (max-width: 480px) {
+    select {
+      font-size: 16px; /* モバイル表示用に調整 */
+    }
+  }
+  
+  .profile-section {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .form-text {
+    margin-top: 5px;
+    font-size: 0.85rem;
+    color: #6c757d;
+  }
+
+  /* 学年設定フォームのスタイル */
+  .grade-settings {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+  }
+
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .form-col {
+    flex: 1;
+    min-width: 200px;
+    width: 100%;
+  }
+  
+  @media (max-width: 768px) {
+    .form-row {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .form-col {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+  
+  /* 通塾曜日設定のスタイル */  .weekday-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  
+  .weekday-check {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f0f0f0;
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  @media (max-width: 768px) {
+    .weekday-checkboxes {
+      justify-content: center;
+    }
+    
+    .weekday-check {
+      padding: 8px 8px;
+      margin-right: 5px;
+      font-size: 14px;
+    }
+  }
+  
+  .weekday-check:hover {
+    background-color: #e3e3e3;
+  }
+  
+  .weekday-check.selected {
+    background-color: #4285f4;
+    color: white;
+  }
+  
+  .weekday-check input {
+    margin-right: 5px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>{{ name }}さんのプロフィール・志望校設定</h3>
+  
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+  
+  {% if success %}
+    <div class="alert alert-success">{{ success }}</div>
+  {% endif %}
+  
+  <div class="internal-points-box">
+    <h4>現在の内申点合計</h4>
+    <div class="internal-points-total">
+      {{ current_internal_points.total }}点 
+      <span class="calculation-method">({{ current_internal_points.calculation_method }})</span>
+    </div>
+    
+    {% if current_internal_points.second_year_points or current_internal_points.third_year_points %}
+      <table class="points-table">
+        <thead>
+          <tr>
+            <th>科目</th>
+            <th>2年生3学期</th>
+            <th>3年生2学期</th>
+            <th>計算結果<br><small>(2年3学期+3年2学期×2)</small></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for detail in current_internal_points.details %}
+            <tr>
+              <td class="subject-name-cell">{{ detail.subject_name }}</td>
+              <td>{{ detail.second_year_point or '-' }}</td>
+              <td>{{ detail.third_year_point or '-' }}</td>
+              <td><strong>{{ detail.weighted_sum }}</strong></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>内申点データがありません。成績ページで内申点を入力してください。</p>
+    {% endif %}
+  </div>
+  
+  <h4>志望校設定</h4>
+  
+  {% if preferences %}
+    <div class="preference-list">
+      {% for pref in preferences %}
+        <div class="preference-item">
+          <div class="preference-order">{{ pref.preference_order }}</div>
+          <div class="preference-info">
+            <div class="school-name">{{ pref.name }}{% if pref.course_type != '普通科' %} ({{ pref.course_type }}){% endif %}</div>
+            <div class="school-details">
+              {% if pref.deviation_score %}偏差値: {{ pref.deviation_score }}{% endif %}
+              {% if pref.min_required_points %} / 最低必要内申: {{ pref.min_required_points }}{% endif %}
+              {% if pref.survey_report_total %} / 調査書合計: {{ pref.survey_report_total }}{% endif %}
+              {% if pref.competition_rate %} / 倍率: {{ pref.competition_rate }}倍{% endif %}
+            </div>
+          </div>
+          <div class="preference-actions">            <form method="post" onsubmit="return confirm('この志望校を削除してもよろしいですか？');">
+              <input type="hidden" name="action" value="delete_preference">
+              <input type="hidden" name="preference_id" value="{{ pref.id }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-danger">削除</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>まだ志望校が設定されていません。下のフォームから志望校を追加してください。</p>
+  {% endif %}
+  
+  <div class="add-form">
+    <h4>志望校を追加</h4>    <form method="post">
+      <input type="hidden" name="action" value="add_preference">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      
+      <div class="form-group">
+        <label class="form-label" for="high_school_id">高校選択</label>
+        <select class="form-control" id="high_school_id" name="high_school_id" required>
+          <option value="">--- 志望校を選択してください ---</option>
+          {% for school in high_schools|sort(attribute='deviation_score', reverse=True) %}
+            <option value="{{ school.id }}">
+              {{ school.name }} - 偏差値: {{ school.deviation_score|default('不明') }}
+              {% if school.course_type != '普通科' %}({{ school.course_type }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="preference_order">志望順位</label>
+        <select class="form-control" id="preference_order" name="preference_order">
+          {% for i in range(1, 11) %}
+            <option value="{{ i }}">{{ i }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <button type="submit" class="btn btn-primary">志望校を追加</button>
+    </form>
+  </div>
+  
+  <h4>プロフィール情報</h4>
+    <div class="profile-section">
+    <form method="post">
+      <input type="hidden" name="action" value="update_birthday">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      
+      <div class="form-group">
+        <label class="form-label" for="birthday">誕生日</label>
+        <input type="date" id="birthday" name="birthday" class="form-control" value="{{ birthday.strftime('%Y-%m-%d') if birthday else '' }}">
+        <small class="form-text text-muted">誕生日を設定すると、誕生日に100ポイントが自動で付与されます！</small>
+      </div>
+      
+      <button type="submit" class="btn btn-primary">誕生日を更新</button>
+    </form>
+    
+    <!-- 通塾曜日設定フォーム -->
+    <div class="attendance-days-settings" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+      <h5>通塾曜日設定</h5>
+      <form method="post" id="attendance-days-form">
+        <input type="hidden" name="action" value="update_attendance_days">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <div class="form-group">
+          <label class="form-label">通塾する曜日を選択してください（複数選択可）</label>
+          <div class="weekday-checkboxes">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="day-0" name="attendance_days[]" value="0">
+              <label class="form-check-label" for="day-0">日曜日</label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="day-1" name="attendance_days[]" value="1">
+              <label class="form-check-label" for="day-1">月曜日</label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="day-2" name="attendance_days[]" value="2">
+              <label class="form-check-label" for="day-2">火曜日</label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="day-3" name="attendance_days[]" value="3">
+              <label class="form-check-label" for="day-3">水曜日</label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="day-4" name="attendance_days[]" value="4">
+              <label class="form-check-label" for="day-4">木曜日</label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="day-5" name="attendance_days[]" value="5">
+              <label class="form-check-label" for="day-5">金曜日</label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="day-6" name="attendance_days[]" value="6">
+              <label class="form-check-label" for="day-6">土曜日</label>
+            </div>
+          </div>
+          <small class="form-text text-muted">授業のある曜日を選択してください。複数選択できます。</small>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">通塾曜日を更新</button>
+      </form>
+    </div>
+    
+    <!-- パスワード変更フォーム -->
+    {% if session.role == 'teacher' %}
+    <div class="password-change" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+      <h5>パスワード変更</h5>
+      <form method="post" id="password-form">
+        <input type="hidden" name="action" value="update_password">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <div class="form-group">
+          <label class="form-label" for="current_password">現在のパスワード</label>
+          <input type="password" id="current_password" name="current_password" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="new_password">新しいパスワード</label>
+          <input type="password" id="new_password" name="new_password" class="form-control" required
+                 pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" 
+                 title="8文字以上で、少なくとも1つの数字、小文字、大文字を含める必要があります">
+          <small class="form-text text-muted">安全のため、8文字以上で、少なくとも1つの数字、小文字、大文字を含める必要があります。</small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">新しいパスワード（確認）</label>
+          <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+          <small class="form-text text-muted" id="password-match"></small>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" id="password-submit">パスワードを変更</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="password-change" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> パスワードの変更が必要な場合は、講師にお問い合わせください。
+      </div>
+    </div>
+    {% endif %}
+    
+    <!-- 学年設定フォーム -->    <div class="grade-settings">
+      <form method="post">
+        <input type="hidden" name="action" value="update_grade">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="school_type">学校タイプ</label>
+            <select class="form-control" id="school_type" name="school_type" required>
+              <option value="elementary" {% if school_type == 'elementary' %}selected{% endif %}>小学生</option>
+              <option value="middle" {% if school_type == 'middle' or not school_type %}selected{% endif %}>中学生</option>
+              <option value="high" {% if school_type == 'high' %}selected{% endif %}>高校生</option>
+            </select>
+          </div>
+          
+          <div class="form-col">
+            <label class="form-label" for="grade_display">学年</label>
+            <select class="form-control" id="grade_display" name="grade_display" required>
+              <!-- JavaScript で動的に生成 -->
+            </select>
+            <!-- 実際のgrade_levelの値を保持する隠しフィールド -->
+            <input type="hidden" id="grade_level" name="grade_level" value="{{ grade_level or '' }}">
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">学年を更新</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 高校選択リストの強調表示
+  const schoolSelect = document.getElementById('high_school_id');
+  
+  if (schoolSelect) {
+    // モバイルデバイスではサイズ調整しない
+    if (window.innerWidth > 768) {
+      schoolSelect.size = 10; // デスクトップのみ表示行数を設定
+    }
+    
+    // 選択された高校のスタイリング
+    schoolSelect.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      
+      // 選択肢の分かりやすい表示
+      Array.from(this.options).forEach(option => {
+        option.style.backgroundColor = '';
+        option.style.fontWeight = '';
+      });
+      
+      if (selectedOption.value) {
+        selectedOption.style.backgroundColor = '#e3f2fd';
+        selectedOption.style.fontWeight = 'bold';
+      }
+    });
+  }
+  
+  // 学年選択の関連付け
+  const schoolTypeSelect = document.getElementById('school_type');
+  const gradeDisplaySelect = document.getElementById('grade_display');
+  const gradeLevelInput = document.getElementById('grade_level');
+  
+  // 学年の選択肢を更新する関数
+  function updateGradeOptions() {
+    const schoolType = schoolTypeSelect.value;
+    const currentGradeLevel = parseInt(gradeLevelInput.value) || 0;
+    
+    // 選択肢をクリア
+    gradeDisplaySelect.innerHTML = '';
+    
+    // 学校タイプに応じた学年選択肢を生成
+    let options = [];
+    let currentDisplayGrade = 0;
+    
+    if (schoolType === 'elementary') {
+      // 小学生: 1-6年
+      for (let i = 1; i <= 6; i++) {
+        options.push({ displayGrade: i, gradeLevel: i, text: i + '年生' });
+      }
+      // 現在の表示学年を計算
+      if (currentGradeLevel >= 1 && currentGradeLevel <= 6) {
+        currentDisplayGrade = currentGradeLevel;
+      }
+    } else if (schoolType === 'middle') {
+      // 中学生: 1-3年 (内部: 7-9)
+      for (let i = 1; i <= 3; i++) {
+        options.push({ displayGrade: i, gradeLevel: i + 6, text: i + '年生' });
+      }
+      // 現在の表示学年を計算
+      if (currentGradeLevel >= 7 && currentGradeLevel <= 9) {
+        currentDisplayGrade = currentGradeLevel - 6;
+      }
+    } else if (schoolType === 'high') {
+      // 高校生: 1-3年 (内部: 10-12)
+      for (let i = 1; i <= 3; i++) {
+        options.push({ displayGrade: i, gradeLevel: i + 9, text: i + '年生' });
+      }
+      // 現在の表示学年を計算
+      if (currentGradeLevel >= 10 && currentGradeLevel <= 12) {
+        currentDisplayGrade = currentGradeLevel - 9;
+      }
+    }
+    
+    // 選択肢を追加
+    options.forEach(option => {
+      const optElement = document.createElement('option');
+      optElement.value = option.displayGrade;
+      optElement.textContent = option.text;
+      optElement.dataset.gradeLevel = option.gradeLevel;
+      
+      // 現在の学年を選択状態にする
+      if (option.displayGrade === currentDisplayGrade) {
+        optElement.selected = true;
+      }
+      
+      gradeDisplaySelect.appendChild(optElement);
+    });
+    
+    // 最初の選択肢がない場合は選択状態にする
+    if (currentDisplayGrade === 0 && gradeDisplaySelect.options.length > 0) {
+      gradeDisplaySelect.options[0].selected = true;
+      updateGradeLevel();
+    }
+  }
+  
+  // 隠しフィールドの値を更新する関数
+  function updateGradeLevel() {
+    const selectedOption = gradeDisplaySelect.options[gradeDisplaySelect.selectedIndex];
+    if (selectedOption) {
+      gradeLevelInput.value = selectedOption.dataset.gradeLevel;
+    }
+  }
+  
+  // 学校タイプが変更されたときに学年選択肢を更新
+  if (schoolTypeSelect && gradeDisplaySelect) {
+    schoolTypeSelect.addEventListener('change', function() {
+      updateGradeOptions();
+      updateGradeLevel();
+    });
+    
+    // 学年が変更されたときに隠しフィールドを更新
+    gradeDisplaySelect.addEventListener('change', updateGradeLevel);
+    
+    // 初期表示時に学年選択肢を設定
+    updateGradeOptions();
+  }
+  
+  // パスワードの一致チェック
+  const newPassword = document.getElementById('new_password');
+  const confirmPassword = document.getElementById('confirm_password');
+  const passwordMatch = document.getElementById('password-match');
+  const passwordSubmit = document.getElementById('password-submit');
+  
+  if (confirmPassword && newPassword) {
+    const validatePassword = function() {
+      if (newPassword.value !== confirmPassword.value) {
+        passwordMatch.textContent = 'パスワードが一致していません';
+        passwordMatch.style.color = 'red';
+        passwordSubmit.disabled = true;
+        return false;
+      } else if (newPassword.value.length > 0) {
+        passwordMatch.textContent = 'パスワードが一致しています';
+        passwordMatch.style.color = 'green';
+        passwordSubmit.disabled = false;
+        return true;
+      } else {
+        passwordMatch.textContent = '';
+        passwordSubmit.disabled = false;
+        return false;
+      }
+    };
+    
+    newPassword.addEventListener('keyup', validatePassword);
+    confirmPassword.addEventListener('keyup', validatePassword);
+    
+    // パスワード強度のチェック
+    newPassword.addEventListener('keyup', function() {
+      const password = newPassword.value;
+      const passwordStrength = document.createElement('div');
+      passwordStrength.id = 'password-strength';
+      
+      // すでに存在する場合は削除
+      const existingStrength = document.getElementById('password-strength');
+      if (existingStrength) {
+        existingStrength.remove();
+      }
+      
+      if (password.length > 0) {
+        let strength = 0;
+        let feedback = [];
+        
+        // 8文字以上
+        if (password.length >= 8) {
+          strength += 1;
+        } else {
+          feedback.push('8文字以上にしてください');
+        }
+        
+        // 数字を含む
+        if (/\d/.test(password)) {
+          strength += 1;
+        } else {
+          feedback.push('数字を含めてください');
+        }
+        
+        // 小文字を含む
+        if (/[a-z]/.test(password)) {
+          strength += 1;
+        } else {
+          feedback.push('小文字を含めてください');
+        }
+        
+        // 大文字を含む
+        if (/[A-Z]/.test(password)) {
+          strength += 1;
+        } else {
+          feedback.push('大文字を含めてください');
+        }
+        
+        // 特殊文字を含む (オプション)
+        if (/[^A-Za-z0-9]/.test(password)) {
+          strength += 1;
+        }
+        
+        let strengthText = '';
+        let strengthColor = '';
+        
+        if (strength < 2) {
+          strengthText = '弱い';
+          strengthColor = '#ff4d4d';
+        } else if (strength < 4) {
+          strengthText = '普通';
+          strengthColor = '#ffaa00';
+        } else {
+          strengthText = '強い';
+          strengthColor = '#00cc44';
+        }
+        
+        passwordStrength.innerHTML = `
+          <div style="margin-top: 5px;">
+            <div style="display: flex; margin-bottom: 5px;">
+              <div style="flex-grow: 1; height: 5px; background-color: #eee; border-radius: 2px; overflow: hidden;">
+                <div style="width: ${(strength/5)*100}%; height: 100%; background-color: ${strengthColor};"></div>
+              </div>
+              <div style="margin-left: 10px; font-size: 0.8em; color: ${strengthColor};">${strengthText}</div>
+            </div>
+            ${feedback.length > 0 ? `<div style="font-size: 0.8em; color: #666;">${feedback.join('、')}</div>` : ''}
+          </div>
+        `;
+        
+        newPassword.parentNode.appendChild(passwordStrength);
+      }
+    });
+    
+    // フォーム送信前の検証
+    document.getElementById('password-form').addEventListener('submit', function(e) {
+      if (newPassword.value && !validatePassword()) {
+        e.preventDefault();
+        alert('パスワードが一致していません。再確認してください。');
+      }
+    });
+  }
+  
+  // 通塾曜日設定の初期表示とイベント設定
+  function initAttendanceDays() {
+    // attendance_days の値を取得 (サーバーから渡された値)
+    const attendanceDaysStr = "{{ attendance_days or '' }}";
+    
+    // 値がある場合は各曜日チェックボックスに反映
+    if (attendanceDaysStr) {
+      // カンマ区切りの値を配列に変換
+      const selectedDays = attendanceDaysStr.split(',').map(day => parseInt(day.trim()));
+      
+      // 該当する曜日のチェックボックスを選択状態にする
+      selectedDays.forEach(day => {
+        const checkbox = document.getElementById(`day-${day}`);
+        if (checkbox) {
+          checkbox.checked = true;
+        }
+      });
+    }
+  }
+  
+  // 通塾曜日の設定を初期化
+  initAttendanceDays();
+});
+</script>
+{% endblock %}

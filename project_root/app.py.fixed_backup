@@ -1,0 +1,349 @@
+# 修正された英検単語インポート関数
+def import_eiken_words_from_csv(file_content, grade, user_id, overwrite=False):
+    """CSVファイルから英検単語をインポートする関数（エラー修正版）"""
+    try:
+        # 必要なモジュールをインポート
+        import csv
+        import io
+        import sys
+        from datetime import datetime
+        
+        # Flask appのimportを試みる (log_errorを使うため)
+        try:
+            from app import app, log_error
+        except ImportError:
+            # Flaskアプリケーションが利用できない場合は独自のlog_error関数を定義
+            def log_error(message):
+                """エラーメッセージをログに出力する関数"""
+                print(message, file=sys.stderr)
+        
+        # ログ記録
+        log_error(f"英検単語インポート開始: grade={grade}")
+        
+        # BOMが付いている場合の処理
+        if isinstance(file_content, str) and file_content.startswith('\ufeff'):
+            file_content = file_content[1:]
+            log_error("BOMが検出されました。除去して処理を続行します。")
+        
+        # CSVファイルを読み込む
+        csv_data = io.StringIO(file_content)
+        
+        # ヘッダー行の確認
+        try:
+            first_line = csv_data.readline().strip()
+            csv_data.seek(0)  # ファイルポインタを先頭に戻す
+            log_error(f"CSV最初の行: {first_line}")
+        except Exception as e:
+            log_error(f"CSVファイルの先頭行読み取りエラー: {e}")
+            return {'success': False, 'message': f'CSVファイルの読み取りに失敗しました: {str(e)}', 'count': 0}
+        
+        # CSVの読み込み
+        try:
+            reader = csv.reader(csv_data)
+            headers = next(reader, None)  # ヘッダー行を読み取り
+            
+            if not headers:
+                log_error("CSVヘッダーが見つかりません")
+                return {
+                    'success': False,
+                    'message': 'CSVファイルのヘッダー行を認識できませんでした',
+                    'count': 0
+                }
+            
+            log_error(f"CSVヘッダー: {headers}")
+        except Exception as e:
+            log_error(f"CSV解析エラー: {e}")
+            return {
+                'success': False,
+                'message': f'CSVファイルの解析に失敗しました: {str(e)}',
+                'count': 0
+            }
+        
+        # インポート準備
+        imported_count = 0
+        errors = []
+        
+        try:
+            # データベース接続
+            try:
+                from app import get_db_connection
+            except ImportError:
+                log_error("get_db_connection関数をインポートできません。app.pyが存在するか確認してください。")
+                return {
+                    'success': False,
+                    'message': 'データベース接続モジュールが利用できません',
+                    'count': 0
+                }
+                
+            conn = get_db_connection()
+            
+            # まず、テーブルが存在するか確認し、なければ作成
+            with conn.cursor() as cur:
+                # テーブルの存在確認
+                try:
+                    from app import ensure_eiken_words_table
+                except ImportError:
+                    # ensure_eiken_words_tableが利用できない場合は独自の実装を使用
+                    def ensure_eiken_words_table(connection):
+                        """英検単語テーブルを確認・作成する（修正版）"""
+                        try:
+                            with connection.cursor() as curr:
+                                # テーブル作成
+                                curr.execute("""
+                                    CREATE TABLE IF NOT EXISTS eiken_words (
+                                        id INT AUTO_INCREMENT PRIMARY KEY,
+                                        grade VARCHAR(10) NOT NULL COMMENT '英検の級 (5, 4, 3, pre2, 2)',
+                                        question_id INT NOT NULL COMMENT '問題ID',
+                                        stage_number INT NOT NULL DEFAULT 1 COMMENT 'ステージ番号',
+                                        japanese VARCHAR(255) NOT NULL COMMENT '日本語の意味',
+                                        english VARCHAR(255) NOT NULL COMMENT '英単語',
+                                        pronunciation VARCHAR(255) COMMENT '発音',
+                                        audio_url VARCHAR(255) COMMENT '音声ファイルURL',
+                                        notes TEXT COMMENT '追加情報・メモ',
+                                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                                """)
+                                log_error("eiken_words テーブルを確認/作成しました")
+                                connection.commit()
+                        except Exception as e:
+                            log_error(f"Error creating eiken_words table: {e}")
+                            connection.rollback()
+                
+                ensure_eiken_words_table(conn)
+                
+                # オーバーライトモードの場合、既存データを削除
+                if overwrite:
+                    cur.execute("DELETE FROM eiken_words WHERE grade = %s", (grade,))
+                    log_error(f"既存の {grade} 級データを削除しました")
+            
+            # 全データを一括でコミットするため、自動コミットを無効化
+            conn.autocommit = False
+            
+            # 見出し行の列インデックスを特定
+            headers_lower = [h.lower() if h else "" for h in headers]
+            
+            # 基本的なカラムマッピング（いくつかのパターンに対応）
+            question_id_idx = next((i for i, h in enumerate(headers_lower) if 'question' in h and 'id' in h), -1)
+            if question_id_idx == -1:
+                question_id_idx = next((i for i, h in enumerate(headers_lower) if 'id' in h), 0)
+            
+            stage_number_idx = next((i for i, h in enumerate(headers_lower) if 'stage' in h), -1)
+            if stage_number_idx == -1:
+                stage_number_idx = next((i for i, h in enumerate(headers_lower) if 'number' in h), 1)
+            
+            # 日本語意味 (QuestionText)
+            japanese_idx = next((i for i, h in enumerate(headers_lower) if 'question' in h and 'text' in h), -1)
+            if japanese_idx == -1:
+                japanese_idx = next((i for i, h in enumerate(headers_lower) if 'japanese' in h or 'meaning' in h), -1)
+            if japanese_idx == -1:
+                japanese_idx = 2  # デフォルトは3列目
+            
+            # 英単語 (CorrectAnswer)
+            english_idx = next((i for i, h in enumerate(headers_lower) if 'correct' in h and 'answer' in h), -1)
+            if english_idx == -1:
+                english_idx = next((i for i, h in enumerate(headers_lower) if 'english' in h or 'word' in h), -1)
+            if english_idx == -1:
+                english_idx = 3  # デフォルトは4列目
+            
+            # 発音情報 (Pronunciation)
+            pronunciation_idx = next((i for i, h in enumerate(headers_lower) if 'pronun' in h), -1)
+            
+            audio_url_idx = next((i for i, h in enumerate(headers_lower) if 'audio' in h or 'url' in h or 'sound' in h), -1)
+            notes_idx = next((i for i, h in enumerate(headers_lower) if 'note' in h or 'memo' in h or 'comment' in h), -1)
+            
+            log_error(f"検出したカラム位置: QuestionID={question_id_idx}, StageNumber={stage_number_idx}, Japanese(QuestionText)={japanese_idx}, English(CorrectAnswer)={english_idx}, Pronunciation={pronunciation_idx}")
+            
+            # バッチ処理用にデータを準備
+            batch_size = 100
+            batch_data = []
+            
+            with conn.cursor() as cur:
+                for row_idx, row in enumerate(reader, start=2):
+                    try:
+                        # 行の長さが不足している場合はスキップ
+                        required_max_idx = max(question_id_idx, english_idx, japanese_idx)
+                        if len(row) <= required_max_idx:
+                            log_error(f"行 {row_idx}: 列が不足しています。スキップします。")
+                            errors.append(f"行 {row_idx}: 列が不足しています")
+                            continue
+                        
+                        # 必須データの取得
+                        try:
+                            question_id = int(row[question_id_idx].strip()) if question_id_idx < len(row) and row[question_id_idx].strip() else 0
+                        except ValueError:
+                            question_id = 0
+                            log_error(f"行 {row_idx}: QuestionID '{row[question_id_idx]}' を数値に変換できないため0を設定します")
+                            errors.append(f"行 {row_idx}: QuestionID '{row[question_id_idx]}' を数値に変換できません")
+                        
+                        try:
+                            stage_number = int(row[stage_number_idx].strip()) if stage_number_idx < len(row) and row[stage_number_idx].strip() else 1
+                        except ValueError:
+                            stage_number = 1
+                            log_error(f"行 {row_idx}: StageNumber '{row[stage_number_idx]}' を数値に変換できないため1を設定します")
+                        
+                        # 日本語の意味(QuestionText)を取得
+                        japanese_meaning = row[japanese_idx].strip() if japanese_idx < len(row) and japanese_idx >= 0 else ""
+                        
+                        # 英単語(CorrectAnswer)を取得
+                        english_word = row[english_idx].strip() if english_idx < len(row) else ""
+                        if not english_word:
+                            log_error(f"行 {row_idx}: 英単語が空のためスキップします")
+                            errors.append(f"行 {row_idx}: 英単語が空のためスキップします")
+                            continue
+                        
+                        # 発音情報を取得
+                        pronun = row[pronunciation_idx].strip() if pronunciation_idx < len(row) and pronunciation_idx >= 0 else ""
+                        
+                        # オプションデータ
+                        audio_url = row[audio_url_idx].strip() if audio_url_idx < len(row) and audio_url_idx >= 0 else None
+                        notes = row[notes_idx].strip() if notes_idx < len(row) and notes_idx >= 0 else None
+                        
+                        # 重複チェック（オーバーライトモードでない場合）
+                        if not overwrite:
+                            cur.execute("""
+                                SELECT id FROM eiken_words
+                                WHERE grade = %s AND question_id = %s
+                            """, (grade, question_id))
+                            
+                            existing = cur.fetchone()
+                            
+                            if existing:
+                                # 既存データを更新
+                                cur.execute("""
+                                    UPDATE eiken_words
+                                    SET stage_number = %s,
+                                        japanese = %s,
+                                        english = %s,
+                                        pronunciation = %s,
+                                        audio_url = %s,
+                                        notes = %s
+                                    WHERE id = %s
+                                """, (stage_number, japanese_meaning, english_word, pronun, audio_url, notes, existing['id']))
+                                imported_count += 1
+                                continue
+                        
+                        # データをバッチに追加
+                        batch_data.append((grade, question_id, stage_number, japanese_meaning, english_word, pronun, audio_url, notes))
+                        
+                        # バッチサイズに達したら一括挿入
+                        if len(batch_data) >= batch_size:
+                            placeholders = ', '.join(['(%s, %s, %s, %s, %s, %s, %s, %s)'] * len(batch_data))
+                            flat_data = [item for sublist in batch_data for item in sublist]
+                            
+                            try:
+                                cur.execute(f"""
+                                    INSERT INTO eiken_words
+                                    (grade, question_id, stage_number, japanese, english, pronunciation, audio_url, notes)
+                                    VALUES {placeholders}
+                                """, flat_data)
+                                
+                                imported_count += len(batch_data)
+                                batch_data = []  # バッチをクリア
+                            except Exception as batch_error:
+                                log_error(f"バッチインポートエラー: {batch_error}")
+                                # バッチ処理に失敗した場合は1件ずつ処理
+                                for data in batch_data:
+                                    try:
+                                        cur.execute("""
+                                            INSERT INTO eiken_words
+                                            (grade, question_id, stage_number, japanese, english, pronunciation, audio_url, notes)
+                                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                        """, data)
+                                        imported_count += 1
+                                    except Exception as single_error:
+                                        log_error(f"単一レコードのインポートエラー: {single_error}")
+                                
+                                batch_data = []  # バッチをクリア
+                    
+                    except Exception as row_error:
+                        log_error(f"行 {row_idx} 処理エラー: {row_error}")
+                        errors.append(f"行 {row_idx}: {str(row_error)}")
+                        continue
+                
+                # 残りのバッチデータを処理
+                if batch_data:
+                    placeholders = ', '.join(['(%s, %s, %s, %s, %s, %s, %s, %s)'] * len(batch_data))
+                    flat_data = [item for sublist in batch_data for item in sublist]
+                    
+                    try:
+                        cur.execute(f"""
+                            INSERT INTO eiken_words
+                            (grade, question_id, stage_number, japanese, english, pronunciation, audio_url, notes)
+                            VALUES {placeholders}
+                        """, flat_data)
+                        
+                        imported_count += len(batch_data)
+                    except Exception as batch_error:
+                        log_error(f"最終バッチインポートエラー: {batch_error}")
+                        # 1件ずつ処理
+                        for data in batch_data:
+                            try:
+                                cur.execute("""
+                                    INSERT INTO eiken_words
+                                    (grade, question_id, stage_number, japanese, english, pronunciation, audio_url, notes)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                """, data)
+                                imported_count += 1
+                            except Exception as single_error:
+                                log_error(f"単一レコードのインポートエラー: {single_error}")
+                
+                # インポート履歴を記録
+                try:
+                    # import_historyテーブルがない場合は何もしない
+                    cur.execute("SHOW TABLES LIKE 'import_history'")
+                    if cur.fetchone():
+                        cur.execute("""
+                            INSERT INTO import_history
+                            (import_type, year, imported_by, record_count, file_name)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """, ('eiken_words', datetime.now().year, user_id, imported_count, 'Eiken_Words_Import.csv'))
+                except Exception as history_error:
+                    log_error(f"インポート履歴の記録に失敗しました: {history_error}")
+                    # 履歴の記録に失敗してもロールバックはしない
+            
+            # 全体をコミット
+            conn.commit()
+            log_error(f"英検単語インポート完了: {imported_count}件")
+            
+            result = {
+                'success': True,
+                'message': f"{imported_count}件の英検単語をインポートしました（{grade}級）",
+                'count': imported_count
+            }
+            
+            if errors:
+                if len(errors) <= 5:
+                    result['message'] += f"（{len(errors)}件のエラーがありました）"
+                else:
+                    result['message'] += f"（{len(errors)}件のエラーがありました。最初の5件のみ表示）"
+                result['errors'] = errors[:5]  # 最初の5件のエラーのみ
+            
+            return result
+        
+        except Exception as e:
+            if 'conn' in locals() and conn:
+                conn.rollback()
+            log_error(f"Database error in CSV import: {e}")
+            return {
+                'success': False,
+                'message': f"データベースエラー: {str(e)}",
+                'count': 0,
+                'errors': [f"データベースエラー: {str(e)}"]
+            }
+        finally:
+            if 'conn' in locals() and conn:
+                conn.close()
+    
+    except Exception as e:
+        # モジュール内でlog_error関数を定義していない場合は、標準エラー出力を使用
+        try:
+            log_error(f"CSV read error: {e}")
+        except:
+            print(f"CSV read error: {e}", file=sys.stderr)
+            
+        return {
+            'success': False,
+            'message': f"CSV読み込みエラー: {str(e)}",
+            'count': 0,
+            'errors': [f"CSV読み込みエラー: {str(e)}"]
+        }

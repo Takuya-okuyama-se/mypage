@@ -1,0 +1,1389 @@
+{% extends "base.html" %}
+{% block title %}英検単語学習（改善版）{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>英検単語学習</h1>
+    
+    <!-- 級選択タブ -->    <div class="grade-tabs">        <!-- スマホ表示用の級選択メニュー（サイト全体のハンバーガーと区別） -->
+        <div class="grade-hamburger-menu">
+            <button id="grade-menu-toggle" class="grade-hamburger-button">
+                <i class="fas fa-bars"></i> 級を選択
+            </button>
+        </div>        
+        <div class="tab-header">
+            <!-- 常に表示される必須級（3つ） -->
+            <div class="tab essential-tab active" data-grade="5">5級</div>
+            <div class="tab essential-tab" data-grade="4">4級</div>
+            <div class="tab essential-tab" data-grade="3">3級</div>
+            
+            <!-- スマホでハンバーガーメニューに入る追加項目 -->
+            <div class="tab additional-tab" data-grade="準2級">準2級</div>
+            <div class="tab additional-tab" data-grade="2">2級</div>
+        </div>
+          <!-- 検索・フィルタリングオプション -->
+        <div class="search-options">
+            <div class="row">
+                <div class="col-md-4 col-12 mb-2">
+                    <div class="input-group">
+                        <input type="text" id="search-input" class="form-control" placeholder="単語を検索...">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="search-button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-2">
+                    <select id="stage-filter" class="form-control">
+                        <option value="">全てのステージ</option>
+                        <option value="1">ステージ 1</option>
+                        <option value="2">ステージ 2</option>
+                        <option value="3">ステージ 3</option>
+                        <option value="4">ステージ 4</option>
+                        <option value="5">ステージ 5</option>
+                    </select>
+                </div>
+                <div class="col-md-3 col-6 mb-2">
+                    <select id="audio-filter" class="form-control">
+                        <option value="">全ての単語</option>
+                        <option value="1">音声付きのみ</option>
+                        <option value="0">音声なしのみ</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-12">
+                    <button id="filter-button" class="btn btn-primary w-100">適用</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 学習モード切り替え -->
+        <div class="mode-toggle mb-3">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" data-mode="list">
+                    <i class="fas fa-list"></i> リスト表示
+                </button>
+                <button type="button" class="btn btn-outline-primary" data-mode="flashcard">
+                    <i class="fas fa-clone"></i> フラッシュカード
+                </button>
+                <button type="button" class="btn btn-outline-primary" data-mode="quiz">
+                    <i class="fas fa-question-circle"></i> クイズモード
+                </button>
+            </div>
+        </div>
+        
+        <div class="tab-content">            <!-- リスト表示モード -->
+            <div id="list-mode" class="mode-content active">
+                <div id="words-container">
+                    <div class="loading">データを読み込んでいます...</div>
+                    <div class="error" style="display: none;"></div>
+                    <div class="word-list" style="display: none;"></div>
+                </div>
+            </div>              <!-- フラッシュカードモード -->
+            <div id="flashcard-mode" class="mode-content">
+                <div class="flashcard-container" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">
+                    <div id="flashcard">
+                        <div class="flashcard-inner">                            <div class="flashcard-front">
+                                <div class="word-and-play">
+                                    <h2 id="flashcard-word">単語</h2>
+                                    <button class="play-button" id="flashcard-play">
+                                        <i class="fas fa-volume-up"></i>
+                                        <span class="play-text">再生</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flashcard-back">
+                                <h3 id="flashcard-pronunciation">発音・意味</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flashcard-progress text-center mb-3">
+                        <span class="progress-text">カード <span id="flashcard-progress">0 / 0</span></span>
+                    </div>
+                    <div class="flashcard-controls">
+                        <button id="prev-card" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> 前の単語
+                        </button>
+                        <button id="flip-card" class="btn btn-primary">
+                            <i class="fas fa-sync"></i> めくる
+                        </button>
+                        <button id="next-card" class="btn btn-outline-secondary">
+                            次の単語 <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+              <!-- クイズモード -->
+            <div id="quiz-mode" class="mode-content">
+                <div class="quiz-container" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">                    <div id="quiz-question">                        <div class="word-and-play">
+                            <h3 id="quiz-word">単語</h3>
+                            <button class="play-button" id="quiz-play">
+                                <i class="fas fa-volume-up"></i>
+                                <span class="play-text">再生</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="quiz-options" class="row">
+                        <!-- クイズの選択肢がJSで動的に生成されます -->
+                    </div>
+                    <div id="quiz-result" class="mt-3" style="display: none;">
+                        <div class="alert" role="alert"></div>
+                    </div>
+                    <div class="quiz-progress text-center mb-2">
+                        <span class="progress-text">問題 <span id="quiz-progress">0 / 0</span></span>
+                    </div>
+                    <div class="quiz-controls mt-3">
+                        <button id="next-question" class="btn btn-primary" disabled>次の単語</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pagination">
+                <button id="prev-page" disabled>&laquo; 前へ</button>
+                <span id="page-info">1 / 1</span>
+                <button id="next-page" disabled>次へ &raquo;</button>
+            </div>
+        </div>
+    </div>
+      <div class="usage-info">
+        <h3>使い方</h3>
+        <p><i class="fas fa-list"></i> <strong>リスト表示モード:</strong> 単語の横にある再生ボタンをクリックすると、発音を聞くことができます。ページ単位で表示します。</p>
+        <p><i class="fas fa-clone"></i> <strong>フラッシュカードモード:</strong> カードをクリックして裏返し、発音・意味を確認できます。全ての単語を順番に学習できます。</p>
+        <p><i class="fas fa-question-circle"></i> <strong>クイズモード:</strong> 単語の正しい意味を選択して学習します。全ての単語から出題されます。</p>
+        <p><span class="audio-badge">音声</span> マークがある単語は実際の音声ファイルを再生します。それ以外はブラウザの音声合成機能で英語発音を再生します。</p>
+    </div>
+    
+    <!-- 音声再生用のAudio要素 -->
+    <audio id="word-audio" style="display: none;"></audio>
+</div>
+
+<style>    .grade-tabs {
+        margin: 20px 0;
+        position: relative;
+    }
+      /* 級選択用ハンバーガーメニュー（メインナビと区別） */
+    .grade-hamburger-menu {
+        display: none;
+        margin-bottom: 10px;
+    }
+    
+    .grade-hamburger-button {
+        background-color: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 8px 15px;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .grade-hamburger-button:hover {
+        background-color: #e9ecef;
+    }
+    
+    /* タブヘッダーのスタイル */
+    .tab-header {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+    }
+    
+    .tab-header::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Edge */
+    }
+    
+    .tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-bottom: none;
+        border-radius: 5px 5px 0 0;
+        flex: 0 0 auto;
+    }
+    
+    .tab:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .tab.active {
+        background-color: #fff;
+        border-color: #ddd;
+        border-bottom-color: #fff;
+        margin-bottom: -1px;
+    }
+    
+    /* レスポンシブ対応 */    @media (max-width: 768px) {
+        .grade-hamburger-menu {
+            display: block;
+        }
+        
+        .tab-header {
+            flex-wrap: wrap;
+        }
+        
+        .tab.additional-tab {
+            display: none;
+        }
+        
+        /* 級選択メニューがアクティブ時 */
+        .tab-header.menu-open .additional-tab {
+            display: block;
+        }
+        
+        .tab-header.menu-open {
+            flex-direction: column;
+            position: absolute;
+            background: white;
+            z-index: 100;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .tab-header.menu-open .tab {
+            border-radius: 0;
+            border: none;
+            border-bottom: 1px solid #f0f0f0;
+            width: 100%;
+        }
+        
+        .tab-header.menu-open .tab:last-child {
+            border-bottom: none;
+        }
+    }.tab-content {
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-top: none;
+        min-height: 400px;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+    
+    .word-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 15px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .word-card {
+        padding: 15px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        word-break: break-word;
+    }
+    .word-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }    .word {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+    .word span:first-child {
+        margin-right: 10px;
+        flex: 1;
+    }
+    .pronunciation {
+        color: #666;
+        margin-bottom: 10px;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }
+    .katakana-pronunciation {
+        color: #e67c73;
+        font-size: 0.9em;
+        margin-bottom: 10px;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }    .play-button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 20px;
+        cursor: pointer;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        margin-left: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        min-width: 80px;
+    }
+    .play-button:hover {
+        background-color: #45a049;
+        transform: scale(1.05);
+    }
+    .play-button i {
+        font-size: 16px;
+        margin-right: 5px;
+    }
+    .play-text {
+        font-size: 14px;
+    }
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+    }
+    .pagination button {
+        padding: 5px 10px;
+        margin: 0 5px;
+        cursor: pointer;
+    }
+    .pagination button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+    #page-info {
+        padding: 0 10px;
+    }
+    .loading, .error {
+        text-align: center;
+        padding: 20px;
+    }
+    .error {
+        color: red;
+    }
+    .usage-info {
+        margin-top: 30px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+    }
+    .audio-badge {
+        display: inline-block;
+        background-color: #3498db;
+        color: white;
+        font-size: 0.7em;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 5px;
+    }
+    .search-options {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        margin-top: 15px;
+    }    .mode-toggle {
+        margin-top: 15px;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    .mode-toggle .btn-group {
+        display: flex;
+        flex-wrap: nowrap;
+        width: 100%;
+    }
+    @media (max-width: 576px) {
+        .mode-toggle .btn {
+            font-size: 0.8rem;
+            padding: 0.375rem 0.5rem;
+        }
+    }    .mode-content {
+        display: none;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .mode-content.active {
+        display: block;
+        width: 100%;
+    }
+    
+    /* コンテナの共通スタイル - オーバーフロー防止 */
+    #words-container, .flashcard-container, .quiz-container {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+    }    /* フラッシュカードスタイル */
+    .flashcard-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 40px; /* カード間の間隔を広げる */
+        padding: 20px 0;
+    }    #flashcard {
+        width: 90%;
+        max-width: 320px;
+        height: 240px; /* カードの高さを少し大きくする */
+        perspective: 1000px;
+        cursor: pointer;
+        margin-bottom: 20px; /* カード下部にマージンを追加 */
+    }
+    .flashcard-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+    }
+    #flashcard.flipped .flashcard-inner {
+        transform: rotateY(180deg);
+    }    .flashcard-front, .flashcard-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        padding: 20px;
+        z-index: 1; /* 重なり順を指定 */
+    }    .flashcard-front {
+        background-color: white;
+    }
+    .flashcard-back {
+        background-color: #f8f9fa;
+        transform: rotateY(180deg);
+    }
+      .word-and-play {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }.flashcard-controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+    }
+    @media (max-width: 576px) {
+        .flashcard-controls .btn {
+            font-size: 0.85rem;
+            padding: 0.375rem 0.5rem;
+            margin-bottom: 5px;
+        }
+    }
+      /* クイズスタイル */
+    .quiz-container {
+        max-width: 600px;
+        margin: 0 auto;
+        width: 100%;
+        padding: 0 10px;
+    }
+    #quiz-question {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    #quiz-word {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        margin: 0;
+    }
+    #flashcard-word {
+        margin: 0;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }.quiz-option {
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+    @media (max-width: 576px) {
+        #quiz-options .col-md-6 {
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+        .quiz-option {
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+    }
+    .quiz-option:hover {
+        background-color: #f5f5f5;
+    }
+    .quiz-option.selected {
+        border-color: #007bff;
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    .quiz-option.correct {
+        border-color: #28a745;
+        background-color: rgba(40, 167, 69, 0.1);
+    }    .quiz-option.incorrect {
+        border-color: #dc3545;
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+      .quiz-progress {
+        margin-top: 20px;
+    }
+    
+    .flashcard-progress {
+        margin-top: 30px; /* フラッシュカードとの重なりを避けるためのマージン */
+        position: relative; /* 位置関係を明確にする */
+        z-index: 2; /* カードよりも前面に表示 */
+    }
+    
+    .progress-text {
+        background-color: #f8f9fa;
+        border-radius: 20px;
+        padding: 8px 15px;
+        font-size: 1.1em;
+        display: inline-block;
+        border: 1px solid #ddd;
+    }
+    
+    .progress-text #quiz-progress,
+    .progress-text #flashcard-progress {
+        font-weight: bold;
+        color: #007bff;
+    }
+</style>
+
+<script>    document.addEventListener('DOMContentLoaded', function() {
+        // ハンバーガーメニューの初期化
+        const gradeMenuToggle = document.getElementById('grade-menu-toggle');
+        const tabHeader = document.querySelector('.tab-header');
+          if (gradeMenuToggle) {
+            gradeMenuToggle.addEventListener('click', function(e) {
+                // サイト全体のナビメニューとの混同を防ぐため、イベントの伝播を停止
+                e.stopPropagation();
+                tabHeader.classList.toggle('menu-open');
+            });
+            
+            // メニュー外クリックでメニューを閉じる
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.grade-hamburger-menu') && 
+                    !event.target.closest('.tab-header') && 
+                    tabHeader.classList.contains('menu-open')) {
+                    tabHeader.classList.remove('menu-open');
+                }
+            });
+        }
+        
+        let currentGrade = '5級';  // デフォルトは5級（「級」付き）
+        let currentPage = 1;
+        let totalPages = 1;
+        let totalWordCount = 743; // 現在の級の総単語数（デフォルトは5級の単語数）
+        let currentMode = 'list'; // デフォルトモード
+        let previousMode = 'list'; // 前回のモード記憶用
+        let wordsData = []; // 現在読み込まれている単語データ
+        let currentCardIndex = 0; // 現在のフラッシュカードインデックス
+        let currentQuestionIndex = 0; // 現在のクイズ問題インデックス
+        let quizAnswered = false; // クイズの回答状態
+        
+        // 音声合成の設定
+        const synth = window.speechSynthesis;
+        let voices = [];
+        
+        // 英語をカタカナに変換する関数
+        function englishToKatakana(text) {
+            if (!text) return '';
+            
+            // 基本的な英語音素のカタカナ対応表
+            const phonemeMap = {
+                // 母音
+                'a': 'ア', 'ai': 'アイ', 'ar': 'アー',
+                'e': 'エ', 'ea': 'イー', 'ee': 'イー', 'er': 'アー',
+                'i': 'イ', 'ie': 'アイ', 'ir': 'アー',
+                'o': 'オ', 'oo': 'ウー', 'or': 'オー',
+                'u': 'ア', 'ur': 'アー',
+                'y': 'イ',
+                // 子音
+                'b': 'ブ', 'bl': 'ブル', 'br': 'ブル',
+                'c': 'ク', 'ch': 'チ', 'cl': 'クル', 'cr': 'クル',
+                'd': 'ド', 'dr': 'ドル',
+                'f': 'フ', 'fl': 'フル', 'fr': 'フル',
+                'g': 'グ', 'gh': 'グ', 'gl': 'グル', 'gr': 'グル',
+                'h': 'ハ',
+                'j': 'ジ',
+                'k': 'ク', 'kn': 'ン',
+                'l': 'ル', 'll': 'ル',
+                'm': 'ム',
+                'n': 'ン', 'ng': 'ング',
+                'p': 'プ', 'ph': 'フ', 'pl': 'プル', 'pr': 'プル',
+                'q': 'ク', 'qu': 'クゥ',
+                'r': 'ル',
+                's': 'ス', 'sh': 'シ', 'sl': 'スル', 'sm': 'スム', 'sn': 'スン', 'sp': 'スプ', 'st': 'スト', 'sw': 'スウ',
+                't': 'ト', 'th': 'ス', 'tr': 'トル', 'tw': 'トゥ',
+                'v': 'ブ',
+                'w': 'ウ', 'wh': 'ウ',
+                'x': 'クス',
+                'z': 'ズ'
+            };
+            
+            // 単語末の音素
+            const finalPhonemes = {
+                'b': 'ブ', 'c': 'ク', 'd': 'ド', 'f': 'フ',
+                'g': 'グ', 'h': 'ハ', 'j': 'ジ', 'k': 'ク',
+                'l': 'ル', 'm': 'ム', 'n': 'ン', 'p': 'プ',
+                'r': 'ー', 's': 'ス', 't': 'ト', 'v': 'ブ',
+                'w': 'ウ', 'x': 'クス', 'y': 'イ', 'z': 'ズ',
+                'ch': 'チ', 'gh': 'グ', 'ng': 'ング', 'ph': 'フ',
+                'sh': 'シュ', 'th': 'ス', 'wh': 'ウ'
+            };
+            
+            // 母音の前の子音のパターン
+            const vowels = ['a', 'e', 'i', 'o', 'u', 'y'];
+            
+            // 文字ごとに変換していく
+            let katakana = '';
+            let i = 0;
+            text = text.toLowerCase();
+            
+            while (i < text.length) {
+                // 2文字の音素をチェック
+                if (i < text.length - 1) {
+                    let twoChar = text.substring(i, i + 2);
+                    if (phonemeMap[twoChar]) {
+                        katakana += phonemeMap[twoChar];
+                        i += 2;
+                        continue;
+                    }
+                }
+                
+                // 1文字の音素をチェック
+                let char = text[i];
+                
+                // 母音の場合
+                if (vowels.includes(char)) {
+                    katakana += phonemeMap[char] || char;
+                    i++;
+                    continue;
+                }
+                
+                // 子音の場合、次が母音かチェック
+                if (phonemeMap[char] && i < text.length - 1 && vowels.includes(text[i+1])) {
+                    // 子音+母音のパターン
+                    switch (char) {
+                        case 'b': katakana += 'バ'; break;
+                        case 'c': katakana += 'カ'; break;
+                        case 'd': katakana += 'ダ'; break;
+                        case 'f': katakana += 'ファ'; break;
+                        case 'g': katakana += 'ガ'; break;
+                        case 'h': katakana += 'ハ'; break;
+                        case 'j': katakana += 'ジャ'; break;
+                        case 'k': katakana += 'カ'; break;
+                        case 'l': katakana += 'ラ'; break;
+                        case 'm': katakana += 'マ'; break;
+                        case 'n': katakana += 'ナ'; break;
+                        case 'p': katakana += 'パ'; break;
+                        case 'q': katakana += 'ク'; break;
+                        case 'r': katakana += 'ラ'; break;
+                        case 's': katakana += 'サ'; break;
+                        case 't': katakana += 'タ'; break;
+                        case 'v': katakana += 'バ'; break;
+                        case 'w': katakana += 'ワ'; break;
+                        case 'x': katakana += 'ザ'; break;
+                        case 'y': katakana += 'ヤ'; break;
+                        case 'z': katakana += 'ザ'; break;
+                        default: katakana += char;
+                    }
+                    
+                    // 母音による音の調整
+                    let nextVowel = text[i+1];
+                    let lastChar = katakana[katakana.length - 1];
+                    
+                    switch(nextVowel) {
+                        case 'a': break; // 'ア'系はそのまま
+                        case 'i':
+                            if ('バカダファガハジャカラマナパクラサタバワザヤザ'.includes(lastChar)) {
+                                katakana = katakana.slice(0, -1) + lastChar.replace(
+                                    /バ|カ|ダ|ファ|ガ|ハ|ジャ|カ|ラ|マ|ナ|パ|ク|ラ|サ|タ|バ|ワ|ザ|ヤ|ザ/,
+                                    match => ({
+                                        'バ': 'ビ', 'カ': 'キ', 'ダ': 'ディ', 'ファ': 'フィ', 
+                                        'ガ': 'ギ', 'ハ': 'ヒ', 'ジャ': 'ジ', 'ラ': 'リ', 
+                                        'マ': 'ミ', 'ナ': 'ニ', 'パ': 'ピ', 'ク': 'キ', 
+                                        'サ': 'シ', 'タ': 'ティ', 'バ': 'ビ', 'ワ': 'ウィ', 
+                                        'ザ': 'ジ', 'ヤ': 'イ', 'ザ': 'ジ'
+                                    })[match]
+                                );
+                            }
+                            break;
+                        case 'u':
+                            if ('バカダファガハジャカラマナパクラサタバワザヤザ'.includes(lastChar)) {
+                                katakana = katakana.slice(0, -1) + lastChar.replace(
+                                    /バ|カ|ダ|ファ|ガ|ハ|ジャ|カ|ラ|マ|ナ|パ|ク|ラ|サ|タ|バ|ワ|ザ|ヤ|ザ/,
+                                    match => ({
+                                        'バ': 'ブ', 'カ': 'ク', 'ダ': 'ドゥ', 'ファ': 'フ', 
+                                        'ガ': 'グ', 'ハ': 'フ', 'ジャ': 'ジュ', 'ラ': 'ル', 
+                                        'マ': 'ム', 'ナ': 'ヌ', 'パ': 'プ', 'ク': 'ク', 
+                                        'サ': 'ス', 'タ': 'トゥ', 'バ': 'ブ', 'ワ': 'ウ', 
+                                        'ザ': 'ズ', 'ヤ': 'ユ', 'ザ': 'ズ'
+                                    })[match]
+                                );
+                            }
+                            break;
+                        case 'e':
+                            if ('バカダファガハジャカラマナパクラサタバワザヤザ'.includes(lastChar)) {
+                                katakana = katakana.slice(0, -1) + lastChar.replace(
+                                    /バ|カ|ダ|ファ|ガ|ハ|ジャ|カ|ラ|マ|ナ|パ|ク|ラ|サ|タ|バ|ワ|ザ|ヤ|ザ/,
+                                    match => ({
+                                        'バ': 'ベ', 'カ': 'ケ', 'ダ': 'デ', 'ファ': 'フェ', 
+                                        'ガ': 'ゲ', 'ハ': 'ヘ', 'ジャ': 'ジェ', 'ラ': 'レ', 
+                                        'マ': 'メ', 'ナ': 'ネ', 'パ': 'ペ', 'ク': 'ケ', 
+                                        'サ': 'セ', 'タ': 'テ', 'バ': 'ベ', 'ワ': 'ウェ', 
+                                        'ザ': 'ゼ', 'ヤ': 'イェ', 'ザ': 'ゼ'
+                                    })[match]
+                                );
+                            }
+                            break;
+                        case 'o':
+                            if ('バカダファガハジャカラマナパクラサタバワザヤザ'.includes(lastChar)) {
+                                katakana = katakana.slice(0, -1) + lastChar.replace(
+                                    /バ|カ|ダ|ファ|ガ|ハ|ジャ|カ|ラ|マ|ナ|パ|ク|ラ|サ|タ|バ|ワ|ザ|ヤ|ザ/,
+                                    match => ({
+                                        'バ': 'ボ', 'カ': 'コ', 'ダ': 'ド', 'ファ': 'フォ', 
+                                        'ガ': 'ゴ', 'ハ': 'ホ', 'ジャ': 'ジョ', 'ラ': 'ロ', 
+                                        'マ': 'モ', 'ナ': 'ノ', 'パ': 'ポ', 'ク': 'コ', 
+                                        'サ': 'ソ', 'タ': 'ト', 'バ': 'ボ', 'ワ': 'ウォ', 
+                                        'ザ': 'ゾ', 'ヤ': 'ヨ', 'ザ': 'ゾ'
+                                    })[match]
+                                );
+                            }
+                            break;
+                    }
+                    i += 2; // 子音+母音の2文字進める
+                    continue;
+                }
+                
+                // 単語の最後の子音
+                if (i === text.length - 1 && finalPhonemes[char]) {
+                    katakana += finalPhonemes[char];
+                    i++;
+                    continue;
+                }
+                
+                // その他の場合
+                katakana += phonemeMap[char] || char;
+                i++;
+            }
+            
+            return katakana;
+        }
+        
+        // 利用可能な音声を取得
+        function loadVoices() {
+            voices = synth.getVoices();
+        }
+        
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        
+        loadVoices();
+        
+        // 英語の音声を取得
+        function getEnglishVoice() {
+            // 英語の音声を探す
+            for (let voice of voices) {
+                if (voice.lang.includes('en-')) {
+                    return voice;
+                }
+            }
+            return voices[0];  // デフォルト
+        }          // 音声再生用のaudio要素
+        const audioElement = document.getElementById('word-audio');
+        
+        // 単語を発音する (音声ファイルがある場合は音声ファイル、なければ音声合成)
+        function speakWord(word, audioUrl, pronunciation, japanese) {
+            // 音声URLがある場合は音声ファイルを再生
+            if (audioUrl) {
+                try {
+                    audioElement.src = audioUrl;
+                    audioElement.play().catch(error => {
+                        console.error('音声ファイルの再生に失敗しました:', error);
+                        // 音声ファイルの再生に失敗した場合は音声合成にフォールバック
+                        synthesizeWordWithMeaning(japanese || word, word);
+                    });
+                    return;
+                } catch (error) {
+                    console.error('音声ファイルの設定に失敗しました:', error);
+                    // エラーが発生した場合は音声合成にフォールバック
+                    synthesizeWordWithMeaning(japanese || word, word);
+                }
+            } else {
+                // 音声URLがない場合は音声合成
+                synthesizeWordWithMeaning(japanese || word, word);
+            }
+        }
+        
+        // 音声合成を使用して単語を発音
+        function synthesizeWord(word) {
+            if (synth.speaking) {
+                console.error('発音中です');
+                return;
+            }
+            
+            if (word) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.voice = getEnglishVoice();
+                utterance.lang = 'en-US'; // 必ず英語で読み上げるように指定
+                utterance.pitch = 1;
+                utterance.rate = 0.8;  // ゆっくり目に設定
+                utterance.volume = 1;
+                synth.speak(utterance);
+            }
+        }
+        
+        // 日本語の音声を取得
+        function getJapaneseVoice() {
+            // 日本語の音声を探す
+            for (let voice of voices) {
+                if (voice.lang.includes('ja-')) {
+                    return voice;
+                }
+            }
+            return null;  // 日本語の音声がない場合
+        }
+          // 音声合成を使用して英単語のみを発音（日本語部分はスキップ）
+        function synthesizeWordWithMeaning(word, pronunciation) {
+            if (synth.speaking) {
+                synth.cancel(); // 読み上げ中の場合はキャンセル
+            }
+            
+            // 英単語のみを発音
+            if (pronunciation) {
+                // 日本語文字（ひらがな、カタカナ、漢字）を除去
+                const englishOnly = pronunciation.replace(/[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/g, "").trim();
+                
+                const utteranceEng = new SpeechSynthesisUtterance(englishOnly);
+                utteranceEng.voice = getEnglishVoice();
+                utteranceEng.lang = 'en-US';
+                utteranceEng.pitch = 1;
+                utteranceEng.rate = 0.8;
+                utteranceEng.volume = 1;
+                synth.speak(utteranceEng);
+            }
+        }
+          // タブ切り替え処理
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                // イベントの伝播を停止（メインナビゲーションとの混同防止）
+                e.stopPropagation();
+                
+                // アクティブなタブを変更
+                document.querySelectorAll('.tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                this.classList.add('active');                // 級を切り替え
+                currentGrade = this.dataset.grade;
+                
+                // 数字のみの場合は「級」を追加（APIリクエスト時のために保存）
+                if (!isNaN(currentGrade) && !currentGrade.includes('級')) {
+                    // データ属性はそのままに、変数には「級」付きで保存
+                    currentGrade = `${currentGrade}級`;
+                }
+                
+                currentPage = 1;
+                
+                // デバッグ情報を表示
+                console.log('級を切り替え:', currentGrade);
+                
+                // 現在のモードに応じたデータ読み込み
+                if (currentMode === 'list') {
+                    loadWords(); // リストモードは通常のページネーション
+                } else {
+                    // フラッシュカードかクイズモードの場合は全データを読み込む
+                    loadWords(true).then(() => {
+                        if (currentMode === 'flashcard') {
+                            currentCardIndex = 0;
+                            updateFlashcard();
+                        } else if (currentMode === 'quiz') {
+                            currentQuestionIndex = 0;
+                            generateQuizQuestion();
+                        }
+                    });
+                }
+            });
+        });
+          // モード切り替え処理
+        document.querySelectorAll('.mode-toggle .btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // イベントの伝播を停止（メインナビゲーションとの混同防止）
+                e.stopPropagation();
+                
+                // アクティブなボタンを変更
+                document.querySelectorAll('.mode-toggle .btn').forEach(b => {
+                    b.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // モードを切り替え
+                currentMode = this.dataset.mode;
+                document.querySelectorAll('.mode-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${currentMode}-mode`).classList.add('active');
+                
+                // 新しいモードに合わせて表示を更新
+                updateModeDisplay();
+            });
+        });
+        
+        // モード表示の更新
+        function updateModeDisplay() {
+            if (currentMode === 'list') {
+                // リストモードでは通常のページネーションでデータを表示
+                document.querySelector('.pagination').style.display = 'flex'; // ページネーション表示
+                
+                // 他のモードから戻ってきた場合は再度データを読み込む
+                if (currentMode !== previousMode) {
+                    loadWords(); // リストモードの場合はページネーション付きでデータを読み込む
+                }
+            } else if (currentMode === 'flashcard') {
+                // フラッシュカードモードでは全データを読み込む
+                document.querySelector('.pagination').style.display = 'none'; // ページネーション非表示
+                
+                if (currentMode !== previousMode) {
+                    // モード切り替え時のみ全データ読み込み
+                    loadWords(true).then(() => {
+                        if (wordsData.length > 0) {
+                            currentCardIndex = 0;
+                            updateFlashcard();
+                        }
+                    });
+                } else if (wordsData.length > 0) {
+                    currentCardIndex = 0;
+                    updateFlashcard();
+                }
+            } else if (currentMode === 'quiz') {
+                // クイズモードでも全データを読み込む
+                document.querySelector('.pagination').style.display = 'none'; // ページネーション非表示
+                
+                if (currentMode !== previousMode) {
+                    // モード切り替え時のみ全データ読み込み
+                    loadWords(true).then(() => {
+                        if (wordsData.length > 0) {
+                            currentQuestionIndex = 0;
+                            generateQuizQuestion();
+                        }
+                    });
+                } else if (wordsData.length > 0) {
+                    currentQuestionIndex = 0;
+                    generateQuizQuestion();
+                }
+            }
+                          // 現在のモードを記憶
+            previousMode = currentMode;
+        }
+        
+        // フラッシュカードの更新
+        function updateFlashcard() {
+            if (wordsData.length === 0) return;
+            
+            const card = document.getElementById('flashcard');
+            const wordElement = document.getElementById('flashcard-word');
+            const pronunciationElement = document.getElementById('flashcard-pronunciation');
+              // カードをリセット
+            card.classList.remove('flipped');
+            
+            // データを設定
+            const currentWord = wordsData[currentCardIndex];
+            wordElement.textContent = currentWord.word;
+              
+            // 発音とカタカナ発音を設定
+            const katakana = englishToKatakana(currentWord.pronunciation || '');
+            pronunciationElement.innerHTML = `
+                ${currentWord.japanese || '（意味なし）'}
+                <div class="katakana-pronunciation">${currentWord.pronunciation || ''}</div>
+            `;
+              
+            // 音声再生ボタンの設定
+            document.getElementById('flashcard-play').onclick = function(e) {
+                e.stopPropagation(); // カードフリップを防止
+                speakWord(currentWord.word, currentWord.audio_url, currentWord.pronunciation, currentWord.japanese);
+            };
+              // 前後ボタンの状態更新（一周するようになったので無効化しない）
+            document.getElementById('prev-card').disabled = false;
+            document.getElementById('next-card').disabled = false;
+              
+            // 現在の進捗表示（総単語数に対する進捗）
+            document.getElementById('flashcard-progress').textContent = 
+                `${currentCardIndex + 1} / ${totalWordCount}`;
+        }
+        
+        // フラッシュカードをめくる
+        document.getElementById('flashcard').addEventListener('click', function() {
+            this.classList.toggle('flipped');
+        });
+        
+        document.getElementById('flip-card').addEventListener('click', function() {
+            document.getElementById('flashcard').classList.toggle('flipped');
+        });
+        
+        // 前のカードへ（最初の場合は最後に戻る）
+        document.getElementById('prev-card').addEventListener('click', function() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+            } else {
+                currentCardIndex = wordsData.length - 1; // 最初のカードから戻ると最後に移動
+            }
+            updateFlashcard();
+        });
+        
+        // 次のカードへ（最後の場合は最初に戻る）
+        document.getElementById('next-card').addEventListener('click', function() {
+            if (currentCardIndex < wordsData.length - 1) {
+                currentCardIndex++;
+            } else {
+                currentCardIndex = 0; // 最後のカードから進むと最初に戻る
+            }
+            updateFlashcard();
+        });
+        
+        // クイズ問題の生成
+        function generateQuizQuestion() {
+            if (wordsData.length < 4) {
+                document.getElementById('quiz-question').innerHTML = 
+                    '<div class="alert alert-warning">クイズモードには最低4つの単語が必要です。別の級またはフィルターを選択してください。</div>';
+                return;
+            }
+            
+            // 問題のリセット
+            quizAnswered = false;
+            document.getElementById('quiz-result').style.display = 'none';
+            document.getElementById('next-question').disabled = true;
+            
+            // 現在の問題の単語を取得
+            const currentWord = wordsData[currentQuestionIndex];
+              
+            // 進捗表示の更新
+            document.getElementById('quiz-progress').textContent = 
+                `${currentQuestionIndex + 1} / ${totalWordCount}`;
+                
+            // 問題文と発音ボタンを設定
+            document.getElementById('quiz-word').textContent = currentWord.word;
+            document.getElementById('quiz-play').onclick = function() {
+                speakWord(currentWord.word, currentWord.audio_url, currentWord.pronunciation, currentWord.japanese);
+            };
+            
+            // この級の全単語から選択肢を選ぶ
+            // 選択肢を生成（正解+他の3つのランダムな単語）
+            let options = [currentWord]; 
+            let attempts = 0;
+            const maxAttempts = 50; // 無限ループ防止
+            
+            // 異なる意味の単語のみを選択肢にする
+            while (options.length < 4 && attempts < maxAttempts) {
+                attempts++;
+                // ランダムな単語を選択
+                const randomIndex = Math.floor(Math.random() * wordsData.length);
+                const randomWord = wordsData[randomIndex];
+                  // 重複チェック - IDと意味の両方をチェック
+                if (!options.some(w => w.id === randomWord.id || 
+                                     w.japanese === randomWord.japanese)) {
+                    options.push(randomWord);
+                }
+            }
+            
+            // 十分な選択肢が得られなかった場合のフォールバック
+            if (options.length < 4) {
+                while (options.length < 4) {
+                    const randomIndex = Math.floor(Math.random() * wordsData.length);
+                    const randomWord = wordsData[randomIndex];
+                    
+                    // IDのみでチェック
+                    if (!options.some(w => w.id === randomWord.id)) {
+                        options.push(randomWord);
+                    }
+                }
+            }
+            
+            // 選択肢をシャッフル
+            options = shuffleArray(options);
+            
+            // 選択肢を表示
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            
+            options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'col-md-6 mb-3';
+                optionElement.innerHTML = `
+                    <div class="quiz-option" data-id="${option.id}">
+                        ${option.japanese || '（意味なし）'}
+                    </div>
+                `;
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // 選択肢クリックイベントを設定
+            document.querySelectorAll('.quiz-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    if (quizAnswered) return; // 既に回答済みなら何もしない
+                    
+                    quizAnswered = true;
+                    const selectedId = parseInt(this.dataset.id);
+                    const isCorrect = selectedId === currentWord.id;
+                    
+                    // 全ての選択肢から選択状態を示すクラスを削除
+                    document.querySelectorAll('.quiz-option').forEach(opt => {
+                        opt.classList.add('selected');
+                        
+                        // 正解と不正解を示すクラスを追加
+                        const optionId = parseInt(opt.dataset.id);
+                        if (optionId === currentWord.id) {
+                            opt.classList.add('correct');
+                        } else if (optionId === selectedId && !isCorrect) {
+                            opt.classList.add('incorrect');
+                        }
+                    });
+                    
+                    // 結果表示
+                    const resultElement = document.getElementById('quiz-result');
+                    resultElement.style.display = 'block';
+                    const alertElement = resultElement.querySelector('.alert');
+                    
+                    if (isCorrect) {
+                        alertElement.className = 'alert alert-success';
+                        alertElement.textContent = '正解です！';
+                    } else {
+                        alertElement.className = 'alert alert-danger';
+                        alertElement.innerHTML = `不正解です。<br>「${currentWord.word}」の意味は「${currentWord.japanese || '（意味なし）'}」です。`;
+                    }
+                    
+                    // 次の問題ボタンを有効化
+                    document.getElementById('next-question').disabled = false;
+                });
+            });
+        }
+        
+        // 次の問題ボタン（最後まで行ったら最初に戻る）
+        document.getElementById('next-question').addEventListener('click', function() {
+            if (currentQuestionIndex < wordsData.length - 1) {
+                currentQuestionIndex++;
+            } else {
+                currentQuestionIndex = 0; // 一周したら最初に戻る
+            }
+            generateQuizQuestion();
+        });
+        
+        // 配列をシャッフルする関数
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        // フィルター適用ボタン
+        document.getElementById('filter-button').addEventListener('click', function() {
+            currentPage = 1; // ページをリセット
+            loadWords();
+        });
+        
+        // 検索ボタン
+        document.getElementById('search-button').addEventListener('click', function() {
+            currentPage = 1; // ページをリセット
+            loadWords();
+        });
+        
+        // Enterキーで検索実行
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                currentPage = 1; // ページをリセット
+                loadWords();
+            }
+        });
+        
+        // ページ切り替えボタン
+        document.getElementById('prev-page').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadWords();
+            }
+        });
+        
+        document.getElementById('next-page').addEventListener('click', function() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadWords();
+            }
+        });
+        
+        // 単語データ読み込み
+        function loadWords(loadAllWords = false) {
+            const wordsContainer = document.getElementById('words-container');
+            const loadingElement = wordsContainer.querySelector('.loading');
+            const errorElement = wordsContainer.querySelector('.error');
+            const wordListElement = wordsContainer.querySelector('.word-list');
+            
+            // 表示状態をリセット
+            loadingElement.style.display = 'block';
+            errorElement.style.display = 'none';
+            wordListElement.style.display = 'none';
+            wordListElement.innerHTML = '';
+            
+            // 検索フィルターパラメータを取得
+            const searchTerm = document.getElementById('search-input').value;
+            const stageFilter = document.getElementById('stage-filter').value;
+            const audioFilter = document.getElementById('audio-filter').value;            // APIリクエストのクエリパラメータを構築
+            // 数字のみの場合は「級」を追加する処理
+            let gradeParam = currentGrade;
+            if (!isNaN(gradeParam) && !gradeParam.includes('級')) {
+                gradeParam = `${gradeParam}級`;
+            }
+            let queryParams = `grade=${gradeParam}`;
+            
+            // デバッグ情報 - 級の値をログに出力
+            console.log('リクエスト時の級の値:', gradeParam);
+            
+            if (!loadAllWords) {
+                queryParams += `&page=${currentPage}`; // ページネーションが必要な場合のみページパラメータ追加
+            } else {
+                queryParams += `&all=1`; // 全データ取得のフラグ
+                console.log('全データ取得モードでリクエスト実行');
+            }
+            
+            if (searchTerm) queryParams += `&search=${encodeURIComponent(searchTerm)}`;
+            if (stageFilter) queryParams += `&stage=${stageFilter}`;
+            if (audioFilter) queryParams += `&has_audio=${audioFilter}`;
+            
+            // APIからデータ取得
+            return new Promise((resolve, reject) => {                // コンソールにAPIリクエストを表示 (デバッグ用)
+                console.log(`英検単語データ取得リクエスト: /myapp/index.cgi/api/eiken-words?${queryParams}`);
+                  fetch(`/myapp/index.cgi/api/eiken-words?${queryParams}`)
+                    .then(response => {
+                        console.log('APIレスポンスステータス:', response.status, response.statusText);
+                        if (!response.ok) {
+                            return response.json().then(errData => {
+                                throw new Error(`APIエラー: ${response.status} - ${errData.message || 'サーバーエラー'}`);
+                            }).catch(err => {
+                                throw new Error('APIエラー: ' + response.status);
+                            });
+                        }
+                        return response.json();
+                    }).then(data => {
+                        loadingElement.style.display = 'none';
+                        
+                        // デバッグ情報を詳細に出力
+                        console.log('APIレスポンス:', data);
+                        console.log('英検単語データ数:', data.words ? data.words.length : 0);
+                        console.log('リクエスト情報:', data.filters);
+                          if (!data.success) {
+                            console.error('APIエラー:', data.message);
+                            errorElement.textContent = `データの取得に失敗しました: ${data.message || 'エラーが発生しました'}`;
+                            errorElement.style.display = 'block';
+                            reject(new Error(data.message || 'データの取得に失敗しました'));
+                            return;
+                        }
+                        
+                        // データを保存 (データがない場合は空配列に設定)
+                        wordsData = data.words || [];
+                        
+                        // リストモード用のページネーション表示
+                        if (!loadAllWords) {
+                            // ページネーション情報を更新
+                            totalPages = data.pagination.total_pages;
+                            // 総単語数を保存
+                            totalWordCount = data.pagination.total_count;
+                            document.getElementById('page-info').textContent = 
+                                `${currentPage} / ${totalPages} (総問題数: ${totalWordCount}件)`;
+                            
+                            // ページネーションボタンの状態を更新
+                            document.getElementById('prev-page').disabled = currentPage <= 1;
+                            document.getElementById('next-page').disabled = currentPage >= totalPages;
+                        }                        // 単語カードを生成（リストモードの場合のみ）
+                        if (currentMode === 'list' && data.words && Array.isArray(data.words) && data.words.length > 0) {
+                            data.words.forEach(word => {
+                                const wordCard = document.createElement('div');
+                                wordCard.className = 'word-card';
+                                
+                                // 音声バッジ (音声URLがある場合のみ表示)
+                                const audioBadge = word.audio_url ?
+                                    '<span class="audio-badge">音声</span>' : '';
+                                
+                                // ステージ表示
+                                const stageInfo = word.stage_number ? 
+                                    `<div class="stage-info">ステージ ${word.stage_number}</div>` : '';
+                                
+                                // 英単語のカタカナ発音を生成
+                                const katakana = englishToKatakana(word.pronunciation || '');
+                                
+                                wordCard.innerHTML = `
+                                    <div class="word">
+                                        <span>${word.word}</span>
+                                        <span>${audioBadge}</span>
+                                    </div>
+                                    <div class="pronunciation">${word.japanese || '（意味なし）'}</div>
+                                    <div class="katakana-pronunciation">${word.pronunciation || ''}</div>
+                                    ${stageInfo}
+                                    <button class="play-button" data-word="${word.word}" data-audio="${word.audio_url || ''}" data-pronunciation="${word.pronunciation || ''}" data-japanese="${word.japanese || ''}">
+                                        <i class="fas fa-volume-up"></i> 再生
+                                    </button>
+                                `;
+                                
+                                wordListElement.appendChild(wordCard);
+                            });
+                            
+                            // 音声再生ボタンにイベントを設定
+                            wordListElement.querySelectorAll('.play-button').forEach(button => {
+                                button.addEventListener('click', function() {
+                                    const word = this.dataset.word;
+                                    const audioUrl = this.dataset.audio;
+                                    const pronunciation = this.dataset.pronunciation;
+                                    const japanese = this.dataset.japanese;
+                                    speakWord(word, audioUrl, pronunciation, japanese);
+                                });
+                            });
+                            
+                            wordListElement.style.display = 'grid';
+                        } else if (!data.words || data.words.length === 0) {
+                            errorElement.innerHTML = `
+                                <p>データがありません。</p>
+                                <p>選択中: ${currentGrade}級</p>
+                                <p>検索条件をクリアして再度お試しください。</p>
+                            `;
+                            errorElement.style.display = 'block';
+                        }
+                        
+                        resolve(data);                    })
+                    .catch(error => {
+                        loadingElement.style.display = 'none';
+                        console.error('API通信エラー:', error);
+                        console.error('エラー詳細:', error.stack);
+                        
+                        // リクエストURLを表示（デバッグ用）
+                        console.log('リクエストURL:', `/myapp/index.cgi/api/eiken-words?${queryParams}`);
+                        
+                        errorElement.innerHTML = `
+                            <p>通信エラー: ${error.message}</p>
+                            <p>サーバーとの通信中に問題が発生しました。</p>
+                            <p>ページを更新するか、しばらく経ってから再度お試しください。</p>
+                        `;
+                        errorElement.style.display = 'block';
+                        reject(error);
+                    });
+            });
+        }
+        
+        // 初期データ読み込み
+        loadWords().then(() => {
+            updateModeDisplay();
+        });
+    });
+</script>
+{% endblock %}

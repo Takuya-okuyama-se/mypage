@@ -1,0 +1,8 @@
+# CGIスクリプト実行条件
+<Files ~ "\.cgi$">
+    Options +ExecCGI
+    SetHandler cgi-script
+</Files>
+
+# ディレクトリインデックス設定
+DirectoryIndex index.cgi

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>内申点追加</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; max-width: 600px; margin: auto; }
+    form { display: flex; flex-direction: column; gap: 1em; }
+    label { font-weight: bold; }
+    select, input[type=number] { padding: 0.5em; font-size: 1em; }
+    button { padding: 0.7em; font-size: 1em; background: #036; color: white; border: none; cursor: pointer; }
+    button:hover { background: #024; }
+  </style>
+</head>
+<body>
+  <h1>内申点追加</h1>
+  <form method="post" action="{{ url_for('student_add_point') }}">
+    <div>
+      <label for="subject">科目</label>
+      <select name="subject" id="subject" required>
+        <option value="">-- 選択してください --</option>
+        <option>国語</option>
+        <option>数学</option>
+        <option>英語</option>
+        <option>理科</option>
+        <option>社会</option>
+        <option>音楽</option>
+        <option>美術</option>
+        <option>保健体育</option>
+        <option>技術家庭</option>
+      </select>
+    </div>
+    <div>
+      <label for="point">内申点</label>
+      <input type="number" name="point" id="point" min="1" max="5" required>
+    </div>
+    <button type="submit">登録</button>
+  </form>
+  <p><a href="{{ url_for('student_performance') }}">← 成績・内申点一覧に戻る</a></p>
+</body>
+</html>

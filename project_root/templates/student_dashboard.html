@@ -1,0 +1,1494 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<style>
+  /* モダンなダッシュボードスタイル */
+  .login-bonus-notification {
+    background: linear-gradient(135deg, #d7f0fd, #e8f5fd);
+    border-left: 4px solid var(--primary);
+    animation: pulse-light 2s infinite;
+  }
+  
+  @keyframes pulse-light {
+    0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); }
+  }
+  
+  /* スマホ対応のスタイル追加 */
+  #calendar {
+    max-width: 900px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 10px;
+    min-height: 480px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+  
+  /* モバイル向けの調整 */
+  @media screen and (max-width: 768px) {
+    #calendar {
+      padding: 5px;
+      min-height: 400px;
+      margin: 0 -10px; /* 横幅を広げる */
+      width: calc(100% + 20px); /* 横幅を広げる */
+      border-radius: 8px;
+    }
+    
+    /* カレンダーヘッダーの調整 */
+    .fc .fc-toolbar.fc-header-toolbar {
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 0.8em;
+    }
+    
+    .fc .fc-toolbar-title {
+      font-size: 1.2em;
+      text-align: center;
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    
+    .fc-header-toolbar .fc-toolbar-chunk {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 5px;
+    }
+    
+    /* 日付セルの調整 */
+    .fc .fc-daygrid-day {
+      height: auto !important;
+      min-height: 2em;
+    }
+    
+    /* イベントのフォントサイズ調整 */
+    .fc-event-title {
+      font-size: 0.8em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    /* 日付の表示を小さく */
+    .fc-daygrid-day-number {
+      font-size: 0.9em;
+      padding: 2px !important;
+    }
+    
+    /* ボタングループの調整 */
+    .fc .fc-button-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .fc-direction-ltr .fc-button-group > .fc-button {
+      padding: 0.25em 0.55em;
+      font-size: 0.9em;
+    }
+    
+    /* お知らせカードの調整 */
+    .notification-item {
+      padding: 15px;
+      margin-bottom: 12px;
+    }
+    
+    /* 志望校表示の最適化 */
+    .school-item {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .school-details {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    
+    /* ボーナス表示の強化 */
+    .bonus-content {
+      flex-direction: column;
+      text-align: center;
+    }
+    
+    .bonus-icon {
+      margin-right: 0;
+      margin-bottom: 15px;
+      font-size: 42px;
+    }
+    
+    .bonus-link {
+      width: 100%;
+      text-align: center;
+      padding: 10px;
+    }
+  }
+  
+  @media screen and (max-width: 480px) {
+    /* 小型デバイス向けの追加調整 */
+    #calendar {
+      min-height: 350px;
+    }
+    
+    .fc-toolbar-title {
+      font-size: 1em !important;
+    }
+    
+    .fc .fc-button {
+      padding: 0.2em 0.5em;
+      font-size: 0.85em;
+    }
+    
+    .school-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .school-course {
+      margin-left: 0;
+      margin-top: 5px;
+    }
+    
+    .school-name {
+      font-size: 1em;
+    }
+  }
+  
+  /* 志望校スタイル */
+  .preference-list {
+    margin-top: 10px;
+  }
+  
+  .school-item {
+    border-left: 4px solid #4285f4;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+  }
+  
+  .school-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+  }
+  
+  .school-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  
+  .preference-order {
+    background-color: #4285f4;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 8px;
+    font-weight: bold;
+  }
+  
+  .school-name {
+    font-weight: bold;
+    font-size: 1.1em;
+  }
+  
+  .school-course {
+    font-size: 0.9em;
+    color: #666;
+    margin-left: 5px;
+  }
+  
+  .school-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    margin-top: 8px;
+    font-size: 0.9em;
+  }
+  
+  .detail-label {
+    color: #555;
+  }
+  
+  .detail-value {
+    font-weight: bold;
+  }
+  
+  .point-difference {
+    margin-top: 8px;
+    padding: 5px;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  
+  .point-difference.positive {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .point-difference.negative {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .login-bonus-notification {
+    background-color: #e3f2fd;
+    border-left: 5px solid #4285f4;
+    margin-bottom: 20px;
+    animation: pulse 1.5s infinite alternate;
+  }
+  
+  .bonus-content {
+    display: flex;
+    align-items: center;
+  }
+  
+  .bonus-icon {
+    font-size: 48px;
+    margin-right: 20px;
+    color: #4285f4;
+  }
+  
+  .bonus-text h3 {
+    color: #4285f4;
+    margin-top: 0;
+  }
+  
+  .bonus-points {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #34a853;
+  }
+  
+  .bonus-link {
+    display: inline-block;
+    background-color: #4285f4;
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 5px;
+  }
+  
+  .bonus-link:hover {
+    background-color: #3367d6;
+  }
+  
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.4); }
+    100% { box-shadow: 0 0 0 10px rgba(66, 133, 244, 0); }
+  }
+  
+  /* テーブルのレスポンシブ対応 */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* スマホ向けのテーブル調整 */
+  @media screen and (max-width: 768px) {
+    .data-table {
+      min-width: 500px; /* 横スクロールが必要なほど十分な幅を確保 */
+    }
+    
+    .data-table th,
+    .data-table td {
+      padding: 5px;
+      font-size: 0.9em;
+    }
+  }
+  
+  /* 基本的なスタイルを追加 */
+  .fc-header-toolbar .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 5px;
+  }
+  
+  /* 日付セルの調整 */
+  .fc .fc-daygrid-day {
+    height: auto !important;
+    min-height: 2em;
+  }
+  
+  /* イベントのフォントサイズ調整 */
+  .fc-event-title {
+    font-size: 0.8em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* 日付の表示を小さく */
+  .fc-daygrid-day-number {
+    font-size: 0.9em;
+    padding: 2px !important;
+  }
+  
+  /* ボタングループの調整 */
+  .fc .fc-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if login_bonus %}
+<div class="card login-bonus-notification">
+  <div class="bonus-content">
+    <div class="bonus-icon">🎉</div>
+    <div class="bonus-text">
+      <h3>ログインボーナス獲得！</h3>
+      <p>本日のログインで <span class="bonus-points">{{ login_bonus }}</span> ポイントを獲得しました！</p>
+      <p><a href="/myapp/index.cgi/student/points" class="bonus-link">ポイント履歴を確認する</a></p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  {% if is_teacher_login or teacher_view %}
+<div class="alert alert-info">
+  <p>あなたは現在、講師として生徒アカウントにアクセスしています。</p>
+  {% if is_teacher_login %}
+  <a href="/myapp/index.cgi/student/return-to-teacher" class="btn btn-primary">講師アカウントに戻る</a>
+  {% else %}
+  {% set student_id = request.args.get('id') %}
+  <a href="/myapp/index.cgi/teacher/dashboard" class="btn btn-primary">講師ダッシュボードに戻る</a>
+  {% endif %}
+</div>
+{% endif %}
+  <h3><i class="fas fa-bell"></i> お知らせ</h3>
+  {% if notifications %}
+    <ul class="notification-list">
+      {% for note in notifications %}
+        <li class="notification-item">
+          <div class="notification-date">{{ note.created_at }}</div>
+          <div class="notification-content">
+            <div class="notification-message">{{ note.message }}</div>
+            <div class="notification-author">{{ note.teacher_name }}</div>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">
+      <i class="fas fa-inbox"></i>
+      <p>お知らせはありません。</p>
+    </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>塾スケジュール</h3>
+  <!-- ライブラリとカレンダーの初期化コードを直接埋め込み -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/index.global.min.js"></script>
+  <div id="calendar"></div>
+  <script>
+    // カレンダー要素を取得
+    var calendarEl = document.getElementById('calendar');
+    
+    // ライブラリが読み込まれたらカレンダーを初期化
+    var checkFullCalendarInterval = setInterval(function() {
+      if (typeof FullCalendar !== 'undefined') {
+        clearInterval(checkFullCalendarInterval);
+        console.log('FullCalendarが読み込まれました');
+        
+        // モバイルかどうかをチェック
+        var isMobile = window.innerWidth < 768;
+        
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: isMobile ? 'listMonth' : 'dayGridMonth', // モバイルではリスト表示をデフォルトに
+          locale: 'ja',
+          firstDay: 1,
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,listMonth'
+          },
+          buttonText: {
+            today: '今日',
+            month: '月',
+            list: 'リスト'
+          },
+          height: isMobile ? 'auto' : 'auto',
+          contentHeight: isMobile ? 'auto' : 'auto',
+          aspectRatio: isMobile ? 1.2 : 1.35, // アスペクト比の調整
+          fixedWeekCount: false,
+          events: '/myapp/index.cgi/api/calendar-events',
+          // スマホ向けにイベントのサイズを調整
+          eventDisplay: isMobile ? 'block' : 'auto',
+          eventTimeFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            meridiem: false
+          },
+          // イベント表示の最適化
+          eventMaxStack: isMobile ? 2 : 6,
+          dayMaxEvents: isMobile ? 2 : true,
+          // スクリーンサイズに応じたビューのリサイズ
+          windowResize: function(view) {
+            var newIsMobile = window.innerWidth < 768;
+            if (newIsMobile !== isMobile) {
+              isMobile = newIsMobile;
+              calendar.changeView(isMobile ? 'listMonth' : 'dayGridMonth');
+              calendar.setOption('eventMaxStack', isMobile ? 2 : 6);
+              calendar.setOption('dayMaxEvents', isMobile ? 2 : true);
+            }
+          },
+          eventClick: function(info) {
+            info.jsEvent.preventDefault();
+            
+            // イベントの詳細情報
+            var details = '';
+            
+            // 日時表示
+            if (info.event.allDay) {
+              // 終日イベント
+              var start = new Date(info.event.start);
+              var options = { year: 'numeric', month: 'long', day: 'numeric' };
+              var dateStr = start.toLocaleDateString('ja-JP', options);
+              
+              if (info.event.end) {
+                var end = new Date(info.event.end);
+                end.setDate(end.getDate() - 1);
+                if (start.getTime() !== end.getTime()) {
+                  dateStr += ' 〜 ' + end.toLocaleDateString('ja-JP', options);
+                }
+              }
+              
+              details += '日付: ' + dateStr;
+            } else {
+              // 時間指定イベント
+              var start = new Date(info.event.start);
+              var dateTimeStr = start.toLocaleDateString('ja-JP', {
+                year: 'numeric', month: 'long', day: 'numeric'
+              });
+              dateTimeStr += ' ' + start.toLocaleTimeString('ja-JP', {
+                hour: '2-digit', minute: '2-digit'
+              });
+              
+              if (info.event.end) {
+                var end = new Date(info.event.end);
+                if (start.toDateString() === end.toDateString()) {
+                  // 同じ日の場合は時間だけ表示
+                  dateTimeStr += ' 〜 ' + end.toLocaleTimeString('ja-JP', {
+                    hour: '2-digit', minute: '2-digit'
+                  });
+                } else {
+                  // 異なる日の場合は日付と時間を表示
+                  dateTimeStr += ' 〜 ' + end.toLocaleDateString('ja-JP', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                  });
+                  dateTimeStr += ' ' + end.toLocaleTimeString('ja-JP', {
+                    hour: '2-digit', minute: '2-digit'
+                  });
+                }
+              }
+              
+              details += '日時: ' + dateTimeStr;
+            }
+            
+            // 場所情報があれば追加
+            if (info.event.extendedProps && info.event.extendedProps.location) {
+              details += '\n\n場所: ' + info.event.extendedProps.location;
+            }
+            
+            // 説明情報があれば追加
+            if (info.event.extendedProps && info.event.extendedProps.description) {
+              details += '\n\n' + info.event.extendedProps.description;
+            }
+            
+            // アラート表示
+            alert(info.event.title + '\n\n' + details);
+          }
+        });
+        
+        calendar.render();
+        console.log('カレンダーの初期化が完了しました');
+      }
+    }, 100);
+    
+    // 10秒後にもライブラリが読み込まれていなければエラーを表示
+    setTimeout(function() {
+      if (typeof FullCalendar === 'undefined') {
+        clearInterval(checkFullCalendarInterval);
+        console.error('FullCalendarライブラリの読み込みに失敗しました');
+        calendarEl.innerHTML = '<p style="color:red; padding:20px;">カレンダーの読み込みに失敗しました。ページを再読み込みしてください。</p>';
+      }
+    }, 10000);
+  </script>
+</div>
+
+<!-- 小学5・6年生向け宿題カレンダー -->
+{% if school_type == 'elementary' and grade_level in [5, 6] %}
+<div class="card">
+  <h3><i class="fas fa-calendar-check"></i> 宿題カレンダー（小学5・6年生専用）</h3>
+  <p style="color: #666; margin-bottom: 20px;">
+    📚 あなたの宿題を確認して、提出しましょう！日付をクリックすると詳細が表示されます。
+    <br><small style="color: #999;">※このカレンダーは上の塾スケジュールとは別のものです</small>
+  </p>
+  
+  <!-- 宿題統計 -->
+  <div class="homework-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+    <div class="stat-card" style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center;">
+      <div style="font-size: 24px; font-weight: bold; color: #28a745;" id="completed-count">0</div>
+      <div style="color: #666; font-size: 14px;">今月完了</div>
+    </div>
+    <div class="stat-card" style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center;">
+      <div style="font-size: 24px; font-weight: bold; color: #ffc107;" id="pending-count">0</div>
+      <div style="color: #666; font-size: 14px;">未完了</div>
+    </div>
+    <div class="stat-card" style="background: #d1ecf1; padding: 15px; border-radius: 8px; text-align: center;">
+      <div style="font-size: 24px; font-weight: bold; color: #17a2b8;" id="points-earned">0</div>
+      <div style="color: #666; font-size: 14px;">獲得ポイント</div>
+    </div>
+  </div>
+  
+  <!-- 月選択コントロール -->
+  <div class="homework-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
+    <button id="prev-month" class="btn btn-outline-primary" style="padding: 8px 15px;">
+      <i class="fas fa-chevron-left"></i> 前月
+    </button>
+    <h4 id="current-month-year" style="margin: 0; color: #333;">2025年5月</h4>
+    <button id="next-month" class="btn btn-outline-primary" style="padding: 8px 15px;">
+      次月 <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+  
+  <!-- 宿題カレンダー -->
+  <div id="homework-calendar" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; min-height: 300px;">
+    <div style="text-align: center; padding: 50px; color: #999;">
+      <i class="fas fa-spinner fa-spin"></i> カレンダーを読み込み中...
+    </div>
+  </div>
+  
+  <!-- 宿題リスト -->
+  <div style="margin-top: 20px;">
+    <h4 style="color: #333; margin-bottom: 15px;">今月の宿題一覧</h4>
+    <div id="homework-list" style="max-height: 300px; overflow-y: auto;">
+      <!-- 宿題リストが動的に表示されます -->
+    </div>
+  </div>
+</div>
+
+<style>
+/* 宿題カレンダー専用スタイル */
+.homework-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #007bff; /* 塾カレンダーとの区別 */
+  box-shadow: 0 2px 8px rgba(0,123,255,0.15);
+}
+
+.homework-day {
+  background: white;
+  min-height: 60px;
+  padding: 8px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.homework-calendar-cell {
+  /* 宿題カレンダー専用セルの追加スタイル */
+  border: 1px solid transparent;
+}
+
+.homework-calendar-cell:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
+
+.homework-day:hover {
+  background: #f8f9fa;
+}
+
+.homework-day.other-month {
+  background: #f8f9fa;
+  color: #999;
+}
+
+.homework-day.today {
+  background: #e3f2fd;
+  border: 2px solid #4285f4;
+}
+
+.day-number {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.homework-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffc107;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.homework-indicator.completed {
+  background: #28a745;
+}
+
+.homework-item {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.homework-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.homework-item.completed {
+  background: #e8f5e8;
+  border-color: #28a745;
+}
+
+.homework-subject {
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.homework-details {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.homework-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-submit {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-submit:hover {
+  background: #218838;
+}
+
+.btn-submit:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.homework-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #28a745;
+  color: white;
+}
+
+@media screen and (max-width: 768px) {
+  .homework-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .homework-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .homework-day {
+    min-height: 50px;
+    padding: 4px;
+    font-size: 12px;
+  }
+}
+</style>
+
+<script>
+// DOMContentLoadedイベントは下部で統合処理される
+
+let currentHomeworkMonth = new Date().getMonth() + 1;
+let currentHomeworkYear = new Date().getFullYear();
+
+function initializeHomeworkCalendar() {
+  console.log('宿題カレンダーを初期化します');
+  
+  // 月切り替えボタンのイベントリスナー
+  document.getElementById('prev-month').addEventListener('click', function() {
+    currentHomeworkMonth--;
+    if (currentHomeworkMonth < 1) {
+      currentHomeworkMonth = 12;
+      currentHomeworkYear--;
+    }
+    loadHomeworkCalendar();
+  });
+  
+  document.getElementById('next-month').addEventListener('click', function() {
+    currentHomeworkMonth++;
+    if (currentHomeworkMonth > 12) {
+      currentHomeworkMonth = 1;
+      currentHomeworkYear++;
+    }
+    loadHomeworkCalendar();
+  });
+  
+  // 初期カレンダーを読み込み
+  loadHomeworkCalendar();
+}
+
+function loadHomeworkCalendar() {
+  console.log('🔄 宿題カレンダー更新開始');
+  updateMonthDisplay();
+  renderHomeworkCalendar();
+  
+  // データ読み込みを順序実行し、完了後にカレンダーを更新
+  loadHomeworkData().then(() => {
+    console.log('📊 宿題データ取得完了、リスト更新開始');
+    loadHomeworkList();
+    console.log('✅ 宿題カレンダー完全更新完了');
+  }).catch(error => {
+    console.error('❌ 宿題カレンダー更新エラー:', error);
+    // エラー時もリストは更新を試行
+    loadHomeworkList();
+  });
+}
+
+function updateMonthDisplay() {
+  const monthNames = [
+    '1月', '2月', '3月', '4月', '5月', '6月',
+    '7月', '8月', '9月', '10月', '11月', '12月'
+  ];
+  document.getElementById('current-month-year').textContent = 
+    `${currentHomeworkYear}年${monthNames[currentHomeworkMonth - 1]}`;
+}
+
+function renderHomeworkCalendar() {
+  const calendar = document.getElementById('homework-calendar');
+  const today = new Date();
+  const firstDay = new Date(currentHomeworkYear, currentHomeworkMonth - 1, 1);
+  const lastDay = new Date(currentHomeworkYear, currentHomeworkMonth, 0);
+  const daysInMonth = lastDay.getDate();
+  const startDay = firstDay.getDay(); // 0 = Sunday
+  
+  let calendarHTML = `
+    <div class="homework-calendar">
+      <div style="background: #f8f9fa; padding: 8px; font-weight: bold; text-align: center;">日</div>
+      <div style="background: #f8f9fa; padding: 8px; font-weight: bold; text-align: center;">月</div>
+      <div style="background: #f8f9fa; padding: 8px; font-weight: bold; text-align: center;">火</div>
+      <div style="background: #f8f9fa; padding: 8px; font-weight: bold; text-align: center;">水</div>
+      <div style="background: #f8f9fa; padding: 8px; font-weight: bold; text-align: center;">木</div>
+      <div style="background: #f8f9fa; padding: 8px; font-weight: bold; text-align: center;">金</div>
+      <div style="background: #f8f9fa; padding: 8px; font-weight: bold; text-align: center;">土</div>
+  `;
+  
+  // 前月の日付を表示
+  const prevMonth = new Date(currentHomeworkYear, currentHomeworkMonth - 2, 0);
+  const prevMonthDays = prevMonth.getDate();
+  for (let i = startDay - 1; i >= 0; i--) {
+    const day = prevMonthDays - i;
+    calendarHTML += `
+      <div class="homework-day homework-calendar-cell other-month" data-homework-calendar="true">
+        <div class="day-number">${day}</div>
+      </div>
+    `;
+  }
+  
+  // 現在の月の日付を表示
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(currentHomeworkYear, currentHomeworkMonth - 1, day);
+    const isToday = date.toDateString() === today.toDateString();
+    const dateStr = `${currentHomeworkYear}-${String(currentHomeworkMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    calendarHTML += `
+      <div class="homework-day homework-calendar-cell ${isToday ? 'today' : ''}" data-date="${dateStr}" data-homework-calendar="true">
+        <div class="day-number">${day}</div>
+      </div>
+    `;
+  }
+  
+  // 次月の日付を表示
+  const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
+  const remainingCells = totalCells - (startDay + daysInMonth);
+  for (let day = 1; day <= remainingCells; day++) {
+    calendarHTML += `
+      <div class="homework-day homework-calendar-cell other-month" data-homework-calendar="true">
+        <div class="day-number">${day}</div>
+      </div>
+    `;
+  }
+  
+  calendarHTML += '</div>';
+  calendar.innerHTML = calendarHTML;
+}
+
+// URLパラメータを取得するヘルパー関数
+function getUrlParameter(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
+
+// APIパラメータ構築ヘルパー関数
+function buildApiParams(baseParams = {}) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const teacherView = urlParams.get('teacher_view');
+  const studentId = urlParams.get('id');
+  
+  const params = { ...baseParams };
+  
+  if (teacherView === 'true' && studentId) {
+    params.teacher_view = 'true';
+    params.id = studentId;
+  }
+  
+  return new URLSearchParams(params).toString();
+}
+
+function loadHomeworkData() {
+  console.log(`🔍 宿題データを読み込み中: year=${currentHomeworkYear}, month=${currentHomeworkMonth}`);
+  
+  const baseParams = {
+    year: currentHomeworkYear,
+    month: currentHomeworkMonth
+  };
+  const queryString = buildApiParams(baseParams);
+  const apiUrl = `/myapp/index.cgi/api/student/homework/calendar?${queryString}`;
+  console.log(`📡 API URL: ${apiUrl}`);
+  
+  return fetch(apiUrl, {
+    method: 'GET',
+    credentials: 'same-origin', // セッション情報を含める
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    }
+  })
+    .then(response => {
+      console.log('📡 APIレスポンス受信:', response.status, response.statusText, response.url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      // レスポンスがJSONかチェック
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('APIからJSON以外のレスポンスが返されました');
+      }
+      
+      return response.json();
+    })
+    .then(data => {
+      console.log('📊 取得データ:', data);
+      if (data.success) {
+        console.log(`✅ 宿題データ取得成功: ${data.homework.length}件`);
+        displayHomeworkOnCalendar(data.homework);
+        updateHomeworkStats(data.homework);
+        return data.homework; // データを返す
+      } else {
+        console.error('❌ 宿題データの取得に失敗:', data.message);
+        // エラーメッセージをユーザーに表示
+        const calendar = document.getElementById('homework-calendar');
+        if (calendar) {
+          calendar.innerHTML = `<div style="text-align: center; padding: 50px; color: #dc3545;">
+            <i class="fas fa-exclamation-triangle"></i><br>
+            ${data.message || '宿題データの取得に失敗しました'}
+          </div>`;
+        }
+        throw new Error(data.message || '宿題データの取得に失敗しました');
+      }
+    })
+    .catch(error => {
+      console.error('❌ 宿題データのfetch中にエラー:', error);
+      const calendar = document.getElementById('homework-calendar');
+      if (calendar) {
+        calendar.innerHTML = `<div style="text-align: center; padding: 50px; color: #dc3545;">
+          <i class="fas fa-exclamation-triangle"></i><br>
+          ネットワークエラーまたはAPIエラー<br>
+          <small style="color: #666;">${error.message}</small>
+        </div>`;
+      }
+      throw error; // エラーを再スロー
+    });
+}
+
+function displayHomeworkOnCalendar(homeworkList) {
+  console.log('📅 カレンダーに宿題を表示開始:', homeworkList?.length || 0, '件');
+  
+  // 宿題カレンダー専用の既存のインジケーターを削除
+  document.querySelectorAll('#homework-calendar .homework-indicator').forEach(indicator => {
+    indicator.remove();
+  });
+  
+  // 宿題カレンダー専用の既存のクリックイベントリスナーもクリア（レスポンシブ対応）
+  document.querySelectorAll('#homework-calendar .homework-calendar-cell').forEach(dayCell => {
+    // 新しいelementを作成してイベントリスナーをクリア
+    const newElement = dayCell.cloneNode(true);
+    dayCell.parentNode.replaceChild(newElement, dayCell);
+  });
+  
+  if (!homeworkList || homeworkList.length === 0) {
+    console.log('📝 表示する宿題データがありません - カレンダー表示完了');
+    return;
+  }
+  
+  // 日付ごとに宿題をグループ化
+  const homeworkByDate = {};
+  homeworkList.forEach(hw => {
+    const date = hw.assigned_date;
+    console.log(`📚 宿題: ${date} - ${hw.subject} - ${hw.topic} - 完了:${hw.completed}`);
+    if (!homeworkByDate[date]) {
+      homeworkByDate[date] = [];
+    }
+    homeworkByDate[date].push(hw);
+  });
+  
+  console.log('📋 日付別宿題:', homeworkByDate);
+  
+  // カレンダーに宿題インジケーターを表示
+  Object.keys(homeworkByDate).forEach(date => {
+    // 宿題カレンダー専用のより具体的なセレクタを使用
+    const dayCell = document.querySelector(`#homework-calendar .homework-calendar-cell[data-date="${date}"]`);
+    console.log(`🔍 日付 ${date} のセル検索:`, dayCell ? '見つかりました' : '見つかりません');
+    
+    if (dayCell && dayCell.classList.contains('homework-day') && dayCell.getAttribute('data-homework-calendar') === 'true') {
+      const homework = homeworkByDate[date];
+      const completedCount = homework.filter(hw => hw.completed).length;
+      const totalCount = homework.length;
+      
+      // 既存のインジケーターを削除（重複防止）
+      const existingIndicator = dayCell.querySelector('.homework-indicator');
+      if (existingIndicator) {
+        existingIndicator.remove();
+      }
+      
+      const indicator = document.createElement('div');
+      indicator.className = `homework-indicator ${completedCount === totalCount ? 'completed' : ''}`;
+      indicator.title = `宿題 ${completedCount}/${totalCount} 完了`;
+      indicator.innerHTML = `<span style="font-size: 10px;">${totalCount}</span>`;
+      dayCell.appendChild(indicator);
+      
+      console.log(`✅ インジケーター追加: ${date} - ${totalCount}件 (完了:${completedCount})`);
+      
+      // 宿題カレンダー専用のクリックイベントを追加
+      dayCell.setAttribute('data-homework-date', date);
+      
+      // 既存のイベントリスナーをクリア
+      const newDayCell = dayCell.cloneNode(true);
+      dayCell.parentNode.replaceChild(newDayCell, dayCell);
+      
+      // インジケーターを新しいセルに再追加
+      newDayCell.appendChild(indicator);
+      
+      // 新しいイベントリスナーを追加（宿題カレンダー専用）
+      newDayCell.addEventListener('click', function(e) {
+        // 宿題カレンダー内でのクリックかどうかを確認
+        if (e.target.closest('#homework-calendar') && 
+            e.target.closest('.homework-calendar-cell')) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          console.log('🖱️ 宿題カレンダー日付クリック:', date);
+          showHomeworkDetail(date, homework);
+        }
+      }, { once: false, passive: false });
+    } else {
+      console.log(`❌ 宿題カレンダーの日付 ${date} のセルが見つかりません`);
+    }
+  });
+  
+  console.log('✅ 宿題カレンダー表示完了 - 全', Object.keys(homeworkByDate).length, '日分処理');
+}
+
+function updateHomeworkStats(homeworkList) {
+  const completed = homeworkList.filter(hw => hw.completed).length;
+  const pending = homeworkList.filter(hw => !hw.completed).length;
+  const points = homeworkList.filter(hw => hw.completed).reduce((sum, hw) => sum + (hw.points_awarded || 0), 0);
+  
+  document.getElementById('completed-count').textContent = completed;
+  document.getElementById('pending-count').textContent = pending;
+  document.getElementById('points-earned').textContent = points;
+}
+
+function loadHomeworkList() {
+  console.log('📋 宿題リストを読み込み中...');
+  
+  const baseParams = { limit: 10 };
+  const queryString = buildApiParams(baseParams);
+  const apiUrl = `/myapp/index.cgi/api/student/homework/list?${queryString}`;
+  
+  fetch(apiUrl, {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    }
+  })
+    .then(response => {
+      console.log('📋 宿題リストAPIレスポンス:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('APIからJSON以外のレスポンスが返されました');
+      }
+      
+      return response.json();
+    })
+    .then(data => {
+      console.log('📋 宿題リストデータ:', data);
+      if (data.success) {
+        displayHomeworkList(data.homework);
+      } else {
+        console.error('宿題リスト取得エラー:', data.message);
+        const listContainer = document.getElementById('homework-list');
+        if (listContainer) {
+          listContainer.innerHTML = `<div style="text-align: center; padding: 20px; color: #666;">
+            <i class="fas fa-info-circle"></i><br>
+            ${data.message || '宿題リストの取得に失敗しました'}
+          </div>`;
+        }
+      }
+    })
+    .catch(error => {
+      console.error('❌ 宿題リスト取得中にエラー:', error);
+      const listContainer = document.getElementById('homework-list');
+      if (listContainer) {
+        listContainer.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">
+          <i class="fas fa-exclamation-triangle"></i><br>
+          ネットワークエラーまたはAPIエラー<br>
+          <small style="color: #666;">${error.message}</small>
+        </div>`;
+      }
+    });
+}
+
+function displayHomeworkList(homeworkList) {
+  console.log('📄 宿題リストを表示:', homeworkList);
+  const listContainer = document.getElementById('homework-list');
+  
+  if (!homeworkList || homeworkList.length === 0) {
+    console.log('📝 表示する宿題リストがありません');
+    listContainer.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: #999;">
+        <i class="fas fa-clipboard-list"></i>
+        <p>宿題がありません</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let listHTML = '';
+  homeworkList.forEach(hw => {
+    const isCompleted = hw.completed;
+    listHTML += `
+      <div class="homework-item ${isCompleted ? 'completed' : ''}">
+        <div class="homework-subject">${hw.subject}</div>
+        <div class="homework-details">
+          ${hw.textbook} - ${hw.topic}
+          ${hw.pages ? `(${hw.pages})` : ''}
+          <br>
+          <small>出題日: ${hw.assigned_date_formatted || hw.assigned_date}</small>
+        </div>
+        <div class="homework-actions">
+          <div class="homework-status ${isCompleted ? 'completed' : 'pending'}">
+            ${isCompleted ? 
+              '<i class="fas fa-check-circle"></i> 完了済み' : 
+              '<i class="fas fa-clock"></i> 未完了'
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  listContainer.innerHTML = listHTML;
+}
+
+function showHomeworkDetail(date, homeworkList) {
+  let details = `${date}の宿題:\n\n`;
+  homeworkList.forEach((hw, index) => {
+    details += `${index + 1}. 【${hw.subject}】${hw.topic}\n`;
+    details += `   教材: ${hw.textbook}`;
+    if (hw.pages) details += ` (${hw.pages})`;
+    details += `\n   状態: ${hw.completed ? '✅ 完了済み' : '⏳ 未完了'}\n\n`;
+  });
+  alert(details);
+}
+</script>
+{% endif %}
+
+<div class="card">
+  <h3>英検 スケジュール</h3>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>回数</th>
+          <th>申し込み期間</th>
+          <th>一次試験日程</th>
+          <th>二次試験日程</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>第1回</td><td>2025年3/24～5/7</td><td>2025年6/1(日)</td><td>2025年7/6(日)</td></tr>
+        <tr><td>第2回</td><td>2025年7/1～9/8</td><td>2025年10/5(日)</td><td>2025年11/9(日)</td></tr>
+        <tr><td>第3回</td><td>2025年10/31～12/15</td><td>2026年1/25(日)</td><td>2026年3/1(日)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><small>最新の詳細情報は<a href="https://www.eiken.or.jp/eiken/schedule/" target="_blank">英検公式サイト</a>をご確認ください。</small></p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- モダンなアニメーションとデータ取得用スクリプト -->
+<script>
+// 志望校データを取得して表示する関数
+function loadPreferenceData() {
+  // APIからデータを取得
+  fetch('/myapp/index.cgi/api/student/preferences')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('API response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.success && data.preferences && data.preferences.length > 0) {
+        // データがある場合、表示用のセクションを追加
+        addPreferenceSection(data.preferences);
+      }
+    })
+    .catch(error => {
+      console.error('Error loading preferences:', error);
+    });
+}
+
+// 志望校データを表示するセクションを追加する関数
+function addPreferenceSection(preferences) {
+  try {
+    // カレンダーセクションの後に志望校セクションを追加
+    const calendarCard = document.querySelector('#calendar').closest('.card');
+    if (!calendarCard) return;
+    
+    // 既存のセクションがあれば削除
+    const existingSection = document.getElementById('preference-section');
+    if (existingSection) {
+      existingSection.remove();
+    }
+    
+    // 新しいセクションを作成
+    const preferencesSection = document.createElement('div');
+    preferencesSection.id = 'preference-section';
+    preferencesSection.className = 'card';
+    preferencesSection.style.marginTop = '20px';
+    
+    // タイトル
+    const titleElement = document.createElement('h3');
+    titleElement.textContent = '志望校情報';
+    preferencesSection.appendChild(titleElement);
+    
+    // 志望校リスト
+    const schoolList = document.createElement('div');
+    schoolList.className = 'preference-list';
+    
+    // 各志望校の情報を表示
+    preferences.forEach(school => {
+      const schoolItem = document.createElement('div');
+      schoolItem.className = 'school-item';
+      schoolItem.style.padding = '10px';
+      schoolItem.style.marginBottom = '10px';
+      schoolItem.style.backgroundColor = '#f8f9fa';
+      schoolItem.style.borderRadius = '5px';
+      schoolItem.style.borderLeft = '4px solid #4285f4';
+      
+      // 学校名と順位
+      const schoolHeader = document.createElement('div');
+      schoolHeader.style.fontWeight = 'bold';
+      schoolHeader.style.fontSize = '1.1rem';
+      schoolHeader.style.marginBottom = '5px';
+      
+      const orderSpan = document.createElement('span');
+      orderSpan.style.backgroundColor = '#4285f4';
+      orderSpan.style.color = 'white';
+      orderSpan.style.borderRadius = '50%';
+      orderSpan.style.width = '24px';
+      orderSpan.style.height = '24px';
+      orderSpan.style.display = 'inline-flex';
+      orderSpan.style.justifyContent = 'center';
+      orderSpan.style.alignItems = 'center';
+      orderSpan.style.marginRight = '8px';
+      orderSpan.style.fontWeight = 'bold';
+      orderSpan.textContent = school.preference_order;
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = school.name;
+      
+      schoolHeader.appendChild(orderSpan);
+      schoolHeader.appendChild(nameSpan);
+      
+      if (school.course_type) {
+        const courseSpan = document.createElement('span');
+        courseSpan.style.marginLeft = '5px';
+        courseSpan.style.fontSize = '0.9rem';
+        courseSpan.style.color = '#666';
+        courseSpan.textContent = `(${school.course_type})`;
+        schoolHeader.appendChild(courseSpan);
+      }
+      
+      schoolItem.appendChild(schoolHeader);
+      
+      // 学校の詳細情報
+      const detailsTable = document.createElement('table');
+      detailsTable.style.width = '100%';
+      detailsTable.style.marginTop = '5px';
+      detailsTable.style.fontSize = '0.9rem';
+      
+      // 内申点情報
+      const pointRow = document.createElement('tr');
+      
+      const pointLabelCell = document.createElement('td');
+      pointLabelCell.style.padding = '3px';
+      pointLabelCell.style.width = '50%';
+      pointLabelCell.textContent = '最低必要内申点:';
+      
+      const pointValueCell = document.createElement('td');
+      pointValueCell.style.padding = '3px';
+      pointValueCell.style.fontWeight = 'bold';
+      pointValueCell.textContent = school.min_required_points;
+      
+      pointRow.appendChild(pointLabelCell);
+      pointRow.appendChild(pointValueCell);
+      detailsTable.appendChild(pointRow);
+      
+      // 平均合格内申点情報（存在する場合）
+      if (school.avg_accepted_points) {
+        const avgRow = document.createElement('tr');
+        
+        const avgLabelCell = document.createElement('td');
+        avgLabelCell.style.padding = '3px';
+        avgLabelCell.textContent = '平均合格内申点:';
+        
+        const avgValueCell = document.createElement('td');
+        avgValueCell.style.padding = '3px';
+        avgValueCell.style.fontWeight = 'bold';
+        avgValueCell.textContent = school.avg_accepted_points;
+        
+        avgRow.appendChild(avgLabelCell);
+        avgRow.appendChild(avgValueCell);
+        detailsTable.appendChild(avgRow);
+      }
+      
+      // 倍率情報（存在する場合）
+      if (school.competition_rate) {
+        const rateRow = document.createElement('tr');
+        
+        const rateLabelCell = document.createElement('td');
+        rateLabelCell.style.padding = '3px';
+        rateLabelCell.textContent = '倍率:';
+        
+        const rateValueCell = document.createElement('td');
+        rateValueCell.style.padding = '3px';
+        rateValueCell.style.fontWeight = 'bold';
+        rateValueCell.textContent = `${school.competition_rate}倍`;
+        
+        rateRow.appendChild(rateLabelCell);
+        rateRow.appendChild(rateValueCell);
+        detailsTable.appendChild(rateRow);
+      }
+      
+      // 偏差値情報（存在する場合）
+      if (school.deviation_score) {
+        const devRow = document.createElement('tr');
+        
+        const devLabelCell = document.createElement('td');
+        devLabelCell.style.padding = '3px';
+        devLabelCell.textContent = '偏差値:';
+        
+        const devValueCell = document.createElement('td');
+        devValueCell.style.padding = '3px';
+        devValueCell.style.fontWeight = 'bold';
+        devValueCell.textContent = school.deviation_score;
+        
+        devRow.appendChild(devLabelCell);
+        devRow.appendChild(devValueCell);
+        detailsTable.appendChild(devRow);
+      }
+      
+      // 部活動情報（存在する場合）
+      if (school.strong_club_activities) {
+        const clubRow = document.createElement('tr');
+        
+        const clubLabelCell = document.createElement('td');
+        clubLabelCell.style.padding = '3px';
+        clubLabelCell.textContent = '強い部活:';
+        
+        const clubValueCell = document.createElement('td');
+        clubValueCell.style.padding = '3px';
+        clubValueCell.textContent = school.strong_club_activities;
+        
+        clubRow.appendChild(clubLabelCell);
+        clubRow.appendChild(clubValueCell);
+        detailsTable.appendChild(clubRow);
+      }
+      
+      schoolItem.appendChild(detailsTable);
+      
+      // ボタンエリア
+      const buttonDiv = document.createElement('div');
+      buttonDiv.style.marginTop = '10px';
+      buttonDiv.style.textAlign = 'right';
+      
+      const detailButton = document.createElement('a');
+      detailButton.href = `/myapp/index.cgi/student/performance`;
+      detailButton.className = 'btn btn-primary';
+      detailButton.style.fontSize = '0.9rem';
+      detailButton.style.padding = '4px 8px';
+      detailButton.textContent = '内申点と比較';
+      
+      buttonDiv.appendChild(detailButton);
+      schoolItem.appendChild(buttonDiv);
+      
+      schoolList.appendChild(schoolItem);
+    });
+    
+    preferencesSection.appendChild(schoolList);
+    
+    // リンクエリア
+    const linkDiv = document.createElement('div');
+    linkDiv.style.marginTop = '10px';
+    
+    const profileLink = document.createElement('a');
+    profileLink.href = '/myapp/index.cgi/student/profile';
+    profileLink.style.fontSize = '0.9rem';
+    profileLink.textContent = '志望校の設定・変更はこちら';
+    
+    linkDiv.appendChild(profileLink);
+    preferencesSection.appendChild(linkDiv);
+    
+    // セクションをページに追加
+    calendarCard.parentNode.insertBefore(preferencesSection, calendarCard.nextSibling);
+  } catch (error) {
+    console.error('Error displaying preferences:', error);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // 小学5・6年生の場合のみ宿題カレンダーを初期化
+  const schoolType = '{{ school_type }}';
+  const gradeLevel = parseInt('{{ grade_level|default("0") }}');
+  console.log(`🔧 初期化チェック: schoolType=${schoolType}, gradeLevel=${gradeLevel}`);
+  
+  if (schoolType === 'elementary' && [5, 6].includes(gradeLevel)) {
+    console.log('✅ 小学5・6年生として宿題カレンダーを初期化します');
+    
+    // 宿題カレンダー要素の存在確認
+    const homeworkCalendar = document.getElementById('homework-calendar');
+    if (homeworkCalendar) {
+      console.log('🎯 宿題カレンダー要素が見つかりました');
+      
+      // 塾スケジュールカレンダーとの競合を避けるため、独立して初期化
+      setTimeout(() => {
+        console.log('⏰ 宿題カレンダー遅延初期化開始');
+        initializeHomeworkCalendar();
+      }, 100); // 塾スケジュールカレンダー初期化後に実行
+    } else {
+      console.log('❌ 宿題カレンダー要素が見つかりません');
+    }
+  } else {
+    console.log('ℹ️ 小学5・6年生ではないため宿題カレンダーは初期化されません');
+  }
+  
+  // ページロード時に志望校データを読み込む
+  loadPreferenceData();
+  
+  // デバイス性能に応じたアニメーション調整（バッテリー消費とパフォーマンス対策）
+  const isMobile = window.innerWidth <= 768;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  
+  // アニメーション設定
+  function setupAnimations() {
+    // 軽量アニメーション用の設定
+    const lightAnimationDuration = isMobile ? '0.3s' : '0.5s';
+    const staggerDelay = isMobile ? 50 : 100;
+    const reducedAnimations = isMobile || prefersReducedMotion;
+    
+    // ダッシュボードカードのアニメーション
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+      if (reducedAnimations && index > 3) {
+        // モバイルでは上部の重要な要素のみアニメーション
+        card.style.opacity = '1';
+        return;
+      }
+      
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(10px)';
+      card.style.transition = `opacity ${lightAnimationDuration} ease, transform ${lightAnimationDuration} ease`;
+      
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, staggerDelay * index);
+    });
+    
+    // お知らせ項目のアニメーション
+    const notificationItems = document.querySelectorAll('.notification-item');
+    notificationItems.forEach((item, index) => {
+      if (reducedAnimations && index > 2) {
+        item.style.opacity = '1';
+        return;
+      }
+      
+      item.style.opacity = '0';
+      item.style.transform = isMobile ? 'translateY(5px)' : 'translateX(-10px)';
+      item.style.transition = `all ${lightAnimationDuration} ease`;
+      
+      setTimeout(() => {
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+      }, 200 + (staggerDelay * index));
+    });
+  }
+  
+  // アニメーション実行
+  setupAnimations();
+});
+</script>
+{% endblock %}

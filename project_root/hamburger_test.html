@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ハンバーガーメニュー テスト</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-light: #667eea;
+      --primary-dark: #3a0ca3;
+      --text-primary: #2d3436;
+      --text-secondary: #636e72;
+      --background: #f8f9fa;
+      --surface: #ffffff;
+      --border: #e0e0e0;
+      --shadow: 0 2px 10px rgba(0,0,0,0.1);
+      --border-radius: 8px;
+      --transition-speed: 0.3s;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    /* ヘッダー */
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 15px 0;
+      box-shadow: var(--shadow);
+    }
+    
+    header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    
+    .user-info {
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .user-points {
+      background: rgba(255,255,255,0.2);
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-weight: 600;
+    }
+    
+    /* ナビゲーション */
+    nav {
+      background-color: white;
+      border-bottom: 1px solid #e0e0e0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    
+    nav .container {
+      display: flex;
+      padding: 0;
+    }
+    
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+    
+    .tab {
+      padding: 15px 20px;
+      text-decoration: none;
+      color: #666;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+      display: flex;
+      align-items: center;
+      border-bottom: 3px solid transparent;
+    }
+    
+    .tab:hover, .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+    
+    .tab i {
+      margin-right: 5px;
+    }
+    
+    .logout-tab {
+      margin-left: auto;
+      color: #ea4335;
+    }
+    
+    .logout-tab:hover {
+      color: #c62828;
+      border-bottom-color: #ea4335;
+      background-color: rgba(234, 67, 53, 0.05);
+    }
+
+    /* ハンバーガーメニューボタン */
+    .hamburger-button {
+      display: none;
+      flex-direction: column;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 10px;
+      z-index: 10001;
+      position: relative;
+      border-radius: 4px;
+      transition: background-color 0.3s ease;
+    }
+    
+    .hamburger-button:hover {
+      background-color: rgba(67, 97, 238, 0.1);
+    }
+    
+    .hamburger-line {
+      width: 25px;
+      height: 3px;
+      background-color: var(--primary);
+      margin: 2px 0;
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+    
+    .hamburger-button.active .hamburger-line:nth-child(1) {
+      transform: rotate(-45deg) translate(-5px, 6px);
+    }
+    
+    .hamburger-button.active .hamburger-line:nth-child(2) {
+      opacity: 0;
+    }
+    
+    .hamburger-button.active .hamburger-line:nth-child(3) {
+      transform: rotate(45deg) translate(-5px, -6px);
+    }
+
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+      
+      header .container {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .user-info {
+        font-size: 0.8rem;
+      }
+      
+      /* ハンバーガーボタンを表示 */
+      .hamburger-button {
+        display: flex;
+      }
+      
+      /* ナビゲーションコンテナの調整 */
+      nav .container {
+        position: relative;
+        justify-content: flex-end;
+      }
+      
+      /* モバイル時のナビリンクを隠す */
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        flex-direction: column;
+        border: 1px solid #e0e0e0;
+        border-top: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        z-index: 1000;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      
+      /* アクティブ状態でメニューを表示 */
+      .nav-links.active {
+        display: flex;
+        max-height: 500px;
+        opacity: 1;
+        transform: translateY(0);
+      }
+      
+      .tab {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        border-right: none;
+        border-left: none;
+        margin: 0;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .tab::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 0;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        transition: width 0.3s ease;
+      }
+      
+      .tab:hover, .tab.active {
+        border-bottom-color: #f0f0f0;
+        background-color: rgba(67, 97, 238, 0.05);
+        color: var(--primary);
+        transform: translateX(5px);
+      }
+      
+      .tab:hover::before, .tab.active::before {
+        width: 4px;
+      }
+      
+      .logout-tab {
+        margin-left: 0;
+        border-top: 2px solid #f0f0f0;
+        color: #ea4335;
+      }
+      
+      .logout-tab:hover {
+        background-color: rgba(234, 67, 53, 0.05);
+        color: #c62828;
+      }
+      
+      .logout-tab::before {
+        background: linear-gradient(135deg, #ea4335, #d32f2f);
+      }
+      
+      /* メニューが開いている時はボディのスクロールを防ぐ */
+      body.menu-open {
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+      }
+    }
+
+    /* メインコンテンツ */
+    .main-content {
+      padding: 30px 0;
+    }
+    
+    .test-info {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    
+    .debug-info {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      z-index: 10000;
+    }
+  </style>
+</head>
+<body>
+  <div class="debug-info" id="debug-info">
+    画面幅: <span id="screen-width"></span>px
+  </div>
+
+  <header>
+    <div class="container">
+      <div class="logo">塾生徒サイト</div>
+      <div class="user-info">
+        ようこそ、テストユーザーさん （生徒）
+        <span class="user-points">ポイント: 1250</span>
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="container">
+      <!-- ハンバーガーメニューボタン -->
+      <button id="nav-hamburger-toggle" class="hamburger-button" aria-label="メニューを開く" aria-expanded="false" aria-controls="nav-links">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+      
+      <div class="nav-links" id="nav-links" role="navigation" aria-hidden="true">
+        <a class="tab active" href="#dashboard">
+          <i class="fas fa-home"></i> ダッシュボード
+        </a>
+        <a class="tab" href="#profile">
+          <i class="fas fa-user"></i> プロフィール
+        </a>
+        <a class="tab" href="#performance">
+          <i class="fas fa-chart-line"></i> 成績・内申
+        </a>
+        <a class="tab" href="#schools">
+          <i class="fas fa-school"></i> 高校情報
+        </a>
+        <a class="tab" href="#points">
+          <i class="fas fa-coins"></i> ポイント
+        </a>
+        <a class="tab" href="#crane-game">
+          <i class="fas fa-gamepad"></i> クレーンゲーム
+        </a>
+        <a class="tab" href="#eiken">
+          <i class="fas fa-language"></i> 英検単語
+        </a>
+        <a class="tab" href="#hope-room">
+          <i class="fas fa-chalkboard-teacher"></i> HOPE ROOM
+        </a>
+        <a class="tab" href="#etr">
+          <i class="fas fa-laptop"></i> eトレ
+        </a>
+        <a class="tab logout-tab" href="#logout">
+          <i class="fas fa-sign-out-alt"></i> ログアウト
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="main-content">
+      <div class="test-info">
+        <h2><i class="fas fa-bars"></i> ハンバーガーメニューテスト</h2>
+        <p>このページでは、モバイル向けハンバーガーメニューの動作をテストできます。</p>
+        
+        <h3>✅ テスト項目</h3>
+        <ul>
+          <li><strong>デスクトップ（769px以上）:</strong> ハンバーガーボタンは非表示、通常のナビゲーション表示</li>
+          <li><strong>モバイル（768px以下）:</strong> ハンバーガーボタンが表示、ナビゲーションは隠される</li>
+          <li><strong>メニュー開閉:</strong> ボタンクリックでスムーズなアニメーション</li>
+          <li><strong>外部クリック:</strong> メニュー外をクリックしてメニューが閉じる</li>
+          <li><strong>ESCキー:</strong> ESCキーでメニューが閉じる</li>
+          <li><strong>メニュー項目クリック:</strong> 項目クリック時にメニューが自動で閉じる</li>
+        </ul>
+        
+        <h3>🔧 テスト手順</h3>
+        <ol>
+          <li>ブラウザの開発者ツールを開く</li>
+          <li>デバイスモードに切り替える</li>
+          <li>画面幅を768px以下に設定してハンバーガーボタンを確認</li>
+          <li>ボタンをクリックしてメニューが開くことを確認</li>
+          <li>各種閉じる操作をテスト</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // デバッグ情報の更新
+    function updateDebugInfo() {
+      const screenWidth = window.innerWidth;
+      document.getElementById('screen-width').textContent = screenWidth;
+    }
+
+    // 初期化
+    updateDebugInfo();
+    window.addEventListener('resize', updateDebugInfo);
+
+    // ハンバーガーメニューの機能
+    function initHamburgerMenu() {
+      const hamburgerButton = document.getElementById('nav-hamburger-toggle');
+      const navLinks = document.getElementById('nav-links');
+      const body = document.body;
+
+      if (!hamburgerButton || !navLinks) {
+        console.error('ハンバーガーメニューの要素が見つかりません');
+        return;
+      }
+
+      // ハンバーガーボタンのクリックイベント
+      hamburgerButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const isExpanded = hamburgerButton.getAttribute('aria-expanded') === 'true';
+        
+        if (isExpanded) {
+          closeMenu();
+        } else {
+          openMenu();
+        }
+      });
+
+      // メニュー項目のクリック時にメニューを閉じる（モバイルのみ）
+      const menuItems = navLinks.querySelectorAll('a.tab');
+      menuItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+          if (window.innerWidth <= 768) {
+            e.preventDefault(); // テスト用にページ遷移を防ぐ
+            closeMenu();
+            console.log('メニュー項目がクリックされました:', this.textContent.trim());
+          }
+        });
+      });
+
+      // 外部クリックでメニューを閉じる
+      document.addEventListener('click', function(e) {
+        if (window.innerWidth <= 768 && 
+            !hamburgerButton.contains(e.target) && 
+            !navLinks.contains(e.target) &&
+            navLinks.classList.contains('active')) {
+          closeMenu();
+        }
+      });
+
+      // ESCキーでメニューを閉じる
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && navLinks.classList.contains('active')) {
+          closeMenu();
+        }
+      });
+
+      // ウィンドウリサイズ時の処理
+      window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+          closeMenu();
+        }
+      });
+
+      function openMenu() {
+        navLinks.classList.add('active');
+        hamburgerButton.classList.add('active');
+        hamburgerButton.setAttribute('aria-expanded', 'true');
+        hamburgerButton.setAttribute('aria-label', 'メニューを閉じる');
+        navLinks.setAttribute('aria-hidden', 'false');
+        body.classList.add('menu-open');
+        console.log('メニューを開きました');
+      }
+
+      function closeMenu() {
+        navLinks.classList.remove('active');
+        hamburgerButton.classList.remove('active');
+        hamburgerButton.setAttribute('aria-expanded', 'false');
+        hamburgerButton.setAttribute('aria-label', 'メニューを開く');
+        navLinks.setAttribute('aria-hidden', 'true');
+        body.classList.remove('menu-open');
+        console.log('メニューを閉じました');
+      }
+    }
+
+    // ページ読み込み完了時に初期化
+    document.addEventListener('DOMContentLoaded', function() {
+      initHamburgerMenu();
+      console.log('ハンバーガーメニューが初期化されました');
+    });
+  </script>
+</body>
+</html>

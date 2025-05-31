@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block title %}高校情報取得 | 塾生徒サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
+  .info-table th,
+  .info-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  .info-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+  }
+  .info-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  .action-form {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  
+  .info-section {
+    margin-top: 30px;
+  }
+  
+  .nav-tabs {
+    display: flex;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 15px;
+  }
+  
+  .nav-tab {
+    padding: 8px 16px;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-bottom: none;
+    margin-right: 5px;
+    border-radius: 4px 4px 0 0;
+  }
+  
+  .nav-tab.active {
+    background-color: #fff;
+    border-bottom: 1px solid white;
+    margin-bottom: -1px;
+    font-weight: bold;
+  }
+  
+  .tab-content {
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    background-color: white;
+  }
+  
+  .tab-pane {
+    display: none;
+  }
+  
+  .tab-pane.active {
+    display: block;
+  }
+  
+  .file-upload-container {
+    margin: 15px 0;
+  }
+  
+  .validation-results {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .validation-errors {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+  }
+  
+  .validation-warnings {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+  }
+  
+  .validation-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+  }
+  
+  .error-item, .warning-item {
+    margin-bottom: 5px;
+    padding-left: 20px;
+    position: relative;
+  }
+  
+  .error-item:before, .warning-item:before {
+    content: "•";
+    position: absolute;
+    left: 5px;
+    color: #721c24;
+  }
+  
+  .warning-item:before {
+    color: #856404;
+  }
+  
+  .csv-sample {
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-top: 15px;
+    overflow-x: auto;
+    font-family: monospace;
+    white-space: nowrap;
+    font-size: 0.9em;
+  }
+  
+  .csv-header {
+    color: #4285f4;
+    font-weight: bold;
+  }
+  
+  .csv-data {
+    color: #666;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>神奈川県公立高校情報取得</h3>
+  <p>神奈川県の公立高校情報を取得します。取得したデータは志望校設定や受験情報として使用されます。</p>
+  
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+  
+  {% if success %}
+    <div class="alert alert-success">{{ success }}</div>
+  {% endif %}
+  
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="web-scrape">ウェブから取得</div>
+    <div class="nav-tab" data-tab="csv-upload">CSVからインポート</div>
+    <div class="nav-tab" data-tab="manual-entry">手動登録</div>
+  </div>
+  
+  <div class="tab-content">
+    <!-- ウェブスクレイピングタブ -->
+    <div class="tab-pane active" id="web-scrape-tab">
+      <div class="action-form">
+        <h4>高校情報ウェブ取得</h4>
+        <form method="post">
+          <input type="hidden" name="action" value="web_scrape">
+          <div class="form-group">
+            <label class="form-label" for="web-year">対象年度</label>
+            <input class="form-control" type="number" id="web-year" name="year" value="{{ current_year }}" min="2020" max="2030" required>
+            <small>取得する高校情報の年度を指定してください</small>
+          </div>
+          
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary">ウェブから高校情報を取得</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- CSVアップロードタブ -->
+    <div class="tab-pane" id="csv-upload-tab">
+      <div class="action-form">
+        <h4>CSVファイルからインポート</h4>
+        <p>CSVファイル（.csv）から高校情報をインポートします。以下の列が含まれたファイルを準備してください：</p>
+        <ul>
+          <li><strong>名称</strong>: 高校名（必須）</li>
+          <li><strong>コース</strong>: 高校のコース（任意、デフォルトは普通科）</li>
+          <li><strong>地区</strong>: 高校の所在地区（任意、デフォルトは神奈川県）</li>
+          <li><strong>内申目安</strong>: 最低必要内申点</li>
+          <li><strong>平均合格内申</strong>: 平均的な合格者の内申点</li>
+          <li><strong>調査書合計</strong>: 調査書の合計点</li>
+          <li><strong>偏差値</strong>: 高校の偏差値</li>
+          <li><strong>本番点数目安</strong>: 入試の目安点数</li>
+          <li><strong>倍率</strong>: 現在の倍率</li>
+          <li><strong>2021年倍率～2024年倍率</strong>: 各年度の倍率</li>
+          <li><strong>進学実績（国立・早慶上理ICU・MARCH）</strong>: 進学実績</li>
+          <li><strong>大学進学割合・専門割合・就職割合</strong>: 卒業後の進路割合</li>
+          <li><strong>強い部活</strong>: 強い部活動</li>
+          <li><strong>海老名駅からの時間</strong>: 海老名駅からの所要時間</li>
+          <li><strong>最寄りからの距離</strong>: 最寄り駅からの距離</li>
+          <li><strong>特徴</strong>: 学校の特徴</li>
+        </ul>
+        
+        <div class="csv-sample">
+          <div class="csv-header">名称,コース,地区,内申目安,平均合格内申,調査書合計,偏差値,本番点数目安,倍率,2021年倍率,2022年倍率,2023年倍率,2024年倍率,進学実績（国立）,進学実績（早慶上理ICU）,進学実績（MARCH）,大学進学割合,専門割合,就職割合,強い部活,海老名駅からの時間,最寄りからの距離,特徴</div>
+          <div class="csv-data">横浜翠嵐高校,普通科,横浜市,45,47,135,70,360,1.25,1.27,1.30,1.25,1.22,5,10,15,95,3,2,弓道・吹奏楽,60分,徒歩10分,進学校として県内トップクラス</div>
+          <div class="csv-data">湘南高校,普通科,藤沢市,44,46,132,69,355,1.31,1.35,1.33,1.32,1.31,4,8,12,93,5,2,野球・サッカー,70分,徒歩5分,文武両道の伝統校</div>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="action" value="csv_upload">
+          
+          <div class="form-group">
+            <label class="form-label" for="csv-year">対象年度</label>
+            <input class="form-control" type="number" id="csv-year" name="year" value="{{ current_year }}" min="2020" max="2030" required>
+          </div>
+          
+          <div class="file-upload-container">
+            <label class="form-label" for="csv-file">CSVファイル（.csv）</label>
+            <input type="file" name="csv_file" id="csv-file" accept=".csv" required>
+            <small class="text-muted">ファイルの文字コードはUTF-8で保存してください</small>
+          </div>
+          
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary">ファイルをアップロード</button>
+          </div>
+        </form>
+        
+        {% if validation_results %}
+          <!-- バリデーション結果の表示 -->
+          <div class="validation-results {% if validation_results.errors %}validation-errors{% elif validation_results.warnings %}validation-warnings{% else %}validation-success{% endif %}">
+            <h5>データ検証結果:</h5>
+            
+            {% if validation_results.errors %}
+              <h6>エラー:</h6>
+              <ul class="error-list">
+                {% for error in validation_results.errors %}
+                  <li class="error-item">{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            
+            {% if validation_results.warnings %}
+              <h6>警告:</h6>
+              <ul class="warning-list">
+                {% for warning in validation_results.warnings %}
+                  <li class="warning-item">{{ warning }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- 手動登録タブ -->
+    <div class="tab-pane" id="manual-entry-tab">
+      <div class="action-form">
+        <h4>高校情報の手動登録</h4>
+        <p>新しい高校情報を手動で登録します。</p>
+        
+        <form method="post">
+          <input type="hidden" name="action" value="manual_entry">
+          
+          <div class="form-group">
+            <label class="form-label" for="manual-year">対象年度</label>
+            <input class="form-control" type="number" id="manual-year" name="year" value="{{ current_year }}" min="2020" max="2030" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="school-name">高校名 <span class="text-danger">*</span></label>
+            <input class="form-control" type="text" id="school-name" name="name" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="school-district">地区</label>
+            <input class="form-control" type="text" id="school-district" name="district" value="神奈川県">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="school-course">コース</label>
+            <input class="form-control" type="text" id="school-course" name="course_type" value="普通科">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="min-points">最低必要内申点</label>
+            <input class="form-control" type="number" id="min-points" name="min_required_points" min="0" max="50" step="0.01">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="avg-points">平均合格内申点</label>
+            <input class="form-control" type="number" id="avg-points" name="avg_accepted_points" min="0" max="50" step="0.01">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="competition-rate">倍率</label>
+            <input class="form-control" type="number" id="competition-rate" name="competition_rate" min="0" max="10" step="0.01">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="deviation-score">偏差値</label>
+            <input class="form-control" type="number" id="deviation-score" name="deviation_score" min="30" max="80">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="club-activities">強い部活動</label>
+            <input class="form-control" type="text" id="club-activities" name="strong_club_activities">
+          </div>
+          
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary">高校情報を登録</button>
+          </div>
+        </form>
+      </div>
+    </div>  </div>
+  
+  <!-- 取得されたデータの表示 -->
+  {% if high_schools %}
+  <div class="info-section">
+    <h4>取得された高校データ</h4>
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>学校名</th>
+          <th>コース</th>
+          <th>所在地</th>
+          <th>偏差値</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for school in high_schools %}
+        <tr>
+          <td>{{ school.name }}</td>
+          <td>{{ school.type or '普通科' }}</td>
+          <td>{{ school.location or '-' }}</td>
+          <td>{{ school.deviation or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  
+  <div class="info-section">
+    <h4>取得履歴</h4>
+    {% if import_history %}
+      <table class="info-table">
+        <thead>
+          <tr>
+            <th>取得日時</th>
+            <th>年度</th>
+            <th>取得件数</th>
+            <th>取得元</th>
+            <th>実行者</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for history in import_history %}
+            <tr>
+              <td>{{ history.import_date.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ history.year }}</td>
+              <td>{{ history.record_count }}</td>
+              <td>{{ history.file_name }}</td>
+              <td>{{ history.teacher_name }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>取得履歴はありません。</p>
+    {% endif %}
+  </div>
+  
+  <div class="info-section">
+    <h4>注意事項</h4>
+    <ul>
+      <li>取得した高校情報は、同じ年度の既存データを上書きします。</li>
+      <li>データソースの状況によっては、正確な情報が取得できない場合があります。</li>
+      <li>データ取得後は内容を確認し、必要に応じて手動で修正してください。</li>
+      <li>CSVファイルの文字コードはUTF-8にしてください。</li>
+      <li>学校名は必須です。存在しない場合はデータが登録されません。</li>
+      <li>数値データには特殊文字（カンマ、%など）を含めないでください。</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // タブ切り替え処理
+  const tabs = document.querySelectorAll('.nav-tab');
+  
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      // アクティブタブの切り替え
+      tabs.forEach(function(t) {
+        t.classList.remove('active');
+      });
+      this.classList.add('active');
+      
+      // タブコンテンツの切り替え
+      const tabId = this.getAttribute('data-tab');
+      document.querySelectorAll('.tab-pane').forEach(function(pane) {
+        pane.classList.remove('active');
+      });
+      document.getElementById(tabId + '-tab').classList.add('active');
+    });
+  });
+  
+  // ファイル選択時の処理
+  const fileInput = document.getElementById('csv-file');
+  if (fileInput) {
+    fileInput.addEventListener('change', function() {
+      const fileName = this.files[0] ? this.files[0].name : '';
+      if (fileName && !fileName.toLowerCase().endsWith('.csv')) {
+        alert('CSVファイル（.csv）を選択してください。');
+        this.value = '';
+      }
+    });
+  }
+  
+  // 数値入力フィールドの検証
+  const numericInputs = document.querySelectorAll('input[type="number"]');
+  numericInputs.forEach(function(input) {
+    input.addEventListener('input', function() {
+      const value = parseFloat(this.value);
+      const min = parseFloat(this.getAttribute('min') || -Infinity);
+      const max = parseFloat(this.getAttribute('max') || Infinity);
+      
+      if (value < min) {
+        this.setCustomValidity(`値は ${min} 以上である必要があります`);
+      } else if (value > max) {
+        this.setCustomValidity(`値は ${max} 以下である必要があります`);
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

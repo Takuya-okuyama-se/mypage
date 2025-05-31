@@ -1,0 +1,582 @@
+{% extends "base.html" %}
+
+{% block title %}クレーンゲーム | 塾生徒サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .crane-game-container {
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+  }
+  
+  .points-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 20px rgba(58, 12, 163, 0.1);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .points-info::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+    opacity: 0.6;
+    z-index: 0;
+  }
+  
+  .total-points {
+    font-size: 24px;
+    font-weight: bold;
+    color: #4285f4;
+  }
+  
+  .crane-game-header {
+    margin-bottom: 20px;
+  }
+  
+  .crane-game-machine {
+    background: linear-gradient(135deg, #e7f5ff, #cce5ff);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 15px 30px rgba(66, 133, 244, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .crane-game-machine:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(66, 133, 244, 0.2);
+  }
+  
+  .crane-game-machine::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    height: 10px;
+    background: linear-gradient(90deg, #4361ee, #4cc9f0);
+    border-radius: 5px;
+    box-shadow: 0 3px 10px rgba(67, 97, 238, 0.3);
+  }
+  
+  .crane-game-image {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 20px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%234285f4" rx="10" ry="10" /><circle cx="100" cy="100" r="60" fill="%23ffffff" /><text x="100" y="104" font-family="Arial" font-size="24" text-anchor="middle" fill="%234285f4">クレーン</text><text x="100" y="130" font-family="Arial" font-size="18" text-anchor="middle" fill="%234285f4">ゲーム</text></svg>');
+    background-repeat: no-repeat;
+    border-radius: 10px;
+  }
+  
+  .play-button {
+    background: linear-gradient(135deg, #4285f4, #3367d6);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 18px 36px;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 6px 12px rgba(66, 133, 244, 0.3), 0 1px 3px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 1px;
+  }
+  
+  /* モバイル対応の強化 */
+  @media (max-width: 768px) {
+    .crane-game-container {
+      margin: 0 -10px;
+    }
+    
+    .points-info {
+      flex-direction: column;
+      gap: 15px;
+      padding: 18px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .crane-game-machine {
+      padding: 20px;
+      border-radius: 15px;
+    }
+    
+    .crane-game-image {
+      width: 160px;
+      height: 160px;
+      background-size: 100% auto;
+      margin-bottom: 15px;
+    }
+    
+    .play-button {
+      width: 100%;
+      padding: 15px 25px;
+      font-size: 18px;
+    }
+    
+    .prize-list {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .empty-history-message {
+      padding: 30px 15px;
+    }
+    
+    .credit-history-item {
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .crane-game-machine {
+      padding: 15px;
+      border-radius: 12px;
+    }
+    
+    .crane-game-image {
+      width: 140px;
+      height: 140px;
+    }
+    
+    .play-button {
+      padding: 12px 20px;
+      font-size: 16px;
+    }
+    
+    .prize-list {
+      grid-template-columns: repeat(1, 1fr);
+    }
+    
+    .prize-item {
+      padding: 10px;
+    }
+    
+    .prize-details {
+      padding: 8px 12px;
+    }
+  }
+  
+  /* モーダル */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+    z-index: 1000;
+    overflow: auto;
+  }
+  
+  .modal-content {
+    position: relative;
+    background-color: white;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .close-button:hover,
+  .close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  
+  .credit-result {
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f0f8ff;
+    border-radius: 8px;
+  }
+  
+  .credit-image {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 20px;
+    background-color: #e3f2fd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+  }
+  
+  .modal-footer {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .ok-button {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+    @media (max-width: 768px) {
+    .modal-content {
+      margin: 15% auto;
+      width: 95%;
+    }
+    
+    .points-info {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .total-points-container {
+      margin-top: 10px;
+      width: 100%;
+    }
+    
+    .play-button {
+      width: 100%;
+      padding: 12px 15px;
+      font-size: 16px;
+    }
+    
+    .history-table {
+      font-size: 14px;
+    }
+    
+    .instruction-box {
+      padding: 12px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>クレーンゲーム 
+    {% if unused_credits > 0 %}
+    <span class="credits-badge">未使用プレイ権: {{ unused_credits }}回</span>
+    {% endif %}
+  </h3>
+  
+  <div class="points-info">
+    <div class="info-text">
+      <p>100ポイントでクレーンゲームのプレイ権を獲得できます。獲得したプレイ権は塾でクレーンゲーム機をプレイする際に使用できます。</p>
+    </div>
+    <div class="total-points-container">
+      現在の所持ポイント: <span class="total-points" id="total-points">{{ total_points }}</span>
+    </div>
+  </div>
+  
+  <div class="crane-game-container">
+    <div class="crane-game-header">
+      <h4>クレーンゲームプレイ権を獲得</h4>
+    </div>
+    
+    <div class="crane-game-machine">
+      <div class="crane-game-image"></div>
+      <button class="play-button" id="play-button" {% if total_points < 100 %}disabled{% endif %}>
+        100ポイントでプレイ権を獲得
+      </button>
+    </div>
+    
+    <div class="instruction-box">
+      <h4>プレイ方法</h4>
+      <div class="instruction-step">プレイ権を獲得（100ポイント消費）</div>
+      <div class="instruction-step">塾にてプレイ権の使用を申請</div>
+      <div class="instruction-step">スタッフの指示に従って実際のクレーンゲームをプレイ</div>
+      <div class="instruction-step">景品獲得をお楽しみください！</div>
+    </div>
+  </div>
+  
+  <div class="history-section">
+    <div class="history-header">
+      <h4>プレイ権獲得履歴</h4>
+    </div>
+    
+    {% if credits_history %}
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>獲得日時</th>
+            <th>消費ポイント</th>
+            <th>ステータス</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for credit in credits_history %}
+            <tr>
+              <td>
+                {% if credit.created_at %}
+                  {{ credit.created_at.strftime('%Y-%m-%d %H:%M') }}
+                {% else %}
+                  ---
+                {% endif %}
+              </td>
+              <td>100ポイント</td>
+              <td>
+                {% if credit.is_used %}
+                  <span class="status-badge status-used">使用済み</span>
+                  {% if credit.used_at %}
+                    ({{ credit.used_at.strftime('%Y-%m-%d') }})
+                  {% endif %}
+                {% else %}
+                  <span class="status-badge status-unused">未使用</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="no-history">
+        まだプレイ権獲得の履歴はありません。
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- プレイ権獲得モーダル -->
+<div id="credit-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <h3>クレーンゲームプレイ権を獲得しました！</h3>
+    <div class="credit-result">
+      <div class="credit-image">🎮</div>
+      <p>100ポイントを消費して、クレーンゲームのプレイ権を1回分獲得しました。</p>
+      <p>塾に来た際にスタッフに申請すると、実際のクレーンゲーム機をプレイできます。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="ok-button" id="ok-button">OK</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>  document.addEventListener('DOMContentLoaded', function() {
+    // モダンなアニメーション効果
+    // クレーンゲーム画像のアニメーション
+    const gameImage = document.querySelector('.crane-game-image');
+    if (gameImage) {
+      gameImage.style.transform = 'scale(0.9)';
+      gameImage.style.opacity = '0';
+      gameImage.style.transition = 'all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      
+      setTimeout(() => {
+        gameImage.style.transform = 'scale(1)';
+        gameImage.style.opacity = '1';
+      }, 300);
+    }
+    
+    // ポイント情報のアニメーション
+    const pointsInfo = document.querySelector('.points-info');
+    if (pointsInfo) {
+      pointsInfo.style.opacity = '0';
+      pointsInfo.style.transform = 'translateY(-10px)';
+      pointsInfo.style.transition = 'all 0.5s ease-out';
+      
+      setTimeout(() => {
+        pointsInfo.style.opacity = '1';
+        pointsInfo.style.transform = 'translateY(0)';
+      }, 200);
+    }
+    
+    // プレイボタンのアニメーション
+    const playBtn = document.getElementById('play-button');
+    if (playBtn) {
+      playBtn.style.opacity = '0';
+      playBtn.style.transform = 'translateY(20px)';
+      playBtn.style.transition = 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      
+      setTimeout(() => {
+        playBtn.style.opacity = '1';
+        playBtn.style.transform = 'translateY(0)';
+      }, 600);
+    }
+    
+    // 景品リストのアニメーション
+    const prizeItems = document.querySelectorAll('.prize-item');
+    prizeItems.forEach((item, index) => {
+      item.style.opacity = '0';
+      item.style.transform = 'translateX(-10px)';
+      item.style.transition = 'all 0.3s ease-out';
+      
+      setTimeout(() => {
+        item.style.opacity = '1';
+        item.style.transform = 'translateX(0)';
+      }, 800 + (index * 100));
+    });
+    
+    // 必要な要素を取得
+    const playButton = document.getElementById('play-button');
+    const totalPointsDisplay = document.getElementById('total-points');
+    const modal = document.getElementById('credit-modal');
+    const closeButton = document.querySelector('.close-button');
+    const okButton = document.getElementById('ok-button');
+    
+    // 現在のポイント数
+    let currentPoints = parseInt(totalPointsDisplay.textContent);
+    
+    // モーダルを閉じる処理
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+    
+    // 閉じるボタンとOKボタンのイベントリスナー
+    closeButton.addEventListener('click', closeModal);
+    okButton.addEventListener('click', closeModal);
+    
+    // モーダルの外側をクリックしたら閉じる
+    window.addEventListener('click', function(event) {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+    
+    // プレイボタンのイベントリスナー
+    if (playButton) {
+      playButton.addEventListener('click', function() {
+        // ポイントチェック
+        if (currentPoints < 100) {
+          alert('ポイントが足りません。');
+          return;
+        }
+        
+        // ボタンを無効化
+        playButton.disabled = true;
+        playButton.textContent = 'プレイ権獲得処理中...';
+        
+        // API呼び出し
+        fetch('/myapp/index.cgi/api/student/get-crane-game-credit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // ポイント更新
+            currentPoints = data.remaining_points;
+            totalPointsDisplay.textContent = currentPoints;
+            
+            // ヘッダーのポイント表示も更新
+            const headerPointsDisplay = document.getElementById('header-points-value');
+            if (headerPointsDisplay) {
+              headerPointsDisplay.textContent = currentPoints;
+            }
+            
+            // モーダル表示
+            modal.style.display = 'block';
+            
+            // ボタンを再有効化
+            playButton.disabled = currentPoints < 100;
+            playButton.textContent = '100ポイントでプレイ権を獲得';
+            
+            // 未使用プレイ権の表示を更新
+            const creditsDisplay = document.querySelector('.credits-badge');
+            const newUnusedCredits = data.unused_credits;
+            
+            if (creditsDisplay) {
+              creditsDisplay.textContent = `未使用プレイ権: ${newUnusedCredits}回`;
+            } else if (newUnusedCredits > 0) {
+              // 新しく追加
+              const heading = document.querySelector('h3');
+              const newBadge = document.createElement('span');
+              newBadge.className = 'credits-badge';
+              newBadge.textContent = `未使用プレイ権: ${newUnusedCredits}回`;
+              heading.appendChild(newBadge);
+            }
+            
+            // リロードではなく履歴を動的に追加
+            const historyTable = document.querySelector('.history-table tbody');
+            const noHistory = document.querySelector('.no-history');
+            
+            if (noHistory) {
+              // 履歴がない場合は表を作成
+              const table = document.createElement('table');
+              table.className = 'history-table';
+              table.innerHTML = `
+                <thead>
+                  <tr>
+                    <th>獲得日時</th>
+                    <th>消費ポイント</th>
+                    <th>ステータス</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>${new Date().toLocaleString()}</td>
+                    <td>100ポイント</td>
+                    <td><span class="status-badge status-unused">未使用</span></td>
+                  </tr>
+                </tbody>
+              `;
+              noHistory.parentNode.replaceChild(table, noHistory);
+            } else if (historyTable) {
+              // 履歴がある場合は先頭に追加
+              const newRow = document.createElement('tr');
+              newRow.innerHTML = `
+                <td>${new Date().toLocaleString()}</td>
+                <td>100ポイント</td>
+                <td><span class="status-badge status-unused">未使用</span></td>
+              `;
+              historyTable.insertBefore(newRow, historyTable.firstChild);
+            }
+          } else {
+            // エラー処理
+            alert(data.message || 'エラーが発生しました。');
+            playButton.disabled = false;
+            playButton.textContent = '100ポイントでプレイ権を獲得';
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('通信エラーが発生しました。もう一度お試しください。');
+          playButton.disabled = false;
+          playButton.textContent = '100ポイントでプレイ権を獲得';
+        });
+      });
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}高校詳細 | 塾生徒サイト{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>高校詳細情報</h3>
+  
+  {% if school %}
+    <table class="data-table">
+      <tr>
+        <th>高校名</th>
+        <td>{{ school.name }}</td>
+      </tr>
+      <tr>
+        <th>地区</th>
+        <td>{{ school.district }}</td>
+      </tr>
+      <tr>
+        <th>コース</th>
+        <td>{{ school.course_type }}</td>
+      </tr>
+      {% if school.deviation_score %}
+      <tr>
+        <th>偏差値</th>
+        <td>{{ school.deviation_score }}</td>
+      </tr>
+      {% endif %}
+      {% if school.min_required_points %}
+      <tr>
+        <th>内申目安</th>
+        <td>{{ school.min_required_points }}</td>
+      </tr>
+      {% endif %}
+      {% if school.competition_rate %}
+      <tr>
+        <th>倍率</th>
+        <td>{{ school.competition_rate }}</td>
+      </tr>
+      {% endif %}
+      {% if school.strong_club_activities %}
+      <tr>
+        <th>強い部活</th>
+        <td>{{ school.strong_club_activities }}</td>
+      </tr>
+      {% endif %}
+    </table>
+    
+    <div style="margin-top: 20px;">
+      <a href="/myapp/index.cgi/student/high-schools" class="btn btn-secondary">戻る</a>
+    </div>
+  {% else %}
+    <p>高校情報が見つかりませんでした。</p>
+    <a href="/myapp/index.cgi/student/high-schools" class="btn btn-secondary">高校一覧に戻る</a>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% block title %}成績・内申向上通知 | 塾講師サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .notification-tabs {
+    display: flex;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .notification-tab {
+    padding: 8px 16px;
+    cursor: pointer;
+    margin-right: 8px;
+    border: 1px solid transparent;
+    border-radius: 4px 4px 0 0;
+  }
+  
+  .notification-tab.active {
+    background-color: #fff;
+    border-color: #dee2e6;
+    border-bottom-color: transparent;
+    font-weight: bold;
+  }
+  
+  .notification-panel {
+    margin-bottom: 20px;
+  }
+  
+  .notification-card {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-left: 4px solid #4285f4;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .notification-card.elementary {
+    border-left-color: #ea4335;
+  }
+  
+  .notification-card.middle {
+    border-left-color: #4285f4;
+  }
+  
+  .notification-card.high {
+    border-left-color: #34a853;
+  }
+  
+  .notification-card.processed {
+    opacity: 0.6;
+  }
+  
+  .notification-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  
+  .student-info {
+    font-weight: bold;
+    font-size: 16px;
+  }
+  
+  .created-date {
+    color: #666;
+    font-size: 14px;
+  }
+  
+  .improvement-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+    font-size: 15px;
+  }
+  
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .detail-label {
+    color: #666;
+    margin-bottom: 4px;
+  }
+  
+  .detail-value {
+    font-weight: 500;
+  }
+  
+  .improvement-value {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    font-weight: bold;
+  }
+  
+  .notification-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .award-button {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .award-button:hover {
+    background-color: #3367d6;
+  }
+  
+  .award-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+  
+  .no-notifications {
+    padding: 40px;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    color: #666;
+  }
+  
+  .processed-info {
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 8px;
+  }
+  
+  /* 処理完了メッセージのスタイル */
+  .success-message {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>成績・内申向上通知</h3>
+  
+  <div id="success-message" class="success-message"></div>
+  
+  <div class="notification-tabs">
+    <div class="notification-tab active" data-type="all">全て</div>
+    <div class="notification-tab" data-type="elementary">小学生成績</div>
+    <div class="notification-tab" data-type="middle">中学生内申</div>
+    <div class="notification-tab" data-type="high">高校生成績</div>
+    <div class="notification-tab" data-type="unprocessed">未処理のみ</div>
+  </div>
+  
+  <div class="notification-panel">
+    {% if notifications %}
+      <div id="notification-list">
+        {% for notification in notifications %}
+          <div class="notification-card {{ notification.student_type }} {% if notification.is_processed %}processed{% endif %}" 
+               data-type="{{ notification.student_type }}"
+               data-processed="{{ notification.is_processed }}">
+            <div class="notification-header">
+              <div class="student-info">
+                {{ notification.student_name }} ({{ notification.student_grade_level }}年生)
+              </div>
+              <div class="created-date">
+                {{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}
+              </div>
+            </div>
+            
+            <div class="improvement-details">
+              <div class="detail-item">
+                <div class="detail-label">科目</div>
+                <div class="detail-value">{{ notification.subject_name }}</div>
+              </div>
+              
+              <div class="detail-item">
+                <div class="detail-label">期間</div>
+                <div class="detail-value">{{ notification.previous_term_display }} → {{ notification.current_term_display }}</div>
+              </div>
+              
+              {% if notification.student_type == 'elementary' or notification.student_type == 'high' %}
+                <div class="detail-item">
+                  <div class="detail-label">点数</div>
+                  <div class="detail-value">{{ notification.previous_score }} → {{ notification.new_score }}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">向上</div>
+                  <div class="detail-value">
+                    <span class="improvement-value">+{{ notification.new_score - notification.previous_score }}</span>
+                  </div>
+                </div>
+              {% else %}
+                <div class="detail-item">
+                  <div class="detail-label">内申点</div>
+                  <div class="detail-value">{{ notification.previous_point }} → {{ notification.new_point }}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">向上</div>
+                  <div class="detail-value">
+                    <span class="improvement-value">+{{ notification.new_point - notification.previous_point }}</span>
+                  </div>
+                </div>
+              {% endif %}
+              
+              <div class="detail-item">
+                <div class="detail-label">向上レベル</div>
+                <div class="detail-value">{{ notification.improvement_level }}</div>
+              </div>
+              
+              <div class="detail-item">
+                <div class="detail-label">推奨ポイント</div>
+                <div class="detail-value">{{ notification.potential_points }}</div>
+              </div>
+            </div>
+            
+            {% if notification.is_processed %}
+              <div class="processed-info">
+                {{ notification.processed_at.strftime('%Y-%m-%d %H:%M') }} に {{ notification.teacher_name }} によって処理済み
+              </div>
+            {% else %}
+              <div class="notification-actions">
+                <button class="award-button" 
+                        data-id="{{ notification.id }}" 
+                        data-type="{{ notification.student_type }}" 
+                        data-student="{{ notification.student_id }}" 
+                        data-points="{{ notification.potential_points }}">
+                  {{ notification.potential_points }}ポイント付与
+                </button>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="no-notifications">
+        <p>成績・内申向上の通知はありません</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // タブ切り替え
+    const tabs = document.querySelectorAll('.notification-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        // アクティブクラスの切り替え
+        tabs.forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        // 表示フィルター
+        const type = this.getAttribute('data-type');
+        filterNotifications(type);
+      });
+    });
+    
+    // 通知フィルター関数
+    function filterNotifications(type) {
+      const cards = document.querySelectorAll('.notification-card');
+      cards.forEach(card => {
+        if (type === 'all') {
+          card.style.display = '';
+        } else if (type === 'unprocessed') {
+          card.style.display = card.getAttribute('data-processed') === 'True' ? 'none' : '';
+        } else {
+          card.style.display = card.getAttribute('data-type') === type ? '' : 'none';
+        }
+      });
+      
+      // 表示されるカードがない場合のメッセージ
+      const visibleCards = Array.from(cards).filter(card => card.style.display !== 'none').length;
+      const notificationList = document.getElementById('notification-list');
+      const noNotificationsMessage = document.querySelector('.no-notifications');
+      
+      if (visibleCards === 0) {
+        if (!noNotificationsMessage) {
+          const messageDiv = document.createElement('div');
+          messageDiv.className = 'no-notifications';
+          messageDiv.innerHTML = '<p>該当する通知はありません</p>';
+          notificationList.parentNode.appendChild(messageDiv);
+        } else {
+          noNotificationsMessage.style.display = '';
+        }
+      } else if (noNotificationsMessage) {
+        noNotificationsMessage.style.display = 'none';
+      }
+    }
+    
+    // ポイント付与ボタンのイベント処理
+    const awardButtons = document.querySelectorAll('.award-button');
+    awardButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const notificationId = this.getAttribute('data-id');
+        const notificationType = this.getAttribute('data-type');
+        const studentId = this.getAttribute('data-student');
+        const points = this.getAttribute('data-points');
+        
+        // ボタンを無効化して連打防止
+        this.disabled = true;
+        this.textContent = '処理中...';
+        
+        // APIリクエスト
+        fetch('/api/teacher/process-notification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            notification_id: notificationId,
+            notification_type: notificationType,
+            student_id: studentId,
+            points: points
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // 成功メッセージを表示
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = data.message;
+            successMessage.style.display = 'block';
+            
+            // 通知カードを処理済み表示に変更
+            const card = this.closest('.notification-card');
+            card.classList.add('processed');
+            
+            // ボタンを非表示にして処理済みメッセージを表示
+            this.parentNode.innerHTML = `
+              <div class="processed-info">
+                ${new Date().toLocaleString()} に処理済み
+              </div>
+            `;
+            
+            // 5秒後にメッセージを非表示
+            setTimeout(() => {
+              successMessage.style.display = 'none';
+            }, 5000);
+          } else {
+            // エラーメッセージを表示
+            alert(`エラー: ${data.message}`);
+            
+            // ボタンを再度有効化
+            this.disabled = false;
+            this.textContent = `${points}ポイント付与`;
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('通信エラーが発生しました。');
+          
+          // ボタンを再度有効化
+          this.disabled = false;
+          this.textContent = `${points}ポイント付与`;
+        });
+      });
+    });
+  });
+</script>
+{% endblock %}

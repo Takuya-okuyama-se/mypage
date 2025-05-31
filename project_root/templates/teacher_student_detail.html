@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}生徒詳細{% endblock %}
+{% block content %}
+<h2>{{ student.name }} さんの詳細</h2>
+<section class="card">
+  <h3>試験成績</h3>
+  <table>
+    <tr><th>科目</th><th>点数</th></tr>
+    {% for g in grades %}
+      <tr><td>{{ g.subject }}</td><td>{{ g.score }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+<section class="card">
+  <h3>内申点</h3>
+  <table>
+    <tr><th>科目</th><th>内申点</th></tr>
+    {% for p in points %}
+      <tr><td>{{ p.subject }}</td><td>{{ p.point }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

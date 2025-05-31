@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>エラー | 塾生徒サイト</title>
+  <style>
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      line-height: 1.6;
+      text-align: center;
+    }
+    
+    .error-container {
+      max-width: 600px;
+      margin: 50px auto;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    
+    h1 {
+      color: #e74c3c;
+      margin-top: 0;
+    }
+    
+    .back-button {
+      display: inline-block;
+      background-color: #4285f4;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-top: 20px;
+    }
+    
+    .back-button:hover {
+      background-color: #3367d6;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <h1>エラーが発生しました</h1>
+    <p>{{ error }}</p>
+    <p>ご不便をおかけして申し訳ありません。</p>
+    <a href="javascript:history.back()" class="back-button">前のページに戻る</a>
+  </div>
+</body>
+</html>

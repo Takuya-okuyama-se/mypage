@@ -1,0 +1,1120 @@
+{% extends "base.html" %}
+{% block title %}講師ダッシュボード | 塾講師サイト{% endblock %}
+
+{% block head %}
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.statistics-card {
+  text-align: center;
+  position: relative;
+}
+
+.statistics-card h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.statistics-card .value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.attendance-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.student-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  padding: 15px;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.student-card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.student-card h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.attendance-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.search-container {
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid #dee2e6;
+  border-radius: 20px;
+  font-size: 16px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(0,0,0,0.1);
+  border-radius: 50%;
+  border-top-color: #007bff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+.save-attendance-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s;
+  margin-top: 15px;
+}
+
+.save-attendance-btn:hover {
+  background: #218838;
+}
+
+.bulk-action-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+  
+  <!-- ダッシュボードヘッダー -->
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6;">
+    <h2 style="color: #333; margin-bottom: 10px; font-size: 24px;">講師ダッシュボード</h2>
+    <p>こんにちは、{{ name }}先生。今日も生徒たちの成長をサポートしましょう。</p>
+  </div>
+  <!-- 統計概要 -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+    <div class="statistics-card" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h3>今日の出席数</h3>
+      <div class="value" id="today-attendance-count">0</div>
+    </div>
+
+    <div class="statistics-card" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h3>今月の出席率</h3>
+      <div class="value" id="monthly-attendance-rate">-</div>
+    </div>
+
+    <div class="statistics-card" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h3>総生徒数</h3>
+      <div class="value" id="total-student-count">-</div>
+    </div>
+
+    <div class="statistics-card" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h3>今月の成績向上者</h3>
+      <div class="value" id="improvement-count" style="color: #28a745;">-</div>
+    </div>
+  </div>
+
+  <!-- 主な機能 -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+    <a href="/myapp/index.cgi/teacher/points" style="display: block; background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; text-decoration: none; color: #333; text-align: center; transition: all 0.3s ease;">
+      <i class="fas fa-coins" style="font-size: 24px; color: #ffc107; margin-bottom: 10px;"></i>
+      <div>ポイント管理</div>
+    </a>
+
+    <a href="/myapp/index.cgi/admin/fetch-high-schools" style="display: block; background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; text-decoration: none; color: #333; text-align: center; transition: all 0.3s ease;">
+      <i class="fas fa-school" style="font-size: 24px; color: #6f42c1; margin-bottom: 10px;"></i>
+      <div>高校情報取得</div>
+    </a>
+
+    <a href="/myapp/index.cgi/student/eiken-words" style="display: block; background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; text-decoration: none; color: #333; text-align: center; transition: all 0.3s ease;">
+      <i class="fas fa-language" style="font-size: 24px; color: #20c997; margin-bottom: 10px;"></i>
+      <div>英検単語</div>
+    </a>
+
+    <a href="/myapp/index.cgi/admin/import-eiken-words" style="display: block; background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; text-decoration: none; color: #333; text-align: center; transition: all 0.3s ease;">
+      <i class="fas fa-file-import" style="font-size: 24px; color: #fd7e14; margin-bottom: 10px;"></i>
+      <div>英検単語インポート</div>
+    </a>
+
+    <a href="/myapp/index.cgi/hope-room" style="display: block; background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; text-decoration: none; color: #333; text-align: center; transition: all 0.3s ease;">
+      <i class="fas fa-chalkboard-teacher" style="font-size: 24px; color: #e83e8c; margin-bottom: 10px;"></i>
+      <div>HOPE ROOM</div>
+    </a>    <a href="/myapp/index.cgi/myetr" style="display: block; background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; text-decoration: none; color: #333; text-align: center; transition: all 0.3s ease;">
+      <i class="fas fa-laptop" style="font-size: 24px; color: #17a2b8; margin-bottom: 10px;"></i>
+      <div>eトレ</div>
+    </a>
+
+    <a href="/myapp/index.cgi/teacher/homework" style="display: block; background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; text-decoration: none; color: #333; text-align: center; transition: all 0.3s ease;">
+      <i class="fas fa-book" style="font-size: 24px; color: #28a745; margin-bottom: 10px;"></i>
+      <div>宿題管理</div>
+    </a>    <a href="/myapp/index.cgi/teacher/mock_exam" style="display: block; background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; text-decoration: none; color: #333; text-align: center; transition: all 0.3s ease;">
+      <i class="fas fa-chart-line" style="font-size: 24px; color: #17a2b8; margin-bottom: 10px;"></i>
+      <div>模試管理</div>
+    </a>
+
+    <a href="/myapp/index.cgi/teacher/improvement-filter" style="display: block; background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; text-decoration: none; color: #333; text-align: center; transition: all 0.3s ease;">
+      <i class="fas fa-trophy" style="font-size: 24px; color: #ffc107; margin-bottom: 10px;"></i>
+      <div>成績向上フィルター</div>
+    </a>
+  </div>
+
+  <!-- 生徒一覧セクション -->
+  <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #dee2e6;">
+      <h3 style="margin: 0; font-size: 20px;">生徒一覧</h3>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="refreshStudentData()" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px 15px; cursor: pointer;">
+          <i class="fas fa-sync-alt"></i> 更新
+        </button>
+        <button id="save-attendance-btn" onclick="saveAttendance()" class="save-attendance-btn" disabled>
+          出席データを保存
+        </button>
+      </div>
+    </div>
+
+    <!-- 一括アクション -->
+    <div class="bulk-action-container">
+      <button onclick="markAllPresent()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-check"></i> 全員出席
+      </button>
+      <button onclick="markAllAbsent()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-times"></i> 全員欠席
+      </button>
+    </div>    <!-- 学年フィルタ -->
+    <div style="margin-bottom: 20px;">
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+        <div class="grade-filter active" data-filter="all" style="background: #007bff; color: white; border: 1px solid #007bff; border-radius: 20px; padding: 8px 16px; cursor: pointer; transition: all 0.3s ease; font-size: 14px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,123,255,0.3);">すべて</div>
+        <div class="grade-filter" data-filter="elementary" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 20px; padding: 8px 16px; cursor: pointer; transition: all 0.3s ease; font-size: 14px; font-weight: 500;">小学生</div>
+        <div class="grade-filter" data-filter="middle" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 20px; padding: 8px 16px; cursor: pointer; transition: all 0.3s ease; font-size: 14px; font-weight: 500;">中学生</div>
+        <div class="grade-filter" data-filter="high" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 20px; padding: 8px 16px; cursor: pointer; transition: all 0.3s ease; font-size: 14px; font-weight: 500;">高校生</div>
+      </div>
+      
+      <!-- 検索機能 -->
+      <div class="search-container">
+        <input type="text" id="student-search" class="search-input" placeholder="生徒名で検索..." />
+      </div>
+    </div>    <!-- 生徒カード -->
+    <div id="student-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+        <div class="loading-spinner"></div>
+        <p>生徒データを読み込み中...</p>
+      </div>
+    </div>
+    
+    <!-- 出席データ保存ボタン -->
+    <button id="save-attendance-btn" class="save-attendance-btn" onclick="saveAttendance()" disabled>
+      出席データを保存
+    </button>
+  </div>
+
+</div>
+
+<script>
+// グローバル変数
+let attendanceData = {};
+let allStudents = [];
+let currentFilter = 'all';
+
+// ページ読み込み時の初期化
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('講師ダッシュボードが読み込まれました');
+  
+  // データベースから生徒データを読み込み
+  loadStudentsFromDatabase();
+    // 初期化
+  initGradeFilter();
+  initSearch();
+  
+  // 初期フィルタ状態を確認
+  console.log(`初期フィルタ状態: ${currentFilter}`);
+  
+  // すべてのリンクにホバー効果を追加
+  const links = document.querySelectorAll('a[href]');
+  links.forEach(link => {
+    link.addEventListener('mouseenter', function() {
+      this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+    });
+    
+    link.addEventListener('mouseleave', function() {
+      this.style.boxShadow = 'none';
+    });
+  });
+});
+
+// データベースから生徒データを読み込む関数
+async function loadStudentsFromDatabase() {
+  try {
+    console.log('データベースから生徒データを読み込み中...');
+    
+    const response = await fetch('/myapp/index.cgi/api/teacher/students', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API エラー: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('取得したデータ:', data);
+    
+    if (data.success && data.students) {
+      allStudents = data.students;
+      
+      // 統計情報を更新
+      updateStatistics();
+      
+      // 生徒カードをレンダリング
+      renderStudentCards(allStudents);
+      
+      console.log(`${allStudents.length}人の生徒データを読み込みました`);
+    } else {
+      throw new Error(data.message || 'データの取得に失敗しました');
+    }
+    } catch (error) {
+    console.error('生徒データの読み込みエラー:', error);
+    showErrorMessage(error.message);
+  }
+}
+
+// 統計情報を更新する関数
+function updateStatistics() {
+  // 総生徒数
+  const totalStudents = allStudents.length;
+  
+  // 統計表示があれば更新
+  const totalStudentElement = document.getElementById('total-student-count');  if (totalStudentElement) {
+    totalStudentElement.textContent = totalStudents;
+  }
+}
+
+// 生徒カードをレンダリングする関数
+function renderStudentCards(students) {
+  const studentList = document.getElementById('student-list');
+  
+  if (!students || students.length === 0) {
+    studentList.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #6c757d;">
+        <i class="fas fa-search" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
+        <p>該当する生徒が見つかりません</p>
+      </div>
+    `;    return;
+  }
+    const cardsHtml = students.map(student => {
+    // 学年表示の安全な処理
+    let gradeDisplay = '';
+    if (student.school_type === 'elementary') {
+      gradeDisplay = `小${student.grade_level}年`;
+    } else if (student.school_type === 'middle') {
+      // 中学生は1-3年で格納されている
+      const middleGrade = student.grade_level > 6 ? student.grade_level - 6 : student.grade_level;
+      gradeDisplay = `中${middleGrade}年`;
+    } else if (student.school_type === 'high') {
+      // 高校生は1-3年で格納されている
+      const highGrade = student.grade_level > 9 ? student.grade_level - 9 : student.grade_level;
+      gradeDisplay = `高${highGrade}年`;
+    } else {
+      gradeDisplay = `${student.school_type || '未設定'} ${student.grade_level}年`;
+    }
+    
+    console.log(`生徒: ${student.name}, school_type: ${student.school_type}, grade_level: ${student.grade_level}, 表示: ${gradeDisplay}`);
+    
+    // 出席状態を日本語に変換し、スタイルを設定
+    let attendanceStatus = '未確認';
+    let statusStyle = 'background: #e9ecef; color: #666;';
+    let cardBorderStyle = '';
+    
+    if (student.attendanceToday === 'present') {
+      attendanceStatus = '出席済み';
+      statusStyle = 'background: #d4edda; color: #28a745;';
+      cardBorderStyle = 'border-color: #28a745;';
+    } else if (student.attendanceToday === 'absent') {
+      attendanceStatus = '欠席済み';
+      statusStyle = 'background: #f8d7da; color: #dc3545;';
+      cardBorderStyle = 'border-color: #dc3545;';
+    }
+      const loginStatus = student.hasLoggedInToday ? '本日ログイン済み' : '未ログイン';
+    
+    // 出席ボタンの無効化状態を判定
+    const isAttendanceRecorded = student.attendanceToday === 'present' || student.attendanceToday === 'absent';
+    const buttonDisabled = isAttendanceRecorded ? 'disabled' : '';
+    const buttonStyle = isAttendanceRecorded ? 'opacity: 0.5; cursor: not-allowed;' : '';
+    
+    // 生徒カードのHTMLを返す
+    return `
+      <div class="student-card" data-id="${student.id}" style="${cardBorderStyle}">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+          <h3 style="margin: 0; color: #333;">${student.name}</h3>
+          <div class="attendance-status" style="padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; ${statusStyle}">${attendanceStatus}</div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="color: #666; font-size: 14px;">${gradeDisplay}</span>
+          <span style="color: ${student.hasLoggedInToday ? '#28a745' : '#6c757d'}; font-size: 12px;">${loginStatus}</span>
+        </div>
+          <div class="attendance-buttons" style="display: flex; gap: 8px; margin-top: 10px;">
+          <button onclick="markAttendance(${student.id}, 'present', this)" 
+                  class="attendance-btn present-btn" 
+                  ${buttonDisabled}
+                  style="flex: 1; padding: 8px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s; ${buttonStyle}">            出席
+          </button>
+          <button onclick="markAttendance(${student.id}, 'absent', this)" 
+                  class="attendance-btn absent-btn" 
+                  ${buttonDisabled}
+                  style="flex: 1; padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s; ${buttonStyle}">
+            欠席
+          </button>
+        </div>
+        
+        <div style="margin-top: 10px;">
+          <button onclick="showStudentDetail(${student.id})" 
+                  style="width: 100%; padding: 6px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-size: 12px; color: #6c757d;">
+            詳細を見る
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  studentList.innerHTML = cardsHtml;
+}
+
+// エラーメッセージを表示する関数
+function showErrorMessage(message) {
+  const studentList = document.getElementById('student-list');
+  studentList.innerHTML = `
+    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #dc3545; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
+      <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px;"></i>
+      <p>データの読み込みに失敗しました</p>
+      <p style="font-size: 0.9rem;">${message}</p>
+      <button onclick="refreshStudentData()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; margin-top: 15px; cursor: pointer;">
+        <i class="fas fa-sync-alt"></i> 再読み込み
+      </button>
+    </div>
+  `;
+}
+
+// 個別の出席マーク
+function markAttendance(studentId, status, button) {
+  attendanceData[studentId] = status;
+  
+  // ボタンのある生徒カードを取得
+  const studentCard = button.closest('.student-card');
+  const statusDisplay = studentCard.querySelector('.attendance-status');
+    // 生徒データを取得
+  const student = allStudents.find(s => s.id == studentId);
+  
+  // 状態表示を更新
+  if (status === 'present') {    statusDisplay.textContent = '出席';
+    statusDisplay.style.background = '#d4edda';
+    statusDisplay.style.color = '#28a745';
+    studentCard.style.borderColor = '#28a745';
+    
+    // ポイント付与のプレビューを表示
+    showPointsPreview(student.name, 10);
+  } else if (status === 'absent') {
+    statusDisplay.textContent = '欠席';
+    statusDisplay.style.background = '#f8d7da';
+    statusDisplay.style.color = '#dc3545';
+    studentCard.style.borderColor = '#dc3545';
+  }
+  
+  // ボタンの無効化（重複クリック防止）
+  const presentBtn = studentCard.querySelector('.present-btn');
+  const absentBtn = studentCard.querySelector('.absent-btn');
+  
+  if (status === 'present') {
+    presentBtn.style.opacity = '1';
+    presentBtn.style.fontWeight = 'bold';
+    absentBtn.style.opacity = '0.5';
+    absentBtn.style.fontWeight = 'normal';
+  } else {
+    absentBtn.style.opacity = '1';
+    absentBtn.style.fontWeight = 'bold';
+    presentBtn.style.opacity = '0.5';
+    presentBtn.style.fontWeight = 'normal';
+  }
+  
+  // 保存ボタンを有効化
+  document.getElementById('save-attendance-btn').disabled = false;
+  
+  // 出席数を更新
+  updateAttendanceCount();
+    console.log(`生徒ID ${studentId} の出席状況: ${status}${status === 'present' ? ' (ポイント付与対象)' : ''}`);
+}
+
+// ポイント付与予告を表示する関数
+function showPointsPreview(studentName, points) {
+  // 既存の予告があれば削除
+  const existingPreview = document.getElementById('points-preview');
+  if (existingPreview) {
+    existingPreview.remove();
+  }
+  
+  // 予告メッセージを作成
+  const previewHtml = `
+    <div id="points-preview" style="
+      position: fixed; 
+      top: 20px; 
+      right: 20px; 
+      background: linear-gradient(135deg, #28a745, #20c997); 
+      color: white; 
+      padding: 15px 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 999;
+      animation: slideInRight 0.3s ease;
+      max-width: 300px;
+    ">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-coins" style="font-size: 20px;"></i>
+        <div>
+          <div style="font-weight: bold; margin-bottom: 3px;">${studentName}さん</div>
+          <div style="font-size: 14px;">${points}ポイント付与予定</div>
+        </div>
+      </div>
+      <div style="font-size: 12px; margin-top: 8px; opacity: 0.9;">
+        「出席データを保存」で確定されます
+      </div>
+    </div>
+  `;
+  
+  // CSSアニメーション追加
+  if (!document.getElementById('preview-animations')) {
+    const style = document.createElement('style');
+    style.id = 'preview-animations';
+    style.textContent = `
+      @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // 予告を表示
+  document.body.insertAdjacentHTML('beforeend', previewHtml);
+  
+  // 3秒後に自動で消去
+  setTimeout(() => {
+    const preview = document.getElementById('points-preview');
+    if (preview) {
+      preview.style.opacity = '0';
+      setTimeout(() => preview.remove(), 300);
+    }
+  }, 3000);
+}
+
+// 出席数カウントを更新
+function updateAttendanceCount() {
+  const presentCount = Object.values(attendanceData).filter(status => status === 'present').length;
+  document.getElementById('today-attendance-count').textContent = presentCount;
+}
+
+// 全員出席
+function markAllPresent() {
+  // 現在表示されている生徒の中からIDを取得
+  const filteredStudents = getCurrentlyDisplayedStudents();
+  
+  filteredStudents.forEach(student => {
+    markAttendanceById(student.id, 'present');
+  });
+  
+  alert(`表示中の生徒${filteredStudents.length}人を出席にマークしました`);
+}
+
+// 全員欠席
+function markAllAbsent() {
+  // 現在表示されている生徒の中からIDを取得
+  const filteredStudents = getCurrentlyDisplayedStudents();
+  
+  filteredStudents.forEach(student => {
+    markAttendanceById(student.id, 'absent');
+  });
+  
+  alert(`表示中の生徒${filteredStudents.length}人を欠席にマークしました`);
+}
+
+// 現在表示されている生徒を取得
+function getCurrentlyDisplayedStudents() {
+  const searchInput = document.getElementById('student-search');
+  const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+  
+  return allStudents.filter(student => {
+    const matchesSearch = !searchTerm || student.name.toLowerCase().includes(searchTerm);
+    const matchesGrade = currentFilter === 'all' || student.school_type === currentFilter;
+    
+    return matchesSearch && matchesGrade;
+  });
+}
+
+// IDで出席をマーク（UI更新も含む）
+function markAttendanceById(studentId, status) {
+  attendanceData[studentId] = status;
+  
+  // 対応する生徒カードを見つけてUI更新
+  const studentCards = document.querySelectorAll('.student-card');
+  studentCards.forEach(card => {
+    if (card.dataset.id == studentId) {
+      const statusDisplay = card.querySelector('.attendance-status');
+      
+      if (status === 'present') {
+        statusDisplay.textContent = '出席';
+        statusDisplay.style.background = '#d4edda';
+        statusDisplay.style.color = '#28a745';
+        card.style.borderColor = '#28a745';
+      } else if (status === 'absent') {
+        statusDisplay.textContent = '欠席';
+        statusDisplay.style.background = '#f8d7da';
+        statusDisplay.style.color = '#dc3545';
+        card.style.borderColor = '#dc3545';
+      }
+    }
+  });
+  
+  // 保存ボタンを有効化
+  document.getElementById('save-attendance-btn').disabled = false;
+  
+  // 出席数を更新
+  updateAttendanceCount();
+}
+
+// 出席データを保存
+async function saveAttendance() {
+  console.log('保存する出席データ:', attendanceData);
+  
+  if (Object.keys(attendanceData).length === 0) {
+    alert('保存する出席データがありません');
+    return;
+  }
+  
+  const requestData = {
+    attendance_data: attendanceData,
+    date: new Date().toISOString().split('T')[0],  // YYYY-MM-DD形式
+    award_points: true
+  };
+  
+  console.log('送信するリクエストデータ:', requestData);
+  
+  try {
+    const saveBtn = document.getElementById('save-attendance-btn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px;"></div> 保存中...';
+    
+    console.log('API呼び出し開始:', '/myapp/index.cgi/api/teacher/attendance');
+    
+    const response = await fetch('/myapp/index.cgi/api/teacher/attendance', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData),
+      credentials: 'same-origin'
+    });
+    
+    console.log('レスポンス受信:', response.status, response.statusText);    
+    const data = await response.json();
+    console.log('サーバーからのレスポンス:', data);
+    
+    if (data.success) {
+      console.log('保存成功:', data.message);
+      console.log('更新件数:', data.updated_count);
+      console.log('ポイント付与件数:', data.awarded_points_count);
+      
+      // ポイント付与情報をもとに詳細なメッセージを作成
+      if (data.awarded_points_count && data.awarded_points_count > 0) {
+        // ポイント付与成功時の詳細ポップアップ表示
+        console.log('ポイント付与モーダル表示');
+        showPointsAwardedModal(data.awarded_points_count, data.awarded_points);
+      } else {
+        // 通常の保存完了メッセージ
+        console.log('保存完了モーダル表示');
+        showSaveCompletedModal(data.updated_count || Object.keys(attendanceData).length);
+      }
+      
+      if (data.errors && data.errors.length > 0) {
+        const errorMessage = '一部でエラーが発生しました:\n' + data.errors.join('\n');
+        console.error('保存エラー:', data.errors);
+        setTimeout(() => alert(errorMessage), 1500);
+      }
+        // 保存前に出席データのコピーを作成
+      const savedAttendanceData = { ...attendanceData };
+      
+      // 出席データをクリア
+      attendanceData = {};
+      
+      // UI更新: 実際に保存されたデータに基づいて状態を更新
+      const studentCards = document.querySelectorAll('.student-card');
+      studentCards.forEach(card => {
+        const studentId = card.dataset.id;
+        const statusDisplay = card.querySelector('.attendance-status');
+        
+        if (savedAttendanceData[studentId]) {
+          // 実際に保存された出席状態を反映
+          const status = savedAttendanceData[studentId];
+          if (status === 'present') {
+            statusDisplay.textContent = '出席済み';
+            statusDisplay.style.background = '#d4edda';
+            statusDisplay.style.color = '#28a745';
+            card.style.borderColor = '#28a745';
+          } else if (status === 'absent') {
+            statusDisplay.textContent = '欠席済み';
+            statusDisplay.style.background = '#f8d7da';
+            statusDisplay.style.color = '#dc3545';
+            card.style.borderColor = '#dc3545';
+          }
+          
+          // 出席ボタンを無効化（保存済みなので）
+          const attendanceButtons = card.querySelectorAll('.attendance-btn');
+          attendanceButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+          });
+        } else {
+          // 変更されなかった生徒は元の状態を維持
+          card.style.borderColor = '#dee2e6';
+        }
+      });
+      
+      // 保存ボタンを無効化
+      saveBtn.disabled = true;
+    } else {
+      throw new Error(data.message || '保存に失敗しました');
+    }
+      } catch (error) {
+    console.error('出席データ保存エラー:', error);
+    alert('出席データの保存に失敗しました: ' + error.message);
+  } finally {
+    const saveBtn = document.getElementById('save-attendance-btn');
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '出席データを保存';
+  }
+}
+
+// 生徒詳細表示
+function showStudentDetail(studentId) {
+  // 生徒詳細ページに遷移
+  console.log(`生徒ID ${studentId} の詳細ページを表示します`);
+  
+  // セッションを維持したまま新しいタブで生徒ページを開く
+  window.open(`/myapp/index.cgi/teacher/student-view/${studentId}`, '_blank');
+}
+
+// 学年フィルタ機能
+function initGradeFilter() {
+  const filterButtons = document.querySelectorAll('.grade-filter');
+  console.log(`フィルタボタンを${filterButtons.length}個見つけました`);
+  
+  filterButtons.forEach(button => {
+    // ホバー効果を追加
+    button.addEventListener('mouseenter', function() {
+      if (!this.classList.contains('active')) {
+        this.style.background = '#e9ecef';
+        this.style.borderColor = '#adb5bd';
+      }
+    });
+    
+    button.addEventListener('mouseleave', function() {
+      if (!this.classList.contains('active')) {
+        this.style.background = '#f8f9fa';
+        this.style.borderColor = '#dee2e6';
+      }
+    });
+    
+    button.addEventListener('click', function() {
+      console.log(`フィルタボタンがクリックされました: ${this.dataset.filter}`);
+      
+      // 全ボタンのアクティブスタイルをリセット
+      filterButtons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.background = '#f8f9fa';
+        btn.style.color = '#333';
+        btn.style.borderColor = '#dee2e6';
+        btn.style.boxShadow = 'none';
+      });
+      
+      // クリックされたボタンをアクティブに
+      this.classList.add('active');
+      this.style.background = '#007bff';
+      this.style.color = 'white';
+      this.style.borderColor = '#007bff';
+      this.style.boxShadow = '0 2px 4px rgba(0,123,255,0.3)';
+      
+      // フィルタ値を設定
+      currentFilter = this.dataset.filter;
+      console.log(`現在のフィルタ: ${currentFilter}`);
+      
+      // フィルタを適用
+      applyFilters();
+    });
+  });
+}
+
+// 検索機能
+function initSearch() {
+  const searchInput = document.getElementById('student-search');
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      applyFilters();
+    });
+  }
+}
+
+// フィルタと検索を適用
+function applyFilters() {
+  const searchInput = document.getElementById('student-search');
+  const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+  
+  console.log(`フィルタ適用開始: 現在のフィルタ=${currentFilter}, 検索語句="${searchTerm}"`);
+  console.log(`総生徒数: ${allStudents.length}`);
+  
+  // 動的に読み込まれたデータに基づいてフィルタリング
+  let filteredStudents = allStudents.filter(student => {
+    const matchesSearch = !searchTerm || student.name.toLowerCase().includes(searchTerm);
+    const matchesGrade = currentFilter === 'all' || student.school_type === currentFilter;
+    
+    console.log(`生徒: ${student.name}, school_type: ${student.school_type}, 検索一致: ${matchesSearch}, 学年一致: ${matchesGrade}`);
+    
+    return matchesSearch && matchesGrade;
+  });
+  
+  console.log(`フィルタ結果: ${filteredStudents.length}人の生徒が一致`);
+  
+  // フィルタリングされた生徒でカードを再レンダリング
+  renderStudentCards(filteredStudents);
+  
+  console.log(`フィルタ適用完了: ${filteredStudents.length}人の生徒を表示`);
+}
+
+// データ再読み込み機能
+async function refreshStudentData() {
+  const studentList = document.getElementById('student-list');
+  studentList.innerHTML = `
+    <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+      <div class="loading-spinner"></div>
+      <p>生徒データを読み込み中...</p>
+    </div>
+  `;
+  
+  // 出席データをリセット
+  attendanceData = {};
+  
+  // 保存ボタンを無効化
+  document.getElementById('save-attendance-btn').disabled = true;
+  
+  await loadStudentsFromDatabase();
+}
+
+// ポイント付与完了モーダルを表示する関数
+function showPointsAwardedModal(studentCount, points) {
+  // モーダルHTML作成
+  const modalHtml = `
+    <div id="points-modal" style="
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.5); 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 1000;
+    ">
+      <div style="
+        background: white; 
+        padding: 30px; 
+        border-radius: 12px; 
+        text-align: center; 
+        max-width: 400px; 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease;
+      ">
+        <div style="
+          width: 60px; 
+          height: 60px; 
+          margin: 0 auto 20px; 
+          background: #28a745; 
+          border-radius: 50%; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center;
+        ">
+          <i class="fas fa-check" style="color: white; font-size: 24px;"></i>
+        </div>
+        <h3 style="color: #28a745; margin-bottom: 15px; font-size: 20px;">ポイント付与完了！</h3>
+        <p style="font-size: 16px; margin-bottom: 10px; color: #333;">
+          <strong>${studentCount}名</strong>の生徒に
+        </p>
+        <p style="font-size: 24px; font-weight: bold; color: #007bff; margin-bottom: 20px;">
+          ${points}ポイント
+        </p>
+        <p style="color: #666; margin-bottom: 25px;">を付与しました</p>        <button onclick="closePointsModal()" style="
+          background: #007bff; 
+          color: white; 
+          border: none; 
+          padding: 12px 25px; 
+          border-radius: 6px; 
+          cursor: pointer; 
+          font-size: 16px;
+          transition: background-color 0.3s;
+        " onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+          確認
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // CSSアニメーション追加
+  if (!document.getElementById('modal-animations')) {
+    const style = document.createElement('style');
+    style.id = 'modal-animations';
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // モーダルを表示
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+    // 5秒後に自動で閉じる
+  setTimeout(() => {
+    const modal = document.getElementById('points-modal');
+    if (modal) {
+      modal.style.opacity = '0';
+      setTimeout(() => modal.remove(), 300);
+    }
+  }, 5000);
+}
+
+// ポイントモーダルを閉じる関数
+function closePointsModal() {
+  const modal = document.getElementById('points-modal');
+  if (modal) {
+    modal.style.opacity = '0';
+    setTimeout(() => modal.remove(), 300);
+  }
+}
+
+// 通常の保存完了モーダルを表示する関数
+function showSaveCompletedModal(recordCount) {
+  // モーダルHTML作成
+  const modalHtml = `
+    <div id="save-modal" style="
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.5); 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    ">
+      <div style="
+        background: white; 
+        padding: 30px; 
+        border-radius: 12px; 
+        text-align: center; 
+        max-width: 400px; 
+        width: 90%;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease;
+      ">
+        <div style="
+          width: 60px; 
+          height: 60px; 
+          background: #17a2b8; 
+          border-radius: 50%; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          margin: 0 auto 20px;
+        ">
+          <i class="fas fa-save" style="color: white; font-size: 24px;"></i>
+        </div>
+        <h3 style="color: #17a2b8; margin-bottom: 15px; font-size: 20px;">保存完了！</h3>
+        <p style="font-size: 16px; margin-bottom: 20px; color: #333;">
+          <strong>${recordCount}件</strong>の出席記録を保存しました
+        </p>
+        <button onclick="closeSaveModal()" style="
+          background: #17a2b8; 
+          color: white; 
+          border: none; 
+          padding: 12px 25px; 
+          border-radius: 6px; 
+          cursor: pointer; 
+          font-size: 16px;
+          transition: background-color 0.3s;
+        " onmouseover="this.style.background='#138496'" onmouseout="this.style.background='#17a2b8'">
+          確認
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // モーダルを表示
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // 3秒後に自動で閉じる
+  setTimeout(() => {
+    const modal = document.getElementById('save-modal');
+    if (modal) {
+      modal.style.opacity = '0';
+      setTimeout(() => modal.remove(), 300);
+    }
+  }, 3000);
+}
+
+// 保存完了モーダルを閉じる関数
+function closeSaveModal() {
+  const modal = document.getElementById('save-modal');
+  if (modal) {
+    modal.style.opacity = '0';
+    setTimeout(() => modal.remove(), 300);
+  }
+}
+
+// 改善管理機能の関数は削除されました
+// 以下の関数は専用ページ(/teacher/improvement-filter)に移行されました:
+// - loadImprovementData() (重複)
+// - displayImprovementData()
+// - updateImprovementData()
+// - fetchMonthlyImprovementData()
+// 関連イベントリスナーも削除されました
+
+// 一括ポイント付与処理
+function awardPointsToSelected(level) {
+  const selectedStudents = getSelectedStudents();
+  
+  if (selectedStudents.length === 0) {
+    alert('ポイントを付与する生徒が選択されていません');
+    return;
+  }
+  
+  let points = 0;
+  switch (level) {
+    case 'small':
+      points = 20;
+      break;
+    case 'medium':
+      points = 30;
+      break;
+    case 'large':
+      points = 50;
+      break;
+    default:
+      return;
+  }
+  
+  // 確認ダイアログ
+  const studentNames = selectedStudents.map(s => s.name).join(', ');
+  const confirmMessage = `${studentNames} に ${points} ポイントを付与します。よろしいですか？`;
+  
+  if (confirm(confirmMessage)) {
+    // API呼び出し
+    fetch('/myapp/index.cgi/api/teacher/award-points', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        student_ids: selectedStudents.map(s => s.id),
+        points: points
+      }),
+      credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('ポイントを付与しました');
+        
+        // UI更新
+        updateImprovementData();
+      } else {
+        throw new Error(data.message || 'ポイント付与に失敗しました');
+      }
+    })
+    .catch(error => {
+      console.error('ポイント付与エラー:', error);
+      alert('ポイント付与に失敗しました: ' + error.message);
+    });
+  }
+}
+
+// 選択中の生徒を取得
+function getSelectedStudents() {
+  const studentCards = document.querySelectorAll('.student-card');
+  const selectedStudents = [];
+  
+  studentCards.forEach(card => {
+    const checkbox = card.querySelector('input[type="checkbox"]');
+    if (checkbox && checkbox.checked) {
+      const studentId = card.dataset.id;
+      const student = allStudents.find(s => s.id == studentId);
+      if (student) {
+        selectedStudents.push(student);
+      }
+    }
+  });
+  
+  return selectedStudents;
+}
+
+// 成績向上管理機能
+// 成績向上管理セクションの初期化機能は削除されました
+// 改善管理機能は専用ページに移行されました
+// 専用の成績向上フィルターページ(/teacher/improvement-filter)をご利用ください
+
+// 以下の関数は削除されました:
+// - initImprovementSection()
+// - loadImprovementData()
+// - updateImprovementStats()
+// - updateImprovementCount()
+// - showAllElementary()
+// - showImprovementCandidates()
+// - showPointCandidates()
+// - updateActiveButton()
+// - renderImprovementCards()
+// - toggleImprovementSelection()
+// - updateBulkActions()
+// - awardPointsToSelected()
+// - clearSelection()
+// - refreshImprovementData()
+// - scrollToImprovement()
+
+</script>
+{% endblock %}

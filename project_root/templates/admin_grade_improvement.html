@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者機能 - データベース修正</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .records-table th, .records-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .records-table th {
+            background-color: #f2f2f2;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>管理者機能 - データベース修正</h1>
+        
+        <div class="section">
+            <h2>Grade Improvement レコード確認</h2>
+            <p>現在データベース内にある「grade_improvement」レコードの状況を確認します。</p>
+            <button onclick="checkGradeImprovement()">レコード状況を確認</button>
+            <div id="check-result" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Grade Improvement レコード修正</h2>
+            <p><strong>注意:</strong> この操作は「grade_improvement」レコードを適切なイベントタイプに変更します。</p>
+            <ul>
+                <li>50ポイント以上 → grade_improvement_large</li>
+                <li>30ポイント以上 → grade_improvement_medium</li>
+                <li>10ポイント以上 → grade_improvement_small</li>
+            </ul>
+            <button class="danger" onclick="fixGradeImprovement()">レコードを修正する</button>
+            <div id="fix-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function checkGradeImprovement() {
+            const resultDiv = document.getElementById('check-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = '確認中...';
+            
+            try {
+                const response = await fetch('/admin/check-grade-improvement');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    let html = `
+                        <h3>確認結果</h3>
+                        <p><strong>修正が必要なレコード数:</strong> ${data.grade_improvement_records.length}件</p>
+                        <p><strong>利用可能なイベントタイプ:</strong> ${data.available_event_types.length}件</p>
+                    `;
+                    
+                    if (data.grade_improvement_records.length > 0) {
+                        html += `
+                            <h4>grade_improvementレコード:</h4>
+                            <table class="records-table">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ユーザーID</th>
+                                    <th>ポイント</th>
+                                    <th>説明</th>
+                                    <th>作成日時</th>
+                                </tr>
+                        `;
+                        data.grade_improvement_records.forEach(record => {
+                            html += `
+                                <tr>
+                                    <td>${record.id}</td>
+                                    <td>${record.user_id}</td>
+                                    <td>${record.points}</td>
+                                    <td>${record.description || '(説明なし)'}</td>
+                                    <td>${record.created_at}</td>
+                                </tr>
+                            `;
+                        });
+                        html += '</table>';
+                    }
+                    
+                    if (data.available_event_types.length > 0) {
+                        html += `
+                            <h4>利用可能なイベントタイプ:</h4>
+                            <table class="records-table">
+                                <tr>
+                                    <th>名前</th>
+                                    <th>表示名</th>
+                                </tr>
+                        `;
+                        data.available_event_types.forEach(type => {
+                            html += `
+                                <tr>
+                                    <td>${type.name}</td>
+                                    <td>${type.display_name}</td>
+                                </tr>
+                            `;
+                        });
+                        html += '</table>';
+                    }
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `エラー: ${data.message}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `エラー: ${error.message}`;
+            }
+        }
+        
+        async function fixGradeImprovement() {
+            if (!confirm('本当にgrade_improvementレコードを修正しますか？この操作は元に戻せません。')) {
+                return;
+            }
+            
+            const resultDiv = document.getElementById('fix-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = '修正中...';
+            
+            try {
+                const response = await fetch('/admin/fix-grade-improvement', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    let html = `
+                        <h3>修正完了</h3>
+                        <p>${data.message}</p>
+                        <p><strong>修正件数:</strong> ${data.updated_count}件</p>
+                    `;
+                    
+                    if (data.records && data.records.length > 0) {
+                        html += `
+                            <h4>修正されたレコード:</h4>
+                            <table class="records-table">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ユーザーID</th>
+                                    <th>ポイント</th>
+                                    <th>説明</th>
+                                    <th>作成日時</th>
+                                </tr>
+                        `;
+                        data.records.forEach(record => {
+                            html += `
+                                <tr>
+                                    <td>${record.id}</td>
+                                    <td>${record.user_id}</td>
+                                    <td>${record.points}</td>
+                                    <td>${record.description || '(説明なし)'}</td>
+                                    <td>${record.created_at}</td>
+                                </tr>
+                            `;
+                        });
+                        html += '</table>';
+                    }
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `エラー: ${data.message}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `エラー: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

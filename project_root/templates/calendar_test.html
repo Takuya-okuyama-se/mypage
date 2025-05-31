@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <title>FullCalendarテスト</title>
+  <!-- 複数のCDNからFullCalendarを読み込む試み -->
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/index.global.min.js'></script>
+  <!-- もし上記のCDNが機能しない場合の代替CDN -->
+  <script>
+    if (typeof FullCalendar === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.5/index.global.min.js"><\/script>');
+    }
+  </script>
+  <style>
+    body {
+      margin: 40px 10px;
+      padding: 0;
+      font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
+      font-size: 14px;
+    }
+    #calendar {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>FullCalendarテスト</h1>
+  <div id='status'></div>
+  <div id='calendar'></div>
+
+  <script>
+    window.onload = function() {
+      var statusEl = document.getElementById('status');
+      
+      // FullCalendarが読み込まれたかチェック
+      if (typeof FullCalendar === 'undefined') {
+        statusEl.innerHTML = '<p style="color:red">エラー: FullCalendarライブラリが読み込まれていません。サーバーの外部接続を確認してください。</p>';
+        return;
+      }
+      
+      statusEl.innerHTML = '<p style="color:green">FullCalendarライブラリを読み込みました。カレンダーを初期化しています...</p>';
+      
+      try {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth',
+          events: [
+            { title: 'テストイベント1', start: '2025-05-01' },
+            { title: 'テストイベント2', start: '2025-05-15' }
+          ]
+        });
+        calendar.render();
+        statusEl.innerHTML += '<p style="color:green">カレンダーの初期化に成功しました！</p>';
+      } catch(e) {
+        statusEl.innerHTML += '<p style="color:red">カレンダー初期化エラー: ' + e.message + '</p>';
+      }
+    };
+  </script>
+</body>
+</html>

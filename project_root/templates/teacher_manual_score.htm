@@ -1,0 +1,726 @@
+{% extends "base.html" %}
+
+{% block title %}小学生テスト点数管理 | 塾講師サイト{% endblock %}
+
+{% block head_extra %}
+<style>
+  .management-tabs {
+    display: flex;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 15px;
+  }
+  
+  .management-tab {
+    padding: 8px 16px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px 4px 0 0;
+    margin-right: 5px;
+  }
+  
+  .management-tab.active {
+    background-color: #fff;
+    border-color: #dee2e6;
+    border-bottom-color: transparent;
+    font-weight: bold;
+  }
+  
+  .tab-content {
+    padding: 15px;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+  }
+  
+  .tab-pane {
+    display: none;
+  }
+  
+  .tab-pane.active {
+    display: block;
+  }
+  
+  .search-form {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  
+  .search-form .form-group {
+    flex: 1;
+    min-width: 150px;
+  }
+  
+  .form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  
+  .score-entry-form {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .form-col {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .student-scores-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  .student-scores-table th,
+  .student-scores-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+  
+  .student-scores-table th {
+    background-color: #f2f2f2;
+  }
+  
+  .student-scores-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  .student-scores-table tr:hover {
+    background-color: #e9ecef;
+  }
+  
+  .student-name-col {
+    text-align: left;
+    font-weight: bold;
+  }
+  
+  .score-cell {
+    position: relative;
+  }
+  
+  .score-value {
+    font-weight: bold;
+  }
+  
+  .score-improvement {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.7em;
+    padding: 1px 3px;
+    border-radius: 2px;
+  }
+  
+  .score-up {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .score-down {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .action-buttons {
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  
+  .import-section {
+    margin-top: 20px;
+  }
+  
+  .import-instructions {
+    background-color: #e9ecef;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+  }
+  
+  .import-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .file-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .test-selector {
+    margin-bottom: 20px;
+  }
+  
+  .test-selector select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    background-color: white;
+  }
+  
+  .test-info {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+  }
+  
+  .confirmation-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+  }
+  
+  .modal-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .modal-header h4 {
+    margin: 0;
+  }
+  
+  .modal-footer {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    text-align: right;
+  }
+  
+  .score-badge {
+    display: inline-block;
+    min-width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-weight: bold;
+    font-size: 0.9em;
+  }
+  
+  .score-excellent {
+    background-color: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  .score-good {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .score-average {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  
+  .score-poor {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .notification-send-form {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 8px;
+  }
+  
+  .notification-recipients {
+    margin-top: 10px;
+    margin-bottom: 15px;
+  }
+  
+  @media (max-width: 768px) {
+    .form-row {
+      flex-direction: column;
+    }
+    
+    .form-col {
+      width: 100%;
+    }
+    
+    .search-form {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .student-scores-table {
+      display: block;
+      overflow-x: auto;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3>小学生テスト点数管理</h3>
+  <p>外部テストサービスの点数を管理し、成績向上を検出してポイント付与できます。</p>
+  
+  <div class="management-tabs">
+    <div class="management-tab active" data-tab="entry">点数入力</div>
+    <div class="management-tab" data-tab="import">一括インポート</div>
+    <div class="management-tab" data-tab="history">テスト履歴</div>
+  </div>
+  
+  <div class="tab-content">
+    <!-- 点数入力タブ -->
+    <div class="tab-pane active" id="entry-tab">
+      <div class="search-form">
+        <div class="form-group">
+          <label class="form-label" for="test-type">テスト種別</label>
+          <select class="form-control" id="test-type" name="test-type">
+            <option value="1">月例テスト</option>
+            <option value="2">全国模試</option>
+            <option value="3">チャレンジテスト</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="test-date">実施日</label>
+          <input type="date" class="form-control" id="test-date" name="test-date" value="2025-05-01">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="grade-level">学年</label>
+          <select class="form-control" id="grade-level" name="grade-level">
+            <option value="all">全学年</option>
+            <option value="4">小学4年生</option>
+            <option value="5">小学5年生</option>
+            <option value="6">小学6年生</option>
+          </select>
+        </div>
+        
+        <button type="button" class="btn btn-primary" id="load-students-btn">生徒を表示</button>
+      </div>
+      
+      <h4>テスト点数入力</h4>
+      
+      <div id="student-scores-container">
+        <table class="student-scores-table" id="student-scores-table">
+          <thead>
+            <tr>
+              <th>生徒名</th>
+              <th>学年</th>
+              <th>国語</th>
+              <th>算数</th>
+              <th>理科</th>
+              <th>社会</th>
+              <th>英語</th>
+              <th>合計</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="student-name-col">伊藤誠</td>
+              <td>6年生</td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="85">
+                <span class="score-improvement score-up">↑10</span>
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="92">
+                <span class="score-improvement score-up">↑5</span>
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="78">
+                <span class="score-improvement score-down">↓3</span>
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="81">
+                <span class="score-improvement score-up">↑12</span>
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="88">
+                <span class="score-improvement score-up">↑7</span>
+              </td>
+              <td><span class="score-badge score-excellent">424</span></td>
+            </tr>
+            <tr>
+              <td class="student-name-col">渡辺美咲</td>
+              <td>5年生</td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="72">
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="68">
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="75">
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="70">
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="65">
+              </td>
+              <td><span class="score-badge score-average">350</span></td>
+            </tr>
+            <tr>
+              <td class="student-name-col">小林大輔</td>
+              <td>4年生</td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="65">
+                <span class="score-improvement score-up">↑8</span>
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="77">
+                <span class="score-improvement score-up">↑15</span>
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="62">
+                <span class="score-improvement score-up">↑5</span>
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="58">
+                <span class="score-improvement score-down">↓2</span>
+              </td>
+              <td class="score-cell">
+                <input type="number" class="form-control score-input" min="0" max="100" value="70">
+                <span class="score-improvement score-up">↑7</span>
+              </td>
+              <td><span class="score-badge score-good">332</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn btn-secondary" id="check-improvements-btn">成績向上確認</button>
+        <button type="button" class="btn btn-primary" id="save-scores-btn">点数を保存</button>
+      </div>
+      
+      <div class="notification-send-form" id="notification-form" style="display:none;">
+        <h5>ポイント付与</h5>
+        <p>以下の生徒の成績が向上しています。ポイントを付与しますか？</p>
+        
+        <div class="notification-recipients" id="improvement-students">
+          <!-- 成績向上した生徒のリストが動的に生成されます -->
+        </div>
+        
+        <button type="button" class="btn btn-primary" id="award-points-btn">ポイントを付与</button>
+      </div>
+    </div>
+    
+    <!-- 一括インポートタブ -->
+    <div class="tab-pane" id="import-tab">
+      <div class="import-instructions">
+        <h5>テスト結果のインポート方法</h5>
+        <ol>
+          <li>外部テストサービスから生徒の点数をCSVファイルとしてダウンロードします</li>
+          <li>ファイルをアップロードして、テスト種別と日付を設定します</li>
+          <li>インポートボタンをクリックして、データを取り込みます</li>
+        </ol>
+        <p><strong>注意:</strong> CSVファイルは以下の列を含む必要があります: 生徒名,学年,科目1,科目2,...</p>
+      </div>
+      
+      <div class="import-form">
+        <div class="form-group">
+          <label class="form-label" for="import-test-type">テスト種別</label>
+          <select class="form-control" id="import-test-type" name="import-test-type">
+            <option value="1">月例テスト</option>
+            <option value="2">全国模試</option>
+            <option value="3">チャレンジテスト</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="import-test-date">実施日</label>
+          <input type="date" class="form-control" id="import-test-date" name="import-test-date" value="2025-05-01">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">CSVファイル</label>
+          <div class="file-input-group">
+            <input type="file" id="import-file" accept=".csv">
+            <small>UTF-8エンコードのCSVファイルを選択してください</small>
+          </div>
+        </div>
+        
+        <button type="button" class="btn btn-primary" id="import-btn">インポート</button>
+      </div>
+    </div>
+    
+    <!-- テスト履歴タブ -->
+    <div class="tab-pane" id="history-tab">
+      <div class="test-selector">
+        <label for="test-history-select">テスト選択:</label>
+        <select id="test-history-select" class="form-control">
+          <option value="1">月例テスト (2025-05-01)</option>
+          <option value="2">全国模試 (2025-04-15)</option>
+          <option value="3">チャレンジテスト (2025-04-01)</option>
+          <option value="4">月例テスト (2025-03-15)</option>
+        </select>
+      </div>
+      
+      <div class="test-info">
+        <h5>月例テスト (2025-05-01)</h5>
+        <p>参加生徒数: 12名 / 平均点: 358点 / 最高点: 424点</p>
+      </div>
+      
+      <table class="student-scores-table">
+        <thead>
+          <tr>
+            <th>生徒名</th>
+            <th>学年</th>
+            <th>国語</th>
+            <th>算数</th>
+            <th>理科</th>
+            <th>社会</th>
+            <th>英語</th>
+            <th>合計</th>
+            <th>前回比</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="student-name-col">伊藤誠</td>
+            <td>6年生</td>
+            <td>85点</td>
+            <td>92点</td>
+            <td>78点</td>
+            <td>81点</td>
+            <td>88点</td>
+            <td><span class="score-badge score-excellent">424</span></td>
+            <td class="score-up">+31</td>
+          </tr>
+          <tr>
+            <td class="student-name-col">渡辺美咲</td>
+            <td>5年生</td>
+            <td>72点</td>
+            <td>68点</td>
+            <td>75点</td>
+            <td>70点</td>
+            <td>65点</td>
+            <td><span class="score-badge score-average">350</span></td>
+            <td class="score-up">+12</td>
+          </tr>
+          <tr>
+            <td class="student-name-col">小林大輔</td>
+            <td>4年生</td>
+            <td>65点</td>
+            <td>77点</td>
+            <td>62点</td>
+            <td>58点</td>
+            <td>70点</td>
+            <td><span class="score-badge score-good">332</span></td>
+            <td class="score-up">+33</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn btn-secondary">CSVでエクスポート</button>
+        <button type="button" class="btn btn-primary">保護者に通知</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 確認モーダル -->
+<div id="confirmation-modal" class="confirmation-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h4>成績向上確認</h4>
+    </div>
+    <div class="modal-body">
+      <p>以下の生徒の成績が大幅に向上しています：</p>
+      <ul>
+        <li><strong>伊藤誠</strong>: 合計31点アップ（大きな向上）</li>
+        <li><strong>小林大輔</strong>: 合計33点アップ（大きな向上）</li>
+      </ul>
+      <p>これらの生徒に成績向上ボーナスポイントを付与しますか？</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="modal-cancel-btn">キャンセル</button>
+      <button type="button" class="btn btn-primary" id="modal-confirm-btn">ポイント付与</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // タブ切り替え
+  const tabs = document.querySelectorAll('.management-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      // タブの切り替え
+      tabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      
+      // コンテンツの切り替え
+      const tabId = this.getAttribute('data-tab') + '-tab';
+      document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+      });
+      document.getElementById(tabId).classList.add('active');
+    });
+  });
+  
+  // 合計点数の自動計算
+  const scoreInputs = document.querySelectorAll('.score-input');
+  scoreInputs.forEach(input => {
+    input.addEventListener('input', function() {
+      const row = this.closest('tr');
+      const inputs = row.querySelectorAll('.score-input');
+      let total = 0;
+      
+      inputs.forEach(input => {
+        const value = parseInt(input.value) || 0;
+        total += value;
+      });
+      
+      const totalCell = row.querySelector('td:last-child span');
+      totalCell.textContent = total;
+      
+      // 合計点に応じたスタイルを設定
+      totalCell.className = 'score-badge';
+      if (total >= 400) {
+        totalCell.classList.add('score-excellent');
+      } else if (total >= 350) {
+        totalCell.classList.add('score-good');
+      } else if (total >= 300) {
+        totalCell.classList.add('score-average');
+      } else {
+        totalCell.classList.add('score-poor');
+      }
+    });
+  });
+  
+  // 成績向上確認ボタン
+  const checkImprovementsBtn = document.getElementById('check-improvements-btn');
+  if (checkImprovementsBtn) {
+    checkImprovementsBtn.addEventListener('click', function() {
+      document.getElementById('confirmation-modal').style.display = 'block';
+    });
+  }
+  
+  // 成績向上確認モーダルのボタン
+  const modalCancelBtn = document.getElementById('modal-cancel-btn');
+  const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+  
+  if (modalCancelBtn) {
+    modalCancelBtn.addEventListener('click', function() {
+      document.getElementById('confirmation-modal').style.display = 'none';
+    });
+  }
+  
+  if (modalConfirmBtn) {
+    modalConfirmBtn.addEventListener('click', function() {
+      // モーダルを閉じる
+      document.getElementById('confirmation-modal').style.display = 'none';
+      
+      // 通知フォームを表示
+      const notificationForm = document.getElementById('notification-form');
+      if (notificationForm) {
+        notificationForm.style.display = 'block';
+        
+        // 成績向上した生徒のリストを追加
+        const improvementStudents = document.getElementById('improvement-students');
+        if (improvementStudents) {
+          improvementStudents.innerHTML = `
+            <div>
+              <input type="checkbox" id="student-1" name="student-1" checked>
+              <label for="student-1">伊藤誠（6年生）: 31点アップ - 推奨ポイント: 50ポイント</label>
+            </div>
+            <div>
+              <input type="checkbox" id="student-3" name="student-3" checked>
+              <label for="student-3">小林大輔（4年生）: 33点アップ - 推奨ポイント: 50ポイント</label>
+            </div>
+          `;
+        }
+      }
+    });
+  }
+  
+  // ポイント付与ボタン
+  const awardPointsBtn = document.getElementById('award-points-btn');
+  if (awardPointsBtn) {
+    awardPointsBtn.addEventListener('click', function() {
+      alert('選択した生徒にポイントを付与しました！');
+      document.getElementById('notification-form').style.display = 'none';
+    });
+  }
+  
+  // 点数保存ボタン
+  const saveScoresBtn = document.getElementById('save-scores-btn');
+  if (saveScoresBtn) {
+    saveScoresBtn.addEventListener('click', function() {
+      alert('テスト点数を保存しました！');
+    });
+  }
+  
+  // インポートボタン
+  const importBtn = document.getElementById('import-btn');
+  if (importBtn) {
+    importBtn.addEventListener('click', function() {
+      const fileInput = document.getElementById('import-file');
+      
+      if (fileInput.files.length === 0) {
+        alert('CSVファイルを選択してください。');
+        return;
+      }
+      
+      // 実際のアプリケーションではここでファイルをアップロードする処理を行う
+      // ここではデモのため、単純にアラートを表示
+      alert('CSVファイルからデータをインポートしました！');
+    });
+  }
+  
+  // テスト履歴選択の変更イベント
+  const testHistorySelect = document.getElementById('test-history-select');
+  if (testHistorySelect) {
+      testHistorySelect.addEventListener('change', function() {
+        // 実際のアプリケーションではサーバーからデータを取得する
+        // ここではデモのため何もしない
+        alert('テスト履歴を切り替えました');
+      });
+    }
+    
+    // モーダル外をクリックしたときにモーダルを閉じる
+    window.addEventListener('click', function(event) {
+      const modal = document.getElementById('confirmation-modal');
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+  });
+</script>
+{% endblock %}
