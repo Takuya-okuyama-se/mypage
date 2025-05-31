@@ -143,7 +143,7 @@ def get_elementary_improved_students(filters):
                     u.name AS student_name,
                     u.school_type,
                     u.grade_level,
-                    sub.name AS subject_name,
+                    COALESCE(sub.name, CONCAT('科目', e1.subject)) AS subject_name,
                     (s1.score - s2.score) AS improvement
                 FROM elementary_grades s1
                 JOIN elementary_grades s2 ON 
@@ -255,28 +255,36 @@ def get_middle_improved_students(filters):
     conn = get_db_connection()
     
     try:
-        # 新しいパラメータ名に対応
-        from_internal = filters.get('from_internal', filters.get('start_year', '1-1'))
-        to_internal = filters.get('to_internal', filters.get('end_year', '1-2'))
+        # フィルターから値を取得
+        from_internal = filters.get('from_internal')
+        if isinstance(from_internal, list):
+            from_internal = from_internal[0] if from_internal else '1-1'
+        from_internal = from_internal or '1-1'
+        
+        to_internal = filters.get('to_internal')
+        if isinstance(to_internal, list):
+            to_internal = to_internal[0] if to_internal else '1-2'
+        to_internal = to_internal or '1-2'
         
         # 期間情報を解析
-        if '-' in str(from_internal):
-            from_parts = from_internal.split('-')
-            start_year = int(from_parts[0])
-            start_term = int(from_parts[1])
-        else:
-            start_year = int(filters.get('start_year', 1))
-            start_term = int(filters.get('start_term', 1))
+        from_parts = from_internal.split('-')
+        start_year = int(from_parts[0])
+        start_term = int(from_parts[1])
+        
+        to_parts = to_internal.split('-')
+        end_year = int(to_parts[0])
+        end_term = int(to_parts[1])
+        
+        subject_id = filters.get('subject')
+        if isinstance(subject_id, list):
+            subject_id = subject_id[0] if subject_id else None
             
-        if '-' in str(to_internal):
-            to_parts = to_internal.split('-')
-            end_year = int(to_parts[0])
-            end_term = int(to_parts[1])
-        else:
-            end_year = int(filters.get('end_year', 3))
-            end_term = int(filters.get('end_term', 3))
-            
-        subject_id = filters.get('subject', 'all')
+        min_improvement_str = filters.get('min_improvement', '0')
+        if isinstance(min_improvement_str, list):
+            min_improvement_str = min_improvement_str[0] if min_improvement_str else '0'
+        min_improvement = int(min_improvement_str) if min_improvement_str else 0
+        
+        logging.info(f"Processing middle internal points - from: {from_internal}, to: {to_internal}, subject: {subject_id}, min_improvement: {min_improvement}")
         
         with conn.cursor() as cur:
             # 基本的なSQLクエリの構築
@@ -293,7 +301,7 @@ def get_middle_improved_students(filters):
                     u.school_type,
                     u.grade_level,
                     p1.subject,
-                    sub.name AS subject_name,
+                    COALESCE(sub.name, CONCAT('科目', e1.subject)) AS subject_name,
                     (p1.point - p2.point) AS improvement
                 FROM internal_points p1
                 JOIN internal_points p2 ON 
@@ -307,10 +315,10 @@ def get_middle_improved_students(filters):
                     p1.term = %s AND 
                     p2.grade_year = %s AND 
                     p2.term = %s AND
-                    (p1.point - p2.point) > 0
+                    (p1.point - p2.point) >= %s
             """
             
-            params = [end_year, end_term, start_year, start_term]
+            params = [end_year, end_term, start_year, start_term, min_improvement]
             
             # 科目フィルターが指定されている場合はWHERE句に追加
             if subject_id != 'all':
@@ -524,10 +532,10 @@ def get_middle_exam_improved_students(filters):
                     u.school_type,
                     u.grade_level,
                     e1.subject,
-                    sub.name AS subject_name,
+                    COALESCE(sub.name, CONCAT('科目', e1.subject)) AS subject_name,
                     (e1.score - e2.score) AS improvement
-                FROM elementary_grades e1
-                JOIN elementary_grades e2 ON 
+                FROM grades e1
+                JOIN grades e2 ON 
                     e1.student_id = e2.student_id AND 
                     e1.subject = e2.subject AND
                     e1.grade_year = e2.grade_year
