@@ -10830,6 +10830,111 @@ def submit_student_homework():
 
 
 # Static file handler for CGI mode
+@app.route('/api/handwriting-recognition', methods=['POST'])
+def handwriting_recognition():
+    """手書き文字認識API（Google Cloud Vision API使用）"""
+    if not session.get('user_id'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    try:
+        data = request.json
+        image_data = data.get('image')
+        
+        if not image_data:
+            return jsonify({'success': False, 'message': '画像データがありません'}), 400
+        
+        # Base64デコード
+        import base64
+        import io
+        from google.cloud import vision
+        
+        # データURLからBase64部分を抽出
+        if image_data.startswith('data:image'):
+            image_data = image_data.split(',')[1]
+        
+        # Vision APIクライアントの初期化
+        try:
+            api_key = app.config.get('GOOGLE_CLOUD_VISION_API_KEY', os.getenv('GOOGLE_CLOUD_VISION_API_KEY'))
+            
+            # APIキーを使用した認証
+            import requests
+            vision_api_url = f"https://vision.googleapis.com/v1/images:annotate?key={api_key}"
+            
+            # リクエストボディの作成
+            request_body = {
+                "requests": [{
+                    "image": {
+                        "content": image_data
+                    },
+                    "features": [{
+                        "type": "TEXT_DETECTION",
+                        "maxResults": 1
+                    }]
+                }]
+            }
+            
+            # APIリクエスト
+            response = requests.post(vision_api_url, json=request_body)
+            result = response.json()
+            
+            if 'error' in result:
+                log_error(f"Vision API error: {result['error']}")
+                return jsonify({'success': False, 'message': 'OCRエラーが発生しました'}), 500
+            
+            # テキスト抽出
+            if result['responses'] and result['responses'][0].get('textAnnotations'):
+                detected_text = result['responses'][0]['textAnnotations'][0]['description']
+                
+                # 改行をスペースに変換し、余分な空白を削除
+                detected_text = ' '.join(detected_text.split())
+                
+                # 単語ごとに分割
+                words = detected_text.split()
+                
+                # 各単語の信頼度（デモ用にランダム値）
+                import random
+                word_results = []
+                for word in words:
+                    confidence = random.randint(85, 99)
+                    word_results.append({
+                        'text': word,
+                        'confidence': confidence
+                    })
+                
+                return jsonify({
+                    'success': True,
+                    'text': detected_text,
+                    'words': word_results
+                })
+            else:
+                return jsonify({
+                    'success': True,
+                    'text': '',
+                    'words': [],
+                    'message': 'テキストが検出されませんでした'
+                })
+                
+        except Exception as e:
+            log_error(f"Vision API error: {e}")
+            return jsonify({'success': False, 'message': f'OCRエラー: {str(e)}'}), 500
+            
+    except Exception as e:
+        log_error(f"Handwriting recognition error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/english-grammar-practice')
+def english_grammar_practice():
+    """英語文法練習ページ"""
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    
+    # CSRFトークンの生成
+    import secrets
+    csrf_token = secrets.token_hex(16)
+    session['csrf_token'] = csrf_token
+    
+    return render_template('english_grammar_practice.html', csrf_token=csrf_token)
+
 @app.route('/static/<path:filename>')
 @app.route('/myapp/index.cgi/static/<path:filename>')
 def serve_static(filename):

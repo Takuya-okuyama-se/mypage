@@ -773,6 +773,9 @@
           <a class="tab {% if request.path.endswith('/student/eiken-words') %}active{% endif %}" href="/myapp/index.cgi/student/eiken-words{{ tv_param }}">
             <i class="fas fa-language"></i> 英検単語
           </a>
+          <a class="tab {% if request.path.endswith('/english-grammar-practice') %}active{% endif %}" href="/myapp/index.cgi/english-grammar-practice{{ tv_param }}">
+            <i class="fas fa-pencil-alt"></i> 英語文法練習
+          </a>
           <a class="tab {% if request.path.endswith('/hope-room') %}active{% endif %}" href="/myapp/index.cgi/hope-room{{ tv_param }}">
             <i class="fas fa-chalkboard-teacher"></i> HOPE ROOM
           </a>

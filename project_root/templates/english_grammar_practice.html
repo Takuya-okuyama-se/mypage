@@ -1,0 +1,823 @@
+{% extends "base.html" %}
+{% block title %}英語文法練習 - be動詞・一般動詞 | 英語学習{% endblock %}
+
+{% block content %}
+<style>
+/* 基本スタイル */
+.english-practice-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+/* タブスタイル */
+.tab-container {
+  margin-bottom: 30px;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.tab-button.active {
+  background: #2196F3;
+  color: white;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* 問題カード */
+.question-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.question-number {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2196F3;
+  margin-bottom: 10px;
+}
+
+.question-type {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #E3F2FD;
+  color: #1976D2;
+  border-radius: 16px;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.question-text {
+  font-size: 20px;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.question-text .japanese {
+  color: #333;
+}
+
+.question-text .hint {
+  color: #666;
+  font-size: 16px;
+  margin-left: 10px;
+}
+
+/* 手書きエリア */
+.writing-area {
+  margin: 20px 0;
+}
+
+.canvas-container {
+  position: relative;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  margin-bottom: 10px;
+}
+
+.writing-canvas {
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.canvas-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.canvas-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.clear-btn {
+  background: #f44336;
+  color: white;
+}
+
+.clear-btn:hover {
+  background: #d32f2f;
+}
+
+/* 認識結果エリア */
+.recognition-area {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.recognition-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #666;
+}
+
+.word-boxes {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 60px;
+}
+
+.word-box {
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 15px;
+  min-width: 80px;
+  text-align: center;
+  font-size: 18px;
+  position: relative;
+}
+
+.word-box.recognized {
+  border-color: #4CAF50;
+  background: #E8F5E9;
+}
+
+.word-box.error {
+  border-color: #f44336;
+  background: #FFEBEE;
+}
+
+.word-box .confidence {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #2196F3;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+/* 解答エリア */
+.answer-area {
+  margin-top: 20px;
+}
+
+.answer-input {
+  width: 100%;
+  padding: 15px;
+  font-size: 18px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.answer-input:focus {
+  outline: none;
+  border-color: #2196F3;
+}
+
+.submit-btn {
+  background: #4CAF50;
+  color: white;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+  background: #45a049;
+}
+
+/* 解答済みリスト */
+.answered-list {
+  margin-top: 30px;
+}
+
+.answered-item {
+  background: #f5f5f5;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.answered-item.correct {
+  background: #E8F5E9;
+}
+
+.answered-item.incorrect {
+  background: #FFEBEE;
+}
+
+/* 採点結果 */
+.scoring-area {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.score-btn {
+  background: #FF9800;
+  color: white;
+  padding: 15px 40px;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.score-btn:hover {
+  background: #F57C00;
+}
+
+.score-result {
+  margin-top: 20px;
+  padding: 30px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  display: none;
+}
+
+.score-result.show {
+  display: block;
+}
+
+.score-display {
+  font-size: 48px;
+  font-weight: bold;
+  color: #2196F3;
+  margin-bottom: 20px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .english-practice-container {
+    padding: 10px;
+  }
+  
+  .question-card {
+    padding: 20px;
+  }
+  
+  .word-boxes {
+    gap: 5px;
+  }
+  
+  .word-box {
+    min-width: 60px;
+    padding: 8px 10px;
+    font-size: 16px;
+  }
+}
+
+/* 手書き認識用の追加スタイル */
+.recognition-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ddd;
+}
+
+.status-indicator.active {
+  background: #4CAF50;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+</style>
+
+<div class="english-practice-container">
+  <h1 style="text-align: center; margin-bottom: 30px;">
+    <i class="fas fa-book" style="color: #2196F3;"></i>
+    英語文法練習 - be動詞・一般動詞
+  </h1>
+
+  <!-- タブコンテナ -->
+  <div class="tab-container">
+    <div class="tab-buttons">
+      <button class="tab-button active" onclick="switchTab('basic')">
+        <i class="fas fa-pencil-alt"></i> 基本練習
+      </button>
+      <button class="tab-button" onclick="switchTab('wh-questions')">
+        <i class="fas fa-question-circle"></i> 疑問詞練習
+      </button>
+    </div>
+  </div>
+
+  <!-- 基本練習タブ -->
+  <div id="basic-tab" class="tab-content active">
+    <div class="question-list" id="basic-questions">
+      <!-- 動的に問題が生成される -->
+    </div>
+    
+    <div class="scoring-area">
+      <button class="score-btn" onclick="scoreAnswers('basic')">
+        <i class="fas fa-check-circle"></i> 採点する
+      </button>
+      <div id="basic-score-result" class="score-result">
+        <div class="score-display" id="basic-score">0/6</div>
+        <div class="score-message" id="basic-message"></div>
+        <button class="submit-btn" onclick="resetQuestions('basic')">
+          <i class="fas fa-redo"></i> もう一度挑戦
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 疑問詞練習タブ -->
+  <div id="wh-questions-tab" class="tab-content">
+    <div class="question-list" id="wh-questions">
+      <!-- 動的に問題が生成される -->
+    </div>
+    
+    <div class="scoring-area">
+      <button class="score-btn" onclick="scoreAnswers('wh-questions')">
+        <i class="fas fa-check-circle"></i> 採点する
+      </button>
+      <div id="wh-score-result" class="score-result">
+        <div class="score-display" id="wh-score">0/6</div>
+        <div class="score-message" id="wh-message"></div>
+        <button class="submit-btn" onclick="resetQuestions('wh-questions')">
+          <i class="fas fa-redo"></i> もう一度挑戦
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// グローバル変数
+let currentTab = 'basic';
+let answers = {
+  basic: {},
+  'wh-questions': {}
+};
+let currentCanvas = null;
+let isDrawing = false;
+
+// 問題データ
+const basicQuestions = [
+  {
+    id: 1,
+    type: 'be動詞・肯定文',
+    japanese: '私は学生です。',
+    answer: 'I am a student.',
+    hint: 'I / am / a student'
+  },
+  {
+    id: 2,
+    type: 'be動詞・否定文',
+    japanese: '彼は医者ではありません。',
+    answer: 'He is not a doctor.',
+    hint: 'He / is not / a doctor'
+  },
+  {
+    id: 3,
+    type: 'be動詞・疑問文',
+    japanese: 'あなたは先生ですか？',
+    answer: 'Are you a teacher?',
+    hint: 'Are / you / a teacher?'
+  },
+  {
+    id: 4,
+    type: '一般動詞・肯定文',
+    japanese: '私は英語を勉強します。',
+    answer: 'I study English.',
+    hint: 'I / study / English'
+  },
+  {
+    id: 5,
+    type: '一般動詞・否定文',
+    japanese: '彼女はサッカーをしません。',
+    answer: 'She does not play soccer.',
+    hint: 'She / does not / play / soccer'
+  },
+  {
+    id: 6,
+    type: '一般動詞・疑問文',
+    japanese: 'あなたは音楽が好きですか？',
+    answer: 'Do you like music?',
+    hint: 'Do / you / like / music?'
+  }
+];
+
+const whQuestions = [
+  {
+    id: 1,
+    type: '疑問詞・What',
+    japanese: 'これは何ですか？',
+    answer: 'What is this?',
+    hint: 'What / is / this?'
+  },
+  {
+    id: 2,
+    type: '疑問詞・Where',
+    japanese: 'あなたはどこに住んでいますか？',
+    answer: 'Where do you live?',
+    hint: 'Where / do / you / live?'
+  },
+  {
+    id: 3,
+    type: '疑問詞・When',
+    japanese: 'いつ勉強しますか？',
+    answer: 'When do you study?',
+    hint: 'When / do / you / study?'
+  },
+  {
+    id: 4,
+    type: '疑問詞・Who',
+    japanese: '誰が英語を教えますか？',
+    answer: 'Who teaches English?',
+    hint: 'Who / teaches / English?'
+  },
+  {
+    id: 5,
+    type: '疑問詞・Why',
+    japanese: 'なぜ英語を勉強しますか？',
+    answer: 'Why do you study English?',
+    hint: 'Why / do / you / study / English?'
+  },
+  {
+    id: 6,
+    type: '疑問詞・How',
+    japanese: 'どのように学校に行きますか？',
+    answer: 'How do you go to school?',
+    hint: 'How / do / you / go / to / school?'
+  }
+];
+
+// 初期化
+document.addEventListener('DOMContentLoaded', function() {
+  renderQuestions('basic', basicQuestions);
+  renderQuestions('wh-questions', whQuestions);
+});
+
+// タブ切り替え
+function switchTab(tab) {
+  currentTab = tab;
+  
+  // タブボタンの更新
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  // コンテンツの切り替え
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  document.getElementById(`${tab}-tab`).classList.add('active');
+}
+
+// 問題のレンダリング
+function renderQuestions(type, questions) {
+  const container = document.getElementById(`${type === 'basic' ? 'basic' : 'wh'}-questions`);
+  container.innerHTML = '';
+  
+  questions.forEach(question => {
+    const questionCard = createQuestionCard(question, type);
+    container.appendChild(questionCard);
+  });
+}
+
+// 問題カードの作成
+function createQuestionCard(question, type) {
+  const card = document.createElement('div');
+  card.className = 'question-card';
+  card.innerHTML = `
+    <div class="question-number">問題 ${question.id}</div>
+    <div class="question-type">${question.type}</div>
+    <div class="question-text">
+      <span class="japanese">${question.japanese}</span>
+      <span class="hint">(${question.hint})</span>
+    </div>
+    
+    <div class="writing-area">
+      <div class="canvas-container">
+        <canvas id="canvas-${type}-${question.id}" class="writing-canvas" width="800" height="150"></canvas>
+      </div>
+      <div class="canvas-controls">
+        <button class="canvas-btn clear-btn" onclick="clearCanvas('${type}', ${question.id})">
+          <i class="fas fa-eraser"></i> クリア
+        </button>
+        <button class="canvas-btn" onclick="recognizeHandwriting('${type}', ${question.id})" style="background: #2196F3; color: white;">
+          <i class="fas fa-search"></i> 認識
+        </button>
+      </div>
+    </div>
+    
+    <div class="recognition-area">
+      <div class="recognition-title">認識結果</div>
+      <div class="word-boxes" id="recognition-${type}-${question.id}">
+        <!-- 認識結果が表示される -->
+      </div>
+      <div class="recognition-status">
+        <span class="status-indicator" id="status-${type}-${question.id}"></span>
+        <span id="status-text-${type}-${question.id}">手書きで英文を書いてください</span>
+      </div>
+    </div>
+    
+    <div class="answer-area">
+      <input type="text" 
+             class="answer-input" 
+             id="answer-${type}-${question.id}"
+             placeholder="認識結果を確認して、正しい英文を入力してください"
+             onchange="saveAnswer('${type}', ${question.id})">
+      <button class="submit-btn" onclick="submitAnswer('${type}', ${question.id})">
+        <i class="fas fa-paper-plane"></i> 解答を保存
+      </button>
+    </div>
+    
+    <div class="answered-list" id="answered-${type}-${question.id}">
+      <!-- 解答済みの表示 -->
+    </div>
+  `;
+  
+  // Canvas初期化を遅延実行
+  setTimeout(() => {
+    initCanvas(`canvas-${type}-${question.id}`);
+  }, 100);
+  
+  return card;
+}
+
+// Canvas初期化
+function initCanvas(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  
+  let isDrawing = false;
+  let lastX = 0;
+  let lastY = 0;
+  
+  // マウスイベント
+  canvas.addEventListener('mousedown', startDrawing);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stopDrawing);
+  canvas.addEventListener('mouseout', stopDrawing);
+  
+  // タッチイベント
+  canvas.addEventListener('touchstart', handleTouch);
+  canvas.addEventListener('touchmove', handleTouch);
+  canvas.addEventListener('touchend', stopDrawing);
+  
+  function startDrawing(e) {
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    lastX = e.clientX - rect.left;
+    lastY = e.clientY - rect.top;
+  }
+  
+  function draw(e) {
+    if (!isDrawing) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    
+    lastX = x;
+    lastY = y;
+  }
+  
+  function stopDrawing() {
+    isDrawing = false;
+  }
+  
+  function handleTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                     e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    canvas.dispatchEvent(mouseEvent);
+  }
+}
+
+// Canvas クリア
+function clearCanvas(type, questionId) {
+  const canvas = document.getElementById(`canvas-${type}-${questionId}`);
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // 認識結果もクリア
+  document.getElementById(`recognition-${type}-${questionId}`).innerHTML = '';
+  document.getElementById(`status-text-${type}-${questionId}`).textContent = '手書きで英文を書いてください';
+  document.getElementById(`status-${type}-${questionId}`).classList.remove('active');
+}
+
+// 手書き認識（Google Vision API）
+async function recognizeHandwriting(type, questionId) {
+  const statusIndicator = document.getElementById(`status-${type}-${questionId}`);
+  const statusText = document.getElementById(`status-text-${type}-${questionId}`);
+  const recognitionArea = document.getElementById(`recognition-${type}-${questionId}`);
+  
+  // 認識中の表示
+  statusIndicator.classList.add('active');
+  statusText.textContent = '認識中...';
+  
+  try {
+    // Canvasから画像データを取得
+    const canvas = document.getElementById(`canvas-${type}-${questionId}`);
+    const imageData = canvas.toDataURL('image/png');
+    
+    // APIに送信
+    const response = await fetch('/myapp/index.cgi/api/handwriting-recognition', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrfToken()
+      },
+      body: JSON.stringify({
+        image: imageData
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // 認識結果を表示
+      recognitionArea.innerHTML = '';
+      
+      if (result.words && result.words.length > 0) {
+        result.words.forEach(wordData => {
+          const wordBox = document.createElement('div');
+          wordBox.className = 'word-box recognized';
+          wordBox.textContent = wordData.text;
+          
+          // 信頼度を表示
+          wordBox.innerHTML += `<span class="confidence">${wordData.confidence}%</span>`;
+          
+          recognitionArea.appendChild(wordBox);
+        });
+        
+        // 解答欄に自動入力（編集可能）
+        document.getElementById(`answer-${type}-${questionId}`).value = result.text;
+        statusText.textContent = '認識完了！結果を確認してください';
+      } else {
+        statusText.textContent = 'テキストが検出されませんでした';
+        statusIndicator.classList.remove('active');
+      }
+    } else {
+      statusText.textContent = 'エラー: ' + result.message;
+      statusIndicator.classList.remove('active');
+    }
+  } catch (error) {
+    console.error('Recognition error:', error);
+    statusText.textContent = '認識エラーが発生しました';
+    statusIndicator.classList.remove('active');
+  }
+}
+
+// 解答の保存
+function saveAnswer(type, questionId) {
+  const answer = document.getElementById(`answer-${type}-${questionId}`).value;
+  if (!answers[type]) answers[type] = {};
+  answers[type][questionId] = answer;
+}
+
+// 解答の送信
+function submitAnswer(type, questionId) {
+  const answer = document.getElementById(`answer-${type}-${questionId}`).value;
+  if (!answer.trim()) {
+    alert('解答を入力してください');
+    return;
+  }
+  
+  saveAnswer(type, questionId);
+  
+  // 解答済み表示
+  const answeredArea = document.getElementById(`answered-${type}-${questionId}`);
+  answeredArea.innerHTML = `
+    <div class="answered-item">
+      <span><i class="fas fa-check"></i> 解答済み: ${answer}</span>
+      <button class="canvas-btn" onclick="editAnswer('${type}', ${questionId})" style="background: #FF9800; color: white;">
+        <i class="fas fa-edit"></i> 修正
+      </button>
+    </div>
+  `;
+  
+  // 入力欄を無効化
+  document.getElementById(`answer-${type}-${questionId}`).disabled = true;
+}
+
+// 解答の修正
+function editAnswer(type, questionId) {
+  document.getElementById(`answer-${type}-${questionId}`).disabled = false;
+  document.getElementById(`answer-${type}-${questionId}`).focus();
+}
+
+// 採点
+function scoreAnswers(type) {
+  const questions = type === 'basic' ? basicQuestions : whQuestions;
+  let correct = 0;
+  
+  questions.forEach(question => {
+    const userAnswer = answers[type][question.id];
+    if (userAnswer && normalizeAnswer(userAnswer) === normalizeAnswer(question.answer)) {
+      correct++;
+      // 正解の表示
+      const answeredArea = document.getElementById(`answered-${type}-${question.id}`);
+      answeredArea.querySelector('.answered-item').classList.add('correct');
+    } else {
+      // 不正解の表示
+      const answeredArea = document.getElementById(`answered-${type}-${question.id}`);
+      if (answeredArea.querySelector('.answered-item')) {
+        answeredArea.querySelector('.answered-item').classList.add('incorrect');
+      }
+    }
+  });
+  
+  // スコア表示
+  const scoreResult = document.getElementById(`${type === 'basic' ? 'basic' : 'wh'}-score-result`);
+  const scoreDisplay = document.getElementById(`${type === 'basic' ? 'basic' : 'wh'}-score`);
+  const scoreMessage = document.getElementById(`${type === 'basic' ? 'basic' : 'wh'}-message`);
+  
+  scoreResult.classList.add('show');
+  scoreDisplay.textContent = `${correct}/6`;
+  
+  // メッセージ
+  if (correct === 6) {
+    scoreMessage.innerHTML = '<i class="fas fa-star"></i> 素晴らしい！全問正解です！';
+  } else if (correct >= 4) {
+    scoreMessage.innerHTML = '<i class="fas fa-thumbs-up"></i> よくできました！';
+  } else {
+    scoreMessage.innerHTML = '<i class="fas fa-book"></i> もう少し練習しましょう！';
+  }
+}
+
+// 解答の正規化
+function normalizeAnswer(answer) {
+  return answer.toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// リセット
+function resetQuestions(type) {
+  answers[type] = {};
+  renderQuestions(type, type === 'basic' ? basicQuestions : whQuestions);
+  document.getElementById(`${type === 'basic' ? 'basic' : 'wh'}-score-result`).classList.remove('show');
+}
+</script>
+{% endblock %}
